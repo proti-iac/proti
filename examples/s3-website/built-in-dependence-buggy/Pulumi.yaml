@@ -1,0 +1,4 @@
+name: s3-website-built-in-dependence-buggy
+runtime: nodejs
+description: A simple static website, that is hosted in an AWS S3 bucket and only
+  uses built-in resource dependencies.
