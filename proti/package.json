@@ -2,34 +2,47 @@
   "name": "proti",
   "version": "0.0.0",
   "description": "Property-based testing of Pulumi TypeScript infrastructure as code programs",
-  "main": "src/index.ts",
+  "main": "./bin/index.js",
+  "types": "./bin/index.d.ts",
+  "files": [
+    "bin"
+  ],
+  "bin": {
+    "proti": "./bin/run.js"
+  },
   "repository": "https://github.com/prg-grp/iac-testing",
   "author": "Daniel Sokolowski",
   "license": "MIT",
   "private": false,
   "scripts": {
+    "clean": "rm -rf bin",
+    "dev": "ts-node ./src/run.ts",
     "build": "tsc",
-    "start": "node ./bin/index.js",
-    "clean": "rm -r bin",
-    "dev": "ts-node ./src/index.ts",
+    "start": "node ./bin/run.js",
+    "prepack": "yarn clean & yarn build",
     "lint": "eslint . --ext .ts",
     "test": "jest"
   },
   "dependencies": {
-    "@types/node": "^18.6.3",
-    "typescript": "^4.7.4"
+    "@types/node": "18.6.4",
+    "fast-check": "^3.1.1",
+    "jest": "^28.1.3",
+    "ts-jest": "^28.0.7",
+    "ts-node": "10.9.1",
+    "typescript": "4.7.4",
+    "yargs": "^17.5.1"
   },
   "devDependencies": {
     "@types/jest": "^28.1.6",
-    "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
-    "eslint": "^7.32.0 || ^8.2.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-import": "^2.25.2",
-    "eslint-plugin-prettier": "^4.2.1",
-    "jest": "^28.1.3",
-    "prettier": "^2.7.1",
-    "ts-node": "^10.9.1"
+    "@types/yargs": "^17.0.11",
+    "@typescript-eslint/eslint-plugin": "5.32.0",
+    "@typescript-eslint/parser": "5.32.0",
+    "eslint": "8.21.0",
+    "eslint-config-airbnb-base": "15.0.0",
+    "eslint-config-airbnb-base-typescript": "^1.1.0",
+    "eslint-config-prettier": "8.5.0",
+    "eslint-plugin-import": "2.26.0",
+    "eslint-plugin-prettier": "4.2.1",
+    "prettier": "2.7.1"
   }
 }
