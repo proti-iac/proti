@@ -1,2 +1,4 @@
 #!/usr/bin/env node
-console.log('Hi ProTI');
+import { run } from './cli';
+
+run(process.argv.slice(2));
