@@ -1,11 +1,11 @@
 import * as jestCli from 'jest-cli';
-import { Options as YOptions } from 'yargs';
+import * as path from 'path';
 import yargs = require('yargs');
 import { Config, defaultConfig } from './config';
 import { keys, pick } from './utilities';
 
 export type Options = Config & { jest: string; showConfig: boolean };
-export const options: { [key in keyof Options]: YOptions } = {
+export const options: { [key in keyof Options]: yargs.Options } = {
 	projectDir: {
 		alias: 'p',
 		default: defaultConfig.projectDir,
@@ -52,8 +52,8 @@ export const run = (args: string[]): void => {
 	const jestConf = [
 		'--rootDir',
 		config.protiDir,
-		'--testMatch',
-		'**/?(*.)+(proti).[tj]s',
+		'--config',
+		path.resolve(config.protiDir, '../jest-proti.config.js'),
 		'--globals',
 		JSON.stringify({ proti: config }),
 	];

@@ -5,7 +5,8 @@
   "main": "./bin/index.js",
   "types": "./bin/index.d.ts",
   "files": [
-    "bin"
+    "bin",
+    "jest-proti.config.js"
   ],
   "bin": {
     "proti": "./bin/run.js"
