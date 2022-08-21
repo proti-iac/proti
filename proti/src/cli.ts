@@ -1,11 +1,12 @@
 import { runCLI as runJest } from 'jest';
 import { buildArgv as buildJestArgv } from 'jest-cli/build/cli';
 import * as path from 'path';
+import * as fs from 'fs';
 import yargs = require('yargs');
 import { Config, defaultConfig } from './config';
 import { keys, pick } from './utilities';
 
-export type Options = Config & { jest: string; showConfig: boolean };
+export type Options = Config & { jest: string; showConfig: boolean; silent: boolean };
 export const options: { [key in keyof Options]: yargs.Options } = {
 	projectDir: {
 		alias: 'p',
@@ -29,15 +30,34 @@ export const options: { [key in keyof Options]: yargs.Options } = {
 		description: 'Show config and exit without executing ProTI',
 		type: 'boolean',
 	},
+	silent: {
+		description: 'Hide console output',
+		type: 'boolean',
+	},
 };
 
-export const run = (args: string[]): void => {
+export const check = (opts: yargs.Arguments<{ projectDir?: string }>) => {
+	if (!opts.projectDir || !fs.existsSync(opts.projectDir))
+		throw new Error(`❌ Project path does not exist: ${opts.projectDir}`);
+	return true;
+};
+
+export const run = async (args: string[]): Promise<void> => {
 	const argv = yargs(args)
 		.scriptName('proti')
 		.usage('$0 [project Dir]', 'Run ProTI on project')
 		.options(options)
 		.alias('h', 'help')
 		.alias('v', 'version')
+		.coerce('projectDir', (projectDir) => path.resolve(process.cwd(), projectDir))
+		.check(check)
+		.fail((msg, err) => {
+			if (!args.join(' ').includes('--silent')) {
+				console.error(msg);
+				console.error('💡 Use --help to display the manual');
+			}
+			throw err;
+		})
 		.strict(true).argv as Options;
 
 	const config = {
