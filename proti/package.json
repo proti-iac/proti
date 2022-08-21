@@ -6,7 +6,8 @@
   "types": "./bin/index.d.ts",
   "files": [
     "bin",
-    "jest-proti.config.js"
+    "jest-proti.config.js",
+    "patches"
   ],
   "bin": {
     "proti": "./bin/run.js"
@@ -22,7 +23,8 @@
     "start": "node ./bin/run.js",
     "prepack": "yarn clean & yarn build",
     "lint": "eslint . --ext .ts",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@jest/types": "^28.1.3",
@@ -30,6 +32,8 @@
     "fast-check": "^3.1.1",
     "jest": "^28.1.3",
     "jest-cli": "^28.1.3",
+    "patch-package": "^6.4.7",
+    "postinstall-postinstall": "^2.1.0",
     "ts-jest": "^28.0.7",
     "ts-node": "10.9.1",
     "typescript": "4.7.4",

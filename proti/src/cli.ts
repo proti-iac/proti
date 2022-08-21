@@ -1,4 +1,5 @@
-import * as jestCli from 'jest-cli';
+import { runCLI as runJest } from 'jest';
+import { buildArgv as buildJestArgv } from 'jest-cli/build/cli';
 import * as path from 'path';
 import yargs = require('yargs');
 import { Config, defaultConfig } from './config';
@@ -46,17 +47,18 @@ export const run = (args: string[]): void => {
 
 	if (argv.showConfig === true) {
 		console.log(config);
-		process.exit(0);
+		return;
 	}
 
 	const jestConf = [
-		'--rootDir',
-		config.protiDir,
-		'--config',
-		path.resolve(config.protiDir, '../jest-proti.config.js'),
-		'--globals',
-		JSON.stringify({ proti: config }),
+		`--rootDir=${config.protiDir}`,
+		`--config=${path.resolve(config.protiDir, '../jest-proti.config.js')}`,
+		`--globals=${JSON.stringify({ proti: config })}`,
 	];
+	if (argv.silent) jestConf.push('--silent');
 	const jestArgs: string[] = argv.jest.match(/(?:[^\s"']+|['"][^'"]*["'])+/g) || [];
-	jestCli.run(jestArgs.concat(jestConf));
+	const jestArgv = await buildJestArgv(jestArgs.concat(jestConf));
+	// Jest ignores --config if multiple projects are configured or the project is not cwd
+	const { results: jestResults } = await runJest(jestArgv, [process.cwd()]);
+	if (!jestResults?.success) throw new Error('Jest tests failed');
 };
