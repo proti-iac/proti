@@ -9,8 +9,18 @@ describe('CLI', () => {
 		await expect(run(['--silent', 'abc'])).rejects.toThrow('Project path does not exist:');
 	});
 
-	it('should not run on flat S3 website', async () => {
-		await expect(run(['--silent', '../examples/s3-website/flat'])).rejects.toThrow(
+	it('should run on flat S3 website', async () => {
+		await expect(run(['--silent', '../examples/s3-website/flat'])).resolves.toBe(undefined);
+	});
+
+	it('should run on flat-redirect S3 website', async () => {
+		await expect(run(['--silent', '../examples/s3-website/flat-redirect'])).resolves.toBe(
+			undefined
+		);
+	});
+
+	it('should not run on flat-throws S3 website', async () => {
+		await expect(run(['--silent', '../examples/s3-website/flat-throws'])).rejects.toThrow(
 			'Jest tests failed'
 		);
 	});
