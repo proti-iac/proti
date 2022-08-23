@@ -30,7 +30,13 @@ export const options: { [key in keyof Options]: yargs.Options } = {
 		description: 'Show config and exit without executing ProTI',
 		type: 'boolean',
 	},
+	showDynamicallyLoadedModules: {
+		default: defaultConfig.showDynamicallyLoadedModules,
+		description: 'Print to console which modules each test execution dynamically loads',
+		type: 'boolean',
+	},
 	silent: {
+		default: defaultConfig.silent,
 		description: 'Hide console output',
 		type: 'boolean',
 	},
