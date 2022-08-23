@@ -1,0 +1,12 @@
+diff --git a/node_modules/jest-runtime/build/index.js b/node_modules/jest-runtime/build/index.js
+index f4da4e6..8440b72 100644
+--- a/node_modules/jest-runtime/build/index.js
++++ b/node_modules/jest-runtime/build/index.js
+@@ -2374,6 +2374,7 @@ class Runtime {
+     };
+ 
+     const jestObject = {
++      getIsolatedModuleRegistry: () => this._isolatedModuleRegistry,
+       advanceTimersByTime: msToRun =>
+         _getFakeTimers().advanceTimersByTime(msToRun),
+       advanceTimersToNextTimer: steps =>
