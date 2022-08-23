@@ -49,8 +49,7 @@ describe(proti.projectDir, () => {
 						loadedModules,
 						"Isolated module registry does not contain Pulumi program's main module. The tests do not execute the IaC program!"
 					).toContain(require.resolve(proti.projectDir));
-					if (proti.showDynamicallyLoadedModules)
-						dynamicallyLoadedModules.push(...loadedModules);
+					if (proti.showDynamicImports) dynamicallyLoadedModules.push(...loadedModules);
 				});
 
 				// Wait for all async code to settle
@@ -61,7 +60,7 @@ describe(proti.projectDir, () => {
 	);
 
 	afterAll(() => {
-		if (proti.showDynamicallyLoadedModules && !proti.silent) {
+		if (proti.showDynamicImports && !proti.silent) {
 			const moduleStats = dynamicallyLoadedModules
 				.reduce(
 					(stats, mod) => stats.set(mod, (stats.get(mod) || 0) + 1),
