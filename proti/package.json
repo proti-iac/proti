@@ -23,7 +23,7 @@
     "start": "node ./bin/run.js",
     "prepack": "yarn clean & yarn build",
     "lint": "eslint . --ext .ts",
-    "test": "jest",
+    "test": "yarn build & jest",
     "postinstall": "patch-package"
   },
   "dependencies": {
