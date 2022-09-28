@@ -1,26 +1,13 @@
 import { runCLI as runJest } from 'jest';
 import { buildArgv as buildJestArgv } from 'jest-cli/build/cli';
 import * as fs from 'fs';
-import { Set } from 'immutable';
 import * as path from 'path';
 import yargs = require('yargs');
-import { Config, defaultConfig } from './config';
+import { defaultConfig, PrimitiveConfig, toPrimitiveConfig } from './config';
 import { dropUndefined, keys, pick } from './utilities';
 
-type Options<O> = { [K in keyof O]: Option<O[K]> };
-type Option<T> = T extends Set<infer U> ? U[] : T;
-// Replaces Set<T> with T[]
-const toOption = <T>(v: T): Option<T> =>
-	(v instanceof Set ? (v as unknown as Set<unknown>).toArray() : v) as Option<T>;
-const toOptions = <T extends object>(vs: T): Options<T> =>
-	Object.fromEntries(Object.entries(vs).map(([k, v]) => [k, toOption(v)])) as Options<T>;
-// Replaces T[] with Set<T>
-const fromOption = <T>(v: Option<T>): T => (Array.isArray(v) ? Set(v) : v) as T;
-const fromOptions = <T, S extends Options<T>>(vs: S): T =>
-	Object.fromEntries(Object.entries(vs).map(([k, v]) => [k, fromOption(v)])) as unknown as T;
-
-const defaultOptions: Options<Config> = toOptions(defaultConfig);
-export const options = <T>(argv: yargs.Argv<T>): yargs.Argv<Options<Config>> =>
+const defaultOptions: PrimitiveConfig = toPrimitiveConfig(defaultConfig);
+export const options = <T>(argv: yargs.Argv<T>): yargs.Argv<PrimitiveConfig> =>
 	argv.options({
 		preload: {
 			default: defaultOptions.preload,
@@ -108,7 +95,7 @@ export const options = <T>(argv: yargs.Argv<T>): yargs.Argv<Options<Config>> =>
 		},
 	});
 
-export const check = (opts: yargs.Arguments<Partial<Options<Config>>>): true => {
+export const check = (opts: yargs.Arguments<Partial<PrimitiveConfig>>): true => {
 	if (!opts.projectDir || !fs.existsSync(opts.projectDir))
 		throw new Error(`❌ Project path does not exist: ${opts.projectDir}`);
 	return true;
@@ -130,13 +117,13 @@ export const run = async (args: string[]): Promise<void> => {
 			throw err;
 		})
 		.strict(true).argv;
-	const config: Config = {
-		...defaultConfig,
-		...fromOptions(dropUndefined(pick(partialBloatedConfig, keys(defaultConfig)))),
+	const config: PrimitiveConfig = {
+		...defaultOptions,
+		...dropUndefined(pick(partialBloatedConfig, keys(defaultConfig))),
 	};
 
 	if (config.showConfig === true) {
-		console.log(toOptions(config));
+		console.log(config);
 		return;
 	}
 

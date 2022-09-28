@@ -1,4 +1,4 @@
-import { Set } from 'immutable';
+import { isSet, Set } from 'immutable';
 import { PreloaderConfig as ModulePreloaderConfig } from './module-preloader';
 
 export type CliConfig = { jest: string; showConfig: boolean; silent: boolean };
@@ -32,3 +32,20 @@ export const defaultConfig: Config = {
 	showPreloadedImports: false,
 	silent: false,
 };
+
+/**
+ * Version of `Config` that only uses datatypes that are available in JSON.
+ */
+export type PrimitiveConfig = {
+	[K in keyof Config]: Config[K] extends Set<infer T> ? T[] : Config[K];
+};
+
+export const toPrimitiveConfig = (config: Config): PrimitiveConfig =>
+	Object.fromEntries(
+		Object.entries(config).map(([k, v]) => [k, isSet(v) ? v.toArray() : v])
+	) as PrimitiveConfig;
+
+export const fromPrimitiveConfig = (config: PrimitiveConfig): Config =>
+	Object.fromEntries(
+		Object.entries(config).map(([k, v]) => [k, Array.isArray(v) ? Set(v) : v])
+	) as Config;
