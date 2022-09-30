@@ -17,7 +17,7 @@ export type VerbosityConfig = {
 export type Config = CliConfig & ModulePreloaderConfig & ProjectConfig & VerbosityConfig;
 export const defaultConfig: Config = {
 	jest: '',
-	preload: Set(['@pulumi/pulumi']),
+	preload: Set(['@pulumi/pulumi', '@pulumi/pulumi/runtime/stack']),
 	preloadAbsoluteImports: false,
 	preloadPackageImports: true,
 	preloadRelativeImports: false,
