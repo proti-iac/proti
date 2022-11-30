@@ -1,5 +1,5 @@
 import { runCLI as runJest } from 'jest';
-import { buildArgv as buildJestArgv } from 'jest-cli/build/cli';
+import { buildArgv as buildJestArgv } from 'jest-cli';
 import * as fs from 'fs';
 import * as path from 'path';
 import yargs = require('yargs');
@@ -12,86 +12,88 @@ export const options = <T>(argv: yargs.Argv<T>): yargs.Argv<PrimitiveConfig> =>
 		preload: {
 			default: defaultOptions.preload,
 			description: 'List of imports to preload before and reuse in the test runs',
-			type: 'array',
+			array: true,
+			string: true,
 		},
 		preloadAbsoluteImports: {
 			default: defaultOptions.preloadAbsoluteImports,
 			description:
 				'Preload all absolute path imports found in the project before the test runs and reuse them',
-			type: 'boolean',
+			boolean: true,
 		},
 		preloadPackageImports: {
 			default: defaultOptions.preloadPackageImports,
 			description:
 				'Preload all package imports found in the project before the test runs and reuse them',
-			type: 'boolean',
+			boolean: true,
 		},
 		preloadRelativeImports: {
 			default: defaultOptions.preloadRelativeImports,
 			description:
 				'Preload all relative path imports found in the project before the test runs and reuse them',
-			type: 'boolean',
+			boolean: true,
 		},
 		projectDir: {
 			alias: 'p',
 			default: defaultOptions.projectDir,
 			description: 'Root directory of the project to test',
-			type: 'string',
+			string: true,
 		},
 		protiDir: {
 			alias: 'r',
 			default: defaultOptions.protiDir,
 			description: 'Root directory of the executing ProTI scripts',
-			type: 'string',
+			string: true,
 		},
 		jest: {
 			alias: 'j',
 			default: defaultOptions.jest,
 			description: 'Argument string to pass to pass to jest',
-			type: 'string',
+			string: true,
 		},
 		searchImportsExclude: {
 			default: defaultOptions.searchImportsExclude,
 			description:
 				'Exclude these imports from the search for imports to preload (package name, absolute path, or path relative to project dir)',
-			type: 'array',
+			// type: 'array',
 		},
 		searchImportsFrom: {
 			default: defaultOptions.searchImportsFrom,
 			description:
 				'Module strings to start search for imports to preload from (package name, absolute path, or path relative to project dir)',
-			type: 'array',
+			array: true,
+			string: true,
 		},
 		searchImportsProjectMain: {
 			default: defaultOptions.searchImportsProjectMain,
 			description: "Search for imports to preload in the project's main file",
-			type: 'boolean',
+			boolean: true,
 		},
 		searchImportsRecursively: {
 			default: defaultOptions.searchImportsRecursively,
 			description: 'Search recursively for imports to preload',
-			type: 'boolean',
+			boolean: true,
 		},
 		showConfig: {
 			default: defaultOptions.showConfig,
 			description: 'Show config and exit without executing ProTI',
-			type: 'boolean',
+			boolean: true,
 		},
 		showDynamicImports: {
 			default: defaultOptions.showDynamicImports,
 			description: 'Print to console which modules each test execution dynamically imports',
-			type: 'boolean',
+			boolean: true,
 		},
 		showPreloadedImports: {
 			default: defaultOptions.showPreloadedImports,
 			description:
 				'Print to console which imports are preloaded before and reused in the runs',
-			type: 'boolean',
+			boolean: true,
 		},
 		silent: {
 			default: defaultOptions.silent,
 			description: 'Hide console output',
-			type: 'boolean',
+			boolean: true,
 		},
 	});
 

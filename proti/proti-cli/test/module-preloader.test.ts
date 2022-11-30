@@ -9,15 +9,15 @@ jest.mock('../src/static-analysis', () => ({
 
 const modules = {
 	a: {
-		absolute: path.resolve('test/empty-ts-modules/src/a.ts'),
-		project: path.resolve('test/empty-ts-modules'),
+		absolute: path.resolve(path.join(__dirname, 'empty-ts-modules/src/a.ts')),
+		project: path.resolve(path.join(__dirname, 'empty-ts-modules')),
 	},
 	b: {
-		absolute: path.resolve('test/empty-ts-modules/src/b.ts'),
+		absolute: path.resolve(path.join(__dirname, 'empty-ts-modules/src/b.ts')),
 		relative: './b',
 	},
 	c: {
-		absolute: path.resolve('test/empty-ts-modules/node_modules/c/see.ts'),
+		absolute: path.resolve(path.join(__dirname, 'empty-ts-modules/node_modules/c/see.ts')),
 		package: 'c',
 	},
 };

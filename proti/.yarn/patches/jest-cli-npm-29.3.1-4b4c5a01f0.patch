@@ -1,0 +1,28 @@
+diff --git a/build/index.d.ts b/build/index.d.ts
+index 2e3820430eb3b363fb4986011131ae6851f15c66..d4bbac808207bbb76256db68e3f8767ab4baffe3 100644
+--- a/build/index.d.ts
++++ b/build/index.d.ts
+@@ -9,4 +9,8 @@ export declare function run(
+   project?: string,
+ ): Promise<void>;
+ 
++export declare function buildArgv(
++  maybeArgv?: Array<string>,
++): Promise<Config.Argv>;
++
+ export {};
+diff --git a/build/index.js b/build/index.js
+index d1fd94e6b41e087e5567199f9b865775156c6126..e433ef3da74154abc5a9d435c575701df2b356da 100644
+--- a/build/index.js
++++ b/build/index.js
+@@ -9,4 +9,10 @@ Object.defineProperty(exports, 'run', {
+     return _run.run;
+   }
+ });
++Object.defineProperty(exports, 'buildArgv', {
++  enumerable: true,
++  get: function () {
++    return _run.buildArgv;
++  }
++});
+ var _run = require('./run');

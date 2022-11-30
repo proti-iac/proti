@@ -7,5 +7,5 @@ module.exports = {
 	haste: {
 		retainAllFiles: true,
 	},
-	setupFilesAfterEnv: ['jest-27-expect-message'],
+	setupFilesAfterEnv: ['jest-expect-message'],
 };

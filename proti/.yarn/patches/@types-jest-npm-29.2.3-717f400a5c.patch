@@ -1,0 +1,12 @@
+diff --git a/index.d.ts b/index.d.ts
+index 60645acebc95e3e90e91086ddfaa65d9b9efc790..f2ea8397c3b7b117576c2f45fa7358c92478be46 100755
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -151,6 +151,7 @@ interface LegacyFakeTimersConfig {
+ }
+ 
+ declare namespace jest {
++    function getIsolatedModuleRegistry(): Map<string, any> | null;
+     /**
+      * Disables automatic mocking in the module loader.
+      */
