@@ -1,41 +1,44 @@
 {
-  "name": "@proti/monorepo",
+  "name": "proti-monorepo",
   "private": true,
-  "packageManager": "yarn@3.3.0",
+  "packageManager": "yarn@3.3.1",
   "workspaces": [
     "jest-runner-proti",
     "proti-cli",
     "proti-core"
   ],
   "scripts": {
-    "g:a": "echo $(pwd); echo $INIT_CWD; echo $PROJECT_CWD; echo $npm_package_name ",
-    "g:clean": "bash -c 'if [ -e \"$INIT_CWD/package.json\" ] && [ $INIT_CWD != $PROJECT_CWD ]; then cd $INIT_CWD && rm -rf bin; else echo \"\\\"clean\\\" must be executed in a package root, not in $INIT_CWD\"; fi'",
-    "clean": "yarn workspaces foreach run clean",
-    "g:build": "bash -c 'if [ -e \"$INIT_CWD/tsconfig.json\" ] && [ $INIT_CWD != $PROJECT_CWD ]; then cd $INIT_CWD && tsc; else echo \"\\\"build\\\" must be executed in a package root with a tsconfig.json file, not in $INIT_CWD\"; fi'",
-    "build": "yarn workspaces foreach run build",
+    "g:all": "yarn workspaces foreach -pti --exclude proti-monorepo run $0",
+    "g:pkgroot": "bash -c 'if [ -e \"$0/$1\" ] && [ $0 != $PROJECT_CWD ]; then cd $0 && eval $3; else echo \"\\\"$2\\\" must be executed in a package root with a $1, not in $0\"; fi'",
+    "g:clean": "yarn g:pkgroot $INIT_CWD package.json clean 'rm -rf bin'",
+    "clean": "yarn g:all clean",
+    "g:build": "yarn g:pkgroot $INIT_CWD tsconfig.json build tsc",
+    "build": "yarn g:all build",
     "g:lint": "eslint --ext .ts --ignore-pattern bin/ $INIT_CWD",
     "lint": "yarn g:lint",
-    "g:test": "bash -c 'if [ -e \"$INIT_CWD/package.json\" ]; then cd $INIT_CWD && yarn build && cd $PROJECT_CWD && jest $INIT_CWD; else echo \"\\\"test\\\" must be executed in a package root, not in $INIT_CWD\"; fi'",
-    "test": "yarn g:test"
+    "g:test": "yarn g:pkgroot $INIT_CWD tsconfig.json test 'yarn build && INIT_CWD=$(pwd) && cd $PROJECT_CWD && jest --roots $INIT_CWD'",
+    "test": "yarn g:all test",
+    "g:prepack": "yarn g:pkgroot $INIT_CWD package.json prepack 'yarn clean && yarn build'",
+    "prepack": "yarn g:all prepack"
   },
   "devDependencies": {
-    "@types/jest": "^29.2.3",
-    "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
-    "eslint": "^8.28.0",
+    "@types/jest": "^29.2.5",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-base-typescript": "^1.1.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-import": "^2.26.0",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^4.2.1",
     "jest": "^29.3.1",
-    "prettier": "^2.8.0",
-    "ts-jest": "^29.0.3",
-    "typescript": "^4.9.3"
+    "prettier": "^2.8.3",
+    "ts-jest": "^29.0.5",
+    "typescript": "^4.9.4"
   },
   "resolutions": {
     "jest-runtime@^29.3.1": "patch:jest-runtime@npm%3A29.3.1#./.yarn/patches/jest-runtime-npm-29.3.1-4afadd3ad9.patch",
-    "@types/jest@^29.2.3": "patch:@types/jest@npm%3A29.2.3#./.yarn/patches/@types-jest-npm-29.2.3-717f400a5c.patch",
-    "jest-cli@^29.3.1": "patch:jest-cli@npm%3A29.3.1#./.yarn/patches/jest-cli-npm-29.3.1-4b4c5a01f0.patch"
+    "jest-cli@^29.3.1": "patch:jest-cli@npm%3A29.3.1#./.yarn/patches/jest-cli-npm-29.3.1-4b4c5a01f0.patch",
+    "@types/jest@^29.2.5": "patch:@types/jest@npm%3A29.2.5#./.yarn/patches/@types-jest-npm-29.2.5-d5d1737a1f.patch"
   }
 }
