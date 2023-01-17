@@ -21,5 +21,8 @@
   },
   "dependencies": {
     "create-jest-runner": "^0.12.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.18"
   }
 }

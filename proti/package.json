@@ -39,6 +39,7 @@
   "resolutions": {
     "jest-runtime@^29.3.1": "patch:jest-runtime@npm%3A29.3.1#./.yarn/patches/jest-runtime-npm-29.3.1-4afadd3ad9.patch",
     "jest-cli@^29.3.1": "patch:jest-cli@npm%3A29.3.1#./.yarn/patches/jest-cli-npm-29.3.1-4b4c5a01f0.patch",
-    "@types/jest@^29.2.5": "patch:@types/jest@npm%3A29.2.5#./.yarn/patches/@types-jest-npm-29.2.5-d5d1737a1f.patch"
+    "@types/jest@^29.2.5": "patch:@types/jest@npm%3A29.2.5#./.yarn/patches/@types-jest-npm-29.2.5-d5d1737a1f.patch",
+    "create-jest-runner@^0.12.2": "patch:create-jest-runner@npm%3A0.12.2#./.yarn/patches/create-jest-runner-npm-0.12.2-54a40f586d.patch"
   }
 }

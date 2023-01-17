@@ -1,0 +1,7 @@
+name: test
+description: A minimal AWS TypeScript Pulumi program
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+main: /hello/world.ts

@@ -1,0 +1,15 @@
+diff --git a/package.json b/package.json
+index 9fa6bb2aed9197a0d1b0e9df29975fcd93ddd282..fcafc9b1fa1b29c51853a4dd2adffd2e92f34d8a 100644
+--- a/package.json
++++ b/package.json
+@@ -8,6 +8,10 @@
+       "types": "./build/index.d.ts",
+       "default": "./build/index.js"
+     },
++    "./build/toTestResult": {
++      "types": "./build/toTestResult.d.ts",
++      "default": "./build/toTestResult.js"
++    },
+     "./package.json": "./package.json",
+     "./generator/index.js": "./generator/index.js"
+   },

@@ -15,5 +15,12 @@
     "lint": "yarn g:lint",
     "test": "yarn g:test",
     "prepack": "yarn g:prepack"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.5",
+    "@types/node": "^18.11.18"
   }
 }
