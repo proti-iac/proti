@@ -1,7 +1,7 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 
-const protiConfig = path.resolve(__dirname, '../proti.config.ts');
+const protiConfig = path.resolve(__dirname, '../jest-preset.js');
 const jestCmd = (...projects: string[]): string =>
 	`yarn jest --silent -c ${protiConfig} ${projects
 		.map((p) => `--roots ${path.resolve(__dirname, p)}`)
