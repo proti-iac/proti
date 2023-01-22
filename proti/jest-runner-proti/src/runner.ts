@@ -6,7 +6,7 @@ type RunResult = {
 	title: string;
 	duration?: number;
 	passedAsserts: number;
-	errorMessages: string[];
+	errors: Error[];
 };
 
 type RunnerState = {
@@ -16,14 +16,28 @@ type RunnerState = {
 	runResults: RunResult[];
 };
 
+const hasFailed = (result: RunResult): boolean => result.errors.length > 0;
+
+const toErrorMessage = (error: Error): string => (error.stack ? error.stack : error.message);
+
+const toFailureMessage = (result: RunResult, id: number): string =>
+	`${'#'.repeat(80)}\n# 🐞 ${id}: ${result.title}\n\n${result.errors
+		.map(toErrorMessage)
+		.join('\n\n')}`;
+
 const toTestResult = (state: RunnerState): TestResult => {
-	const failures = state.runResults.filter((r) => r.errorMessages.length > 0).length;
+	const failures = state.runResults.filter(hasFailed);
 	return {
-		failureMessage: failures === 0 ? null : 'ProTI found 🐞',
+		failureMessage:
+			failures.length === 0
+				? null
+				: `ProTI found ${'🐞'.repeat(failures.length)}\n\n${failures
+						.map(toFailureMessage)
+						.join('\n\n')}`,
 		leaks: false,
-		numFailingTests: failures,
+		numFailingTests: failures.length,
 		numPassingTests: state.runResults.filter(
-			(r) => r.duration !== undefined && r.errorMessages.length === 0
+			(r) => r.duration !== undefined && r.errors.length === 0
 		).length,
 		numPendingTests: state.runResults.filter((r) => r.duration === undefined).length,
 		numTodoTests: 0,
@@ -49,13 +63,10 @@ const toTestResult = (state: RunnerState): TestResult => {
 			ancestorTitles: [],
 			duration: result.duration,
 			failureDetails: [],
-			failureMessages: result.errorMessages,
+			failureMessages: result.errors.map(toErrorMessage),
 			fullName: `${state.testPath}#${result.title}`,
 			numPassingAsserts: result.passedAsserts,
-			status:
-				result.duration === undefined || result.errorMessages.length > 0
-					? 'failed'
-					: 'passed',
+			status: result.duration === undefined || hasFailed(result) ? 'failed' : 'passed',
 			title: result.title,
 		})),
 	};
@@ -67,13 +78,13 @@ const readPulumiYaml = async (pulumiYaml: string, start: number): Promise<RunRes
 		await readPulumiProject(pulumiYaml);
 		result.passedAsserts = 1;
 	} catch (e) {
-		result.errorMessages = [(e as Error).message];
+		result.errors = [e as Error];
 	}
 	return {
 		title: 'Read Pulumi.yaml',
 		duration: Date.now() - start,
 		passedAsserts: 0,
-		errorMessages: [],
+		errors: [],
 		...result,
 	};
 };
