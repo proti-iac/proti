@@ -7,7 +7,6 @@ const config: JestConfigWithTsJest = {
 	moduleFileExtensions: [...defaults.moduleFileExtensions, 'yaml', 'yml'],
 	runner: 'jest-runner-proti',
 	testMatch: ['**/Pulumi.y?(a)ml'],
-	verbose: true,
 };
 
 export default config;
