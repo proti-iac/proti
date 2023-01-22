@@ -1022,7 +1022,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@proti/core@workspace:proti-core":
+"@proti/core@workspace:^, @proti/core@workspace:proti-core":
   version: 0.0.0-use.local
   resolution: "@proti/core@workspace:proti-core"
   dependencies:
@@ -3960,6 +3960,7 @@ __metadata:
   resolution: "jest-runner-proti@workspace:jest-runner-proti"
   dependencies:
     "@jest/test-result": ^29.3.1
+    "@proti/core": "workspace:^"
     "@types/node": ^18.11.18
     create-jest-runner: ^0.12.2
     immutable: ^4.2.2

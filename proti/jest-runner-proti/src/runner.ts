@@ -1,5 +1,6 @@
 import { TestResult } from '@jest/test-result';
 import { RunTest } from 'create-jest-runner';
+import { readPulumiProject } from '@proti/core';
 
 type RunResult = {
 	title: string;
@@ -60,18 +61,28 @@ const toTestResult = (state: RunnerState): TestResult => {
 	};
 };
 
-const run: RunTest<{}> = (options) => {
+const readPulumiYaml = async (pulumiYaml: string, start: number): Promise<RunResult> => {
+	const result = {} as Partial<RunResult>;
+	try {
+		await readPulumiProject(pulumiYaml);
+		result.passedAsserts = 1;
+	} catch (e) {
+		result.errorMessages = [(e as Error).message];
+	}
+	return {
+		title: 'Read Pulumi.yaml',
+		duration: Date.now() - start,
+		passedAsserts: 0,
+		errorMessages: [],
+		...result,
+	};
+};
+
+const run: RunTest<{}> = async (options) => {
 	const { testPath } = options;
 	const start = Date.now();
+	const runResults: RunResult[] = [await readPulumiYaml(testPath, start)];
 	const end = Date.now();
-	const runResults: RunResult[] = [
-		{
-			title: 'test',
-			duration: 0,
-			passedAsserts: 1,
-			errorMessages: [],
-		},
-	];
 
 	return toTestResult({ testPath, start, end, runResults });
 };

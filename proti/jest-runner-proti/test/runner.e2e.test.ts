@@ -13,7 +13,7 @@ describe('runner end-to-end', () => {
 		(project) => expect(cp.execSync(jestCmd(project)).toString()).toBe('')
 	);
 
-	it.each(['abc'])(
+	it.each(['abc', '../../../examples/s3-website/invalid'])(
 		// '../../../examples/s3-website/flat-throws',])( Not implemented yet, but flat-throws should fail!
 		'should run fail on %s',
 		(project) => {
