@@ -1,0 +1,4 @@
+name: s3-website-invalid
+runtime: nodejs
+description: A simple static website hosted in an AWS S3 bucket.
+	// Invalid
