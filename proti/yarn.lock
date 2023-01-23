@@ -1032,6 +1032,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@proti/test-runner@workspace:proti-test-runner":
+  version: 0.0.0-use.local
+  resolution: "@proti/test-runner@workspace:proti-test-runner"
+  dependencies:
+    "@jest/environment": ^29.3.1
+    "@jest/test-result": ^29.3.1
+    "@jest/types": ^29.3.1
+    "@proti/core": "workspace:^"
+    "@types/node": ^18.11.18
+    immutable: ^4.2.2
+    jest: ^29.3.1
+    jest-config: ^29.3.1
+    jest-runtime: ^29.3.1
+    ts-jest: ^29.0.5
+    ts-node: ^10.9.1
+  languageName: unknown
+  linkType: soft
+
 "@pulumi/pulumi@npm:^3.51.1":
   version: 3.51.1
   resolution: "@pulumi/pulumi@npm:3.51.1"
@@ -1913,7 +1931,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.2":
+"chalk@npm:^4.0.0, chalk@npm:^4.1.2":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -2070,48 +2088,6 @@ __metadata:
   version: 2.0.0
   resolution: "convert-source-map@npm:2.0.0"
   checksum: 63ae9933be5a2b8d4509daca5124e20c14d023c820258e484e32dc324d34c2754e71297c94a05784064ad27615037ef677e3f0c00469fb55f409d2bb21261035
-  languageName: node
-  linkType: hard
-
-"create-jest-runner@npm:0.12.2":
-  version: 0.12.2
-  resolution: "create-jest-runner@npm:0.12.2"
-  dependencies:
-    chalk: ^4.1.0
-    jest-worker: ^29.0.0
-    p-limit: ^3.1.0
-  peerDependencies:
-    "@jest/test-result": ^28.0.0 || ^29.0.0
-    jest-runner: ^28.0.0 || ^29.0.0
-  peerDependenciesMeta:
-    "@jest/test-result":
-      optional: true
-    jest-runner:
-      optional: true
-  bin:
-    create-jest-runner: generator/index.js
-  checksum: f181f14888837f6b7ae0393d4883bf0a4bbf4e61ca76fa0fd0bb2b064d65cd25cb10dd005152ed693e809438cc752290fb9367180b0372c26ff4a95ef27460e6
-  languageName: node
-  linkType: hard
-
-"create-jest-runner@patch:create-jest-runner@npm%3A0.12.2#./.yarn/patches/create-jest-runner-npm-0.12.2-54a40f586d.patch::locator=proti-monorepo%40workspace%3A.":
-  version: 0.12.2
-  resolution: "create-jest-runner@patch:create-jest-runner@npm%3A0.12.2#./.yarn/patches/create-jest-runner-npm-0.12.2-54a40f586d.patch::version=0.12.2&hash=845199&locator=proti-monorepo%40workspace%3A."
-  dependencies:
-    chalk: ^4.1.0
-    jest-worker: ^29.0.0
-    p-limit: ^3.1.0
-  peerDependencies:
-    "@jest/test-result": ^28.0.0 || ^29.0.0
-    jest-runner: ^28.0.0 || ^29.0.0
-  peerDependenciesMeta:
-    "@jest/test-result":
-      optional: true
-    jest-runner:
-      optional: true
-  bin:
-    create-jest-runner: generator/index.js
-  checksum: 059304638873cc281174ffe299a833be510353d919c11001bb9f7484c4db68965e9534503000d7b0eb8595700ab5a1aaa0b0bf851bedb2ae118b2a3ce47cfbc8
   languageName: node
   linkType: hard
 
@@ -3955,24 +3931,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-runner-proti@workspace:jest-runner-proti":
-  version: 0.0.0-use.local
-  resolution: "jest-runner-proti@workspace:jest-runner-proti"
-  dependencies:
-    "@jest/test-result": ^29.3.1
-    "@proti/core": "workspace:^"
-    "@types/node": ^18.11.18
-    create-jest-runner: ^0.12.2
-    immutable: ^4.2.2
-    jest: ^29.3.1
-    jest-config: ^29.3.1
-    ts-jest: ^29.0.5
-    ts-node: ^10.9.1
-  bin:
-    proti: ./bin/run.js
-  languageName: unknown
-  linkType: soft
-
 "jest-runner@npm:^29.3.1":
   version: 29.3.1
   resolution: "jest-runner@npm:29.3.1"
@@ -4138,7 +4096,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-worker@npm:^29.0.0, jest-worker@npm:^29.3.1":
+"jest-worker@npm:^29.3.1":
   version: 29.3.1
   resolution: "jest-worker@npm:29.3.1"
   dependencies:

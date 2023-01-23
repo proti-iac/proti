@@ -5,8 +5,8 @@ const config: JestConfigWithTsJest = {
 	preset: 'ts-jest',
 	testEnvironment: 'node',
 	moduleFileExtensions: [...defaults.moduleFileExtensions, 'yaml', 'yml'],
-	runner: 'jest-runner-proti',
 	testMatch: ['**/Pulumi.y?(a)ml'],
+	testRunner: '@proti/test-runner',
 };
 
 export default config;

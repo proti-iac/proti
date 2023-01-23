@@ -1,5 +1,7 @@
+import type { JestEnvironment } from '@jest/environment';
 import { TestResult } from '@jest/test-result';
-import { RunTest } from 'create-jest-runner';
+import type { Config } from '@jest/types';
+import type Runtime from 'jest-runtime';
 import { readPulumiProject } from '@proti/core';
 
 type RunResult = {
@@ -89,13 +91,21 @@ const readPulumiYaml = async (pulumiYaml: string, start: number): Promise<RunRes
 	};
 };
 
-const run: RunTest<{}> = async (options) => {
-	const { testPath } = options;
+const testRunner = async (
+	globalConfig: Config.GlobalConfig,
+	config: Config.ProjectConfig,
+	environment: JestEnvironment,
+	runtime: Runtime,
+	testPath: string
+): Promise<TestResult> => {
 	const start = Date.now();
 	const runResults: RunResult[] = [await readPulumiYaml(testPath, start)];
 	const end = Date.now();
 
+	// random seed
+	// options.globalConfig.seed
+
 	return toTestResult({ testPath, start, end, runResults });
 };
 
-export default run;
+export default testRunner;
