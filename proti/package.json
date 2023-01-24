@@ -5,6 +5,7 @@
   "workspaces": [
     "proti-cli",
     "proti-core",
+    "proti-runner",
     "proti-test-runner"
   ],
   "scripts": {
