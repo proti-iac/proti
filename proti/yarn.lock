@@ -1037,8 +1037,10 @@ __metadata:
   resolution: "@proti/runner@workspace:proti-runner"
   dependencies:
     "@jest/test-result": ^29.4.0
+    "@types/jest": ^29.4.0
     jest-runner: ^29.4.0
     jest-watcher: ^29.4.0
+    ts-jest: ^29.0.5
   languageName: unknown
   linkType: soft
 

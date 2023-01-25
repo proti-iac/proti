@@ -15,7 +15,7 @@ class ProtiTestRunner extends TestRunner.default {
 		return super.runTests(
 			tests.map((test) => {
 				// eslint-disable-next-line no-param-reassign
-				test.context.config.globals.haste = test.context.hasteFS;
+				test.context.config.globals.hasteFS = test.context.hasteFS;
 				return test;
 			}),
 			watcher,
