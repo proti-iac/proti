@@ -2,7 +2,7 @@ import type { JestEnvironment } from '@jest/environment';
 import { TestResult } from '@jest/test-result';
 import type { Config } from '@jest/types';
 import type Runtime from 'jest-runtime';
-import { readPulumiProject } from '@proti/core';
+import { PulumiProject, readPulumiProject } from '@proti/core';
 
 type RunResult = {
 	title: string;
@@ -10,6 +10,7 @@ type RunResult = {
 	passedAsserts: number;
 	errors: Error[];
 };
+type AppendRunResult = (result: RunResult) => void;
 
 type RunnerState = {
 	testPath: string;
@@ -74,21 +75,23 @@ const toTestResult = (state: RunnerState): TestResult => {
 	};
 };
 
-const readPulumiYaml = async (pulumiYaml: string, start: number): Promise<RunResult> => {
-	const result = {} as Partial<RunResult>;
-	try {
-		await readPulumiProject(pulumiYaml);
-		result.passedAsserts = 1;
-	} catch (e) {
-		result.errors = [e as Error];
-	}
-	return {
-		title: 'Read Pulumi.yaml',
-		duration: Date.now() - start,
-		passedAsserts: 0,
-		errors: [],
-		...result,
-	};
+const readPulumiYaml = (
+	pulumiYaml: string,
+	start: number,
+	appendResult: AppendRunResult
+): Promise<PulumiProject> => {
+	const result = (partialResult: Partial<RunResult>): void =>
+		appendResult({
+			title: 'Read Pulumi.yaml',
+			duration: Date.now() - start,
+			passedAsserts: 0,
+			errors: [],
+			...partialResult,
+		});
+	const pulumiProject = readPulumiProject(pulumiYaml);
+	pulumiProject.then(() => result({ passedAsserts: 1 }));
+	pulumiProject.catch((e) => result({ errors: [e as Error] }));
+	return pulumiProject;
 };
 
 const testRunner = async (
@@ -99,11 +102,15 @@ const testRunner = async (
 	testPath: string
 ): Promise<TestResult> => {
 	const start = Date.now();
-	const runResults: RunResult[] = [await readPulumiYaml(testPath, start)];
-	const end = Date.now();
+	const runResults: RunResult[] = [];
+	const appendResult: AppendRunResult = (result) => runResults.push(result);
+
+	await readPulumiYaml(testPath, start, appendResult);
 
 	// random seed
 	// options.globalConfig.seed
+
+	const end = Date.now();
 
 	return toTestResult({ testPath, start, end, runResults });
 };
