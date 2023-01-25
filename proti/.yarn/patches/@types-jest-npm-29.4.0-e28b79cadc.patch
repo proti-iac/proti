@@ -1,5 +1,5 @@
 diff --git a/index.d.ts b/index.d.ts
-index aa868b5b7df7767e4544e68934cbe2c3127cce1a..566b80ffb144c5cc6b5cb6ca480ba68546fa0a35 100755
+index 5201510824b0d1467bfde34337ad3a9de71990b0..02146510c209bead2dfab392680172bc95693501 100755
 --- a/index.d.ts
 +++ b/index.d.ts
 @@ -151,6 +151,7 @@ interface LegacyFakeTimersConfig {

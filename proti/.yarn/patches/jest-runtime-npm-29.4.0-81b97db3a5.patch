@@ -1,8 +1,8 @@
 diff --git a/build/index.js b/build/index.js
-index 9906023dbab712b6600beaeb0b81f807169d646d..cc67b37a13dc7c1367737ff90c5bbdd252e8072c 100644
+index 303abb4a460f5ec7ac9313eefb4b73d3471e6621..d6cd08e8e8055d0153e773a37e870aed15cb49b6 100644
 --- a/build/index.js
 +++ b/build/index.js
-@@ -1949,6 +1949,7 @@ class Runtime {
+@@ -2110,6 +2110,7 @@ class Runtime {
        return jestObject;
      };
      const jestObject = {
