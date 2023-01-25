@@ -1,8 +1,13 @@
 import type { JestEnvironment } from '@jest/environment';
+import { jestExpect } from '@jest/expect';
 import { TestResult } from '@jest/test-result';
 import type { Config } from '@jest/types';
-import type Runtime from 'jest-runtime';
-import { PulumiProject, readPulumiProject } from '@proti/core';
+import { readPulumiProject } from '@proti/core';
+import { IHasteFS } from 'jest-haste-map';
+import Runtime from 'jest-runtime';
+import * as Resolver from 'jest-resolve';
+import { DependencyResolver } from 'jest-resolve-dependencies';
+import { buildSnapshotResolver } from 'jest-snapshot';
 
 type RunResult = {
 	title: string;
@@ -75,23 +80,59 @@ const toTestResult = (state: RunnerState): TestResult => {
 	};
 };
 
-const readPulumiYaml = (
-	pulumiYaml: string,
-	start: number,
+const isHasteFS = (object: any): object is IHasteFS =>
+	typeof object === 'object' &&
+	// eslint-disable-next-line no-underscore-dangle
+	typeof object?._rootDir === 'string' &&
+	// eslint-disable-next-line no-underscore-dangle
+	(object?._files instanceof Map || typeof object?._files === 'object');
+
+const isResolver = (object: any): object is Resolver.default =>
+	typeof object === 'object' &&
+	// eslint-disable-next-line no-underscore-dangle
+	typeof object?._moduleMap === 'object' &&
+	// eslint-disable-next-line no-underscore-dangle
+	(object?._moduleIDCache instanceof Map || typeof object?._moduleIDCache === 'object') &&
+	// eslint-disable-next-line no-underscore-dangle
+	(object?._modulePathCache instanceof Map || typeof object?._modulePathCache === 'object');
+
+const doAndAppendRunResult = async <T>(
+	title: string,
+	fn: () => Promise<T>,
 	appendResult: AppendRunResult
-): Promise<PulumiProject> => {
+): Promise<T> => {
+	const start = Date.now();
 	const result = (partialResult: Partial<RunResult>): void =>
 		appendResult({
-			title: 'Read Pulumi.yaml',
+			title,
 			duration: Date.now() - start,
 			passedAsserts: 0,
 			errors: [],
 			...partialResult,
 		});
-	const pulumiProject = readPulumiProject(pulumiYaml);
-	pulumiProject.then(() => result({ passedAsserts: 1 }));
-	pulumiProject.catch((e) => result({ errors: [e as Error] }));
-	return pulumiProject;
+	const resultVal = fn();
+	resultVal
+		.then(() => result({ passedAsserts: 1 }))
+		.catch((e) => result({ errors: [e as Error] }));
+	return resultVal;
+};
+
+const getResolverGlobals = async (
+	globals: Config.ConfigGlobals
+): Promise<[Resolver.default, IHasteFS]> => {
+	if (!isResolver(globals?.resolver))
+		throw Error(
+			'No Resolver available in config.globals.resolver. ' +
+				'Are you using the @proti/runner runner?\n' +
+				`Received ${JSON.stringify(globals?.resolver)}`
+		);
+	if (!isHasteFS(globals?.hasteFS))
+		throw Error(
+			'No HasteFS available in config.globals.hasteFS. ' +
+				'Are you using the @proti/runner runner?\n' +
+				`Received ${JSON.stringify(globals?.hasteFS)}`
+		);
+	return [globals?.resolver, globals?.hasteFS];
 };
 
 const testRunner = async (
@@ -105,7 +146,52 @@ const testRunner = async (
 	const runResults: RunResult[] = [];
 	const appendResult: AppendRunResult = (result) => runResults.push(result);
 
-	await readPulumiYaml(testPath, start, appendResult);
+	try {
+		const [resolver, hasteFS] = await doAndAppendRunResult(
+			'Get resolver globals',
+			() => getResolverGlobals(config.globals),
+			appendResult
+		);
+		const pulumiProject = await doAndAppendRunResult(
+			'Read Pulumi.yaml',
+			() => readPulumiProject(testPath),
+			appendResult
+		);
+		const dependencyResolver = new DependencyResolver(
+			resolver,
+			hasteFS,
+			await buildSnapshotResolver(config)
+		);
+		if (pulumiProject) {
+			if (config.injectGlobals) {
+				const globals = {
+					expect: jestExpect,
+				};
+				Object.assign(environment.global, globals);
+			}
+
+			// // console.log(config.globals.hasteFS);
+			// // console.log(pulumiProject.main);
+			// // console.log(
+			// // 	await (config.globals.resolver as Resolver.default).resolveModuleFromDirIfExistsAsync(
+			// // 		pulumiProject.main,
+			// // 		'.'
+			// // 	)
+			// // );
+			// // // console.log((config.globals.resolver as Resolver.default).resolveModuleFromDirIfExists(pulumiProject.main + '/Pulumi.yaml', '.'));
+			// console.log(
+			// 	(config.globals.resolver as Resolver.default).resolveModule(
+			// 		`${pulumiProject.main}/index.ts`,
+			// 		'.'
+			// 	)
+			// );
+			// console.log(dependencyResolver.resolve(`${pulumiProject.main}/Pulumi.yaml`));
+			// Run test subject in `environment`
+			// runtime.requireModule('./src/a.ts');
+		}
+	} catch (e) {
+		/* empty */
+	}
 
 	// random seed
 	// options.globalConfig.seed
