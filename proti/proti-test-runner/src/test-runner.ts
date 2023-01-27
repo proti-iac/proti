@@ -26,7 +26,9 @@ type RunnerState = {
 
 const hasFailed = (result: RunResult): boolean => result.errors.length > 0;
 
-const toErrorMessage = (error: Error): string => (error.stack ? error.stack : error.message);
+const toErrorMessage = (error: Error): string =>
+	(error.stack ? error.stack : error.message) +
+	(error.cause instanceof Error ? `\ncaused by ${toErrorMessage(error.cause)}` : '');
 
 const toFailureMessage = (result: RunResult, id: number): string =>
 	`${'#'.repeat(80)}\n# 🐞 ${id}: ${result.title}\n\n${result.errors
@@ -96,26 +98,27 @@ const isResolver = (object: any): object is Resolver.default =>
 	// eslint-disable-next-line no-underscore-dangle
 	(object?._modulePathCache instanceof Map || typeof object?._modulePathCache === 'object');
 
-const doAndAppendRunResult = async <T>(
-	title: string,
-	fn: () => Promise<T>,
-	appendResult: AppendRunResult
-): Promise<T> => {
-	const start = Date.now();
-	const result = (partialResult: Partial<RunResult>): void =>
-		appendResult({
-			title,
-			duration: Date.now() - start,
-			passedAsserts: 0,
-			errors: [],
-			...partialResult,
-		});
-	const resultVal = fn();
-	resultVal
-		.then(() => result({ passedAsserts: 1 }))
-		.catch((e) => result({ errors: [e as Error] }));
-	return resultVal;
-};
+const onErrorThrow = <T>(errorMsg: string, action: Promise<T>) =>
+	action.catch<T>((cause) => Promise.reject(new Error(errorMsg, { cause })));
+
+const makeRunTest =
+	(appendResult: AppendRunResult) =>
+	async <T>(title: string, test: Promise<T>): Promise<T> => {
+		const start = Date.now();
+		const result = (partialResult: Partial<RunResult>): void =>
+			appendResult({
+				title,
+				duration: Date.now() - start,
+				passedAsserts: 0,
+				errors: [],
+				...partialResult,
+			});
+		const resultVal = onErrorThrow(`Failed to ${title}`, test);
+		resultVal
+			.then(() => result({ passedAsserts: 1 }))
+			.catch((e) => result({ errors: [e as Error] }));
+		return resultVal;
+	};
 
 const getResolverGlobals = async (
 	globals: Config.ConfigGlobals
@@ -135,6 +138,24 @@ const getResolverGlobals = async (
 	return [globals?.resolver, globals?.hasteFS];
 };
 
+const resolveModuleFromPath = async (
+	resolver: Resolver.default,
+	path: string,
+	module: string
+): Promise<string> =>
+	resolver
+		.resolveModuleAsync(path, module)
+		.catch(() => resolver.resolveModuleFromDirIfExists(path, module))
+		.then(
+			(result: string | null): Promise<string> =>
+				result === null
+					? Promise.reject(new Error(`Module ${module} resolved to null in ${path}`))
+					: Promise.resolve(module)
+		)
+		.catch((e) =>
+			Promise.reject(new Error(`Failed to resolve ${module} from path ${path}`, { cause: e }))
+		);
+
 const testRunner = async (
 	globalConfig: Config.GlobalConfig,
 	config: Config.ProjectConfig,
@@ -143,37 +164,30 @@ const testRunner = async (
 	testPath: string
 ): Promise<TestResult> => {
 	const start = Date.now();
-	const runResults: RunResult[] = [];
-	const appendResult: AppendRunResult = (result) => runResults.push(result);
+	const testResults: RunResult[] = [];
+	const runTest = makeRunTest((result) => testResults.push(result));
 
 	try {
-		const [resolver, hasteFS] = await doAndAppendRunResult(
-			'Get resolver globals',
-			() => getResolverGlobals(config.globals),
-			appendResult
+		const [resolver, hasteFS] = await onErrorThrow(
+			'Failed to get resolver globals',
+			getResolverGlobals(config.globals)
 		);
-		const pulumiProject = await doAndAppendRunResult(
-			'Read Pulumi.yaml',
-			() => readPulumiProject(testPath),
-			appendResult
-		);
-		const dependencyResolver = new DependencyResolver(
-			resolver,
-			hasteFS,
-			await buildSnapshotResolver(config)
-		);
-		if (pulumiProject) {
-			if (config.injectGlobals) {
-				const globals = {
-					expect: jestExpect,
-				};
-				Object.assign(environment.global, globals);
-			}
+		const pulumiProject = await runTest('Read Pulumi.yaml', readPulumiProject(testPath));
 
-			// // console.log(config.globals.hasteFS);
-			// // console.log(pulumiProject.main);
-			// // console.log(
-			// // 	await (config.globals.resolver as Resolver.default).resolveModuleFromDirIfExistsAsync(
+		const snapshotResolver = await buildSnapshotResolver(config);
+		const dependencyResolver = new DependencyResolver(resolver, hasteFS, snapshotResolver);
+
+		if (config.injectGlobals) {
+			const globals = {
+				expect: jestExpect,
+			};
+			Object.assign(environment.global, globals);
+		}
+
+		const pulumiProgram = await onErrorThrow(
+			'Failed to find Pulumi program',
+			resolveModuleFromPath(resolver, pulumiProject.main, '.')
+		);
 			// // 		pulumiProject.main,
 			// // 		'.'
 			// // 	)
@@ -188,9 +202,13 @@ const testRunner = async (
 			// console.log(dependencyResolver.resolve(`${pulumiProject.main}/Pulumi.yaml`));
 			// Run test subject in `environment`
 			// runtime.requireModule('./src/a.ts');
-		}
 	} catch (e) {
-		/* empty */
+		testResults.push({
+			title: 'ProTI test runner failed',
+			duration: Date.now() - start,
+			passedAsserts: 0,
+			errors: [e as Error],
+		});
 	}
 
 	// random seed
