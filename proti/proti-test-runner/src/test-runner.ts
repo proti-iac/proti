@@ -216,7 +216,7 @@ const testRunner = async (
 
 	const end = Date.now();
 
-	return toTestResult({ testPath, start, end, runResults });
+	return toTestResult({ testPath, start, end, runResults: testResults });
 };
 
 export default testRunner;

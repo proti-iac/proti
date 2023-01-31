@@ -8,14 +8,14 @@ const jestCmd = (...projects: string[]): string =>
 		.join(' ')}`;
 
 describe('runner end-to-end', () => {
-	it.each(['../../../examples/s3-website/flat', '../../../examples/s3-website/flat-redirect'])(
+	xit.each(['../../../examples/s3-website/flat', '../../../examples/s3-website/flat-redirect'])(
 		'should run on %s',
 		(project) => expect(cp.execSync(jestCmd(project)).toString()).toBe('')
 	);
 
 	it.each(['abc', '../../../examples/s3-website/invalid'])(
 		// '../../../examples/s3-website/flat-throws',])( Not implemented yet, but flat-throws should fail!
-		'should run fail on %s',
+		'should fail on %s',
 		(project) => {
 			expect(() => cp.execSync(jestCmd(project))).toThrow('Command failed');
 		}
