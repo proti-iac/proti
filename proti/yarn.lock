@@ -1028,6 +1028,7 @@ __metadata:
   dependencies:
     "@types/js-yaml": ^4.0.5
     "@types/node": ^18.11.18
+    fast-check: ^3.6.2
     js-yaml: ^4.1.0
   languageName: unknown
   linkType: soft
