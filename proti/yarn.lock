@@ -1057,6 +1057,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@proti/demo@workspace:proti-demo":
+  version: 0.0.0-use.local
+  resolution: "@proti/demo@workspace:proti-demo"
+  dependencies:
+    "@types/jest": ^29.4.0
+    "@types/node": ^18.11.18
+    typia: ^3.4.22
+  languageName: unknown
+  linkType: soft
+
 "@proti/runner@workspace:^, @proti/runner@workspace:proti-runner":
   version: 0.0.0-use.local
   resolution: "@proti/runner@workspace:proti-runner"
@@ -1080,6 +1090,7 @@ __metadata:
     "@jest/types": ^29.4.1
     "@proti/core": "workspace:^"
     "@proti/runner": "workspace:^"
+    "@pulumi/pulumi": ^3.53.1
     "@types/jest": ^29.4.0
     "@types/node": ^18.11.18
     immutable: ^4.2.2
@@ -5211,6 +5222,7 @@ __metadata:
     ts-node: ^10.9.1
     ttypescript: ^1.5.15
     typescript: ^4.9.5
+    typia: ^3.4.22
   languageName: unknown
   linkType: soft
 
@@ -6094,6 +6106,18 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: fba33b9756bbffcbdc87254af0f491852bac475c1302b570b9c656c10fad9dbe7113975a64beb6035979db555b0fc87fa168734f10bf556f173213c13d371e4e
+  languageName: node
+  linkType: hard
+
+"typia@npm:^3.4.22":
+  version: 3.4.22
+  resolution: "typia@npm:3.4.22"
+  peerDependencies:
+    ttypescript: ">= 1.5.15"
+    typescript: ">= 4.5.2"
+  bin:
+    typia: lib/executable/typia.js
+  checksum: 0ac035fc43ef594a242e70ce6c32327ff0a019021732b81f50e610703213cf34393e8084d7b34ba5ebc19e8de36cca05fb7d56e9ae539f75c2c961f2efaf053e
   languageName: node
   linkType: hard
 

@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./bin",
+    "plugins": [
+      {
+        "transform": "typia/lib/transform",
+      }
+    ]
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

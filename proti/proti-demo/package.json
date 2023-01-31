@@ -1,0 +1,26 @@
+{
+  "name": "@proti/demo",
+  "version": "0.0.0",
+  "description": "Automated Testing for IaC Programs",
+  "author": "Daniel Sokolowski <github@d.sokolowski.org>",
+  "license": "Apache-2.0",
+  "main": "./bin/index.js",
+  "types": "./bin/index.d.ts",
+  "files": [
+    "bin"
+  ],
+  "scripts": {
+    "clean": "yarn g:clean",
+    "build": "yarn g:build",
+    "lint": "yarn g:lint",
+    "test": "yarn g:test",
+    "prepack": "yarn g:prepack"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.4.0",
+    "@types/node": "^18.11.18"
+  },
+  "dependencies": {
+    "typia": "^3.4.22"
+  }
+}
