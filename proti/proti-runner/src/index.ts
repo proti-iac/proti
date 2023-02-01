@@ -4,6 +4,8 @@ import type { TestWatcher } from 'jest-watcher';
 import type { TestRunnerOptions } from 'jest-runner';
 import type { Test } from '@jest/test-result';
 
+import { config } from '@proti/core';
+
 export * from 'jest-runner';
 
 class ProtiTestRunner extends TestRunner.default {
@@ -14,10 +16,10 @@ class ProtiTestRunner extends TestRunner.default {
 	): Promise<void> {
 		return super.runTests(
 			tests.map((test) => {
-				// eslint-disable-next-line no-param-reassign
-				test.context.config.globals.hasteFS = test.context.hasteFS;
-				// eslint-disable-next-line no-param-reassign
-				test.context.config.globals.resolver = test.context.resolver;
+				const { globals } = test.context.config;
+				globals.proti = config(globals?.proti);
+				globals.hasteFS = test.context.hasteFS;
+				globals.resolver = test.context.resolver;
 				return test;
 			}),
 			watcher,

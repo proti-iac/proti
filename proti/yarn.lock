@@ -1054,6 +1054,8 @@ __metadata:
     "@types/node": ^18.11.18
     fast-check: ^3.6.2
     js-yaml: ^4.1.0
+    typescript: ^4.9.5
+    typia: ^3.4.22
   languageName: unknown
   linkType: soft
 
@@ -1072,7 +1074,9 @@ __metadata:
   resolution: "@proti/runner@workspace:proti-runner"
   dependencies:
     "@jest/test-result": ^29.4.1
+    "@proti/core": "workspace:^"
     "@types/jest": ^29.4.0
+    "@types/node": ^18.11.18
     jest-runner: ^29.4.1
     jest-watcher: ^29.4.1
     ts-jest: ^29.0.5
