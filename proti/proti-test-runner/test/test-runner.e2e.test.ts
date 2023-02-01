@@ -8,7 +8,7 @@ const jestCmd = (...projects: string[]): string =>
 		.join(' ')}`;
 
 describe('runner end-to-end', () => {
-	xit.each(['../../../examples/s3-website/flat', '../../../examples/s3-website/flat-redirect'])(
+	it.each(['../../../examples/s3-website/flat', '../../../examples/s3-website/flat-redirect'])(
 		'should run on %s',
 		(project) => expect(cp.execSync(jestCmd(project)).toString()).toBe('')
 	);

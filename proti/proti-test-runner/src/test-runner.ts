@@ -2,12 +2,13 @@ import type { JestEnvironment } from '@jest/environment';
 import { jestExpect } from '@jest/expect';
 import { TestResult } from '@jest/test-result';
 import type { Config } from '@jest/types';
-import { readPulumiProject } from '@proti/core';
 import { IHasteFS } from 'jest-haste-map';
 import Runtime from 'jest-runtime';
 import * as Resolver from 'jest-resolve';
 import { DependencyResolver } from 'jest-resolve-dependencies';
 import { buildSnapshotResolver } from 'jest-snapshot';
+
+import { Config as ProtiConfig, readPulumiProject } from '@proti/core';
 
 type RunResult = {
 	title: string;
@@ -82,6 +83,9 @@ const toTestResult = (state: RunnerState): TestResult => {
 	};
 };
 
+const isProtiConfig = (object: any): object is ProtiConfig =>
+	typeof object === 'object' && typeof object?.moduleLoading === 'object';
+
 const isHasteFS = (object: any): object is IHasteFS =>
 	typeof object === 'object' &&
 	// eslint-disable-next-line no-underscore-dangle
@@ -120,22 +124,24 @@ const makeRunTest =
 		return resultVal;
 	};
 
-const getResolverGlobals = async (
+const getGlobals = async (
 	globals: Config.ConfigGlobals
-): Promise<[Resolver.default, IHasteFS]> => {
-	if (!isResolver(globals?.resolver))
+): Promise<[ProtiConfig, Resolver.default, IHasteFS]> => {
+	// @TODO: replace these checks with better type guards
+	if (!isProtiConfig(globals.proti)) throw new Error('no proti conf');
+	if (!isResolver(globals.resolver))
 		throw Error(
 			'No Resolver available in config.globals.resolver. ' +
 				'Are you using the @proti/runner runner?\n' +
 				`Received ${JSON.stringify(globals?.resolver)}`
 		);
-	if (!isHasteFS(globals?.hasteFS))
+	if (!isHasteFS(globals.hasteFS))
 		throw Error(
 			'No HasteFS available in config.globals.hasteFS. ' +
 				'Are you using the @proti/runner runner?\n' +
 				`Received ${JSON.stringify(globals?.hasteFS)}`
 		);
-	return [globals?.resolver, globals?.hasteFS];
+	return [globals.proti, globals.resolver, globals.hasteFS];
 };
 
 const resolveModuleFromPath = async (
@@ -168,9 +174,9 @@ const testRunner = async (
 	const runTest = makeRunTest((result) => testResults.push(result));
 
 	try {
-		const [resolver, hasteFS] = await onErrorThrow(
-			'Failed to get resolver globals',
-			getResolverGlobals(config.globals)
+		const [proti, resolver, hasteFS] = await onErrorThrow(
+			'Failed to get configuration from globals',
+			getGlobals(config.globals)
 		);
 		const pulumiProject = await runTest('Read Pulumi.yaml', readPulumiProject(testPath));
 

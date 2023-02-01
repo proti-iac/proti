@@ -1094,7 +1094,6 @@ __metadata:
     "@jest/types": ^29.4.1
     "@proti/core": "workspace:^"
     "@proti/runner": "workspace:^"
-    "@pulumi/pulumi": ^3.53.1
     "@types/jest": ^29.4.0
     "@types/node": ^18.11.18
     immutable: ^4.2.2
