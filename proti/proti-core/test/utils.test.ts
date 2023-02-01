@@ -75,6 +75,15 @@ describe('util', () => {
 				.object({ values: Object.keys(valueArbs).map(fc.constant) })
 				.chain((obj) => fc.tuple(objToNestedRecordArb(obj), objToNestedRecordArb(obj, [])));
 
+		it('throws if update is invalid', () => {
+			fc.assert(
+				fc.property(fc.object(), fc.anything({ maxDepth: 0 }), (obj, update) => {
+					const fail = () => deepMerge(obj, update as DeepPartial<Obj>);
+					expect(fail).toThrow('Update is not an object');
+				})
+			);
+		});
+
 		it('throws if update contains unknown property', () => {
 			const objWInvalidUpdate = fc
 				.tuple(fc.string(), objAndUpdateArb(), fc.anything())
@@ -86,7 +95,9 @@ describe('util', () => {
 				});
 			fc.assert(
 				fc.property(objWInvalidUpdate, ([obj, update]) =>
-					expect(() => deepMerge(obj, update)).toThrow('Update property not in object')
+					expect(() => deepMerge(obj, update)).toThrow(
+						/^Update property .* not in object$/
+					)
 				)
 			);
 		});
@@ -118,7 +129,9 @@ describe('util', () => {
 				});
 			fc.assert(
 				fc.property(objWInvalidUpdate, ([obj, update]) =>
-					expect(() => deepMerge(obj, update)).toThrow('Invalid value type in update for')
+					expect(() => deepMerge(obj, update)).toThrow(
+						/^Update property \..* is .*, not .*$/
+					)
 				)
 			);
 		});

@@ -1,3 +1,6 @@
+import { assertEquals } from 'typia';
+import { deepMerge } from './utils';
+
 export const defaultTestRunnerConfig = () => ({
 	waitTick: true, // Wait for a process tick before ending the test run
 });
@@ -13,3 +16,8 @@ export const defaultConfig = () => ({
 	moduleLoading: defaultModuleLoadingConfig(),
 });
 export type Config = ReturnType<typeof defaultConfig>;
+
+export const config = (partialConfig: any): Config =>
+	partialConfig === undefined
+		? defaultConfig()
+		: assertEquals<Config>(deepMerge(defaultConfig(), partialConfig));

@@ -15,6 +15,7 @@
     "g:clean": "yarn g:pkgroot $INIT_CWD package.json clean 'rm -rf bin'",
     "clean": "yarn g:all clean",
     "g:build": "yarn g:pkgroot $INIT_CWD tsconfig.json build tsc",
+    "g:build:ttsc": "yarn g:pkgroot $INIT_CWD tsconfig.json build ttsc",
     "build": "yarn g:all build",
     "g:lint": "eslint --ext .ts --ignore-pattern bin/ $INIT_CWD",
     "lint": "yarn g:lint",

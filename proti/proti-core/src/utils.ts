@@ -9,23 +9,35 @@ export type DeepPartial<T> = {
 		: T[P];
 };
 
+const wrappedTypeof = (x: any) => typeof x;
+export type Types = ReturnType<typeof wrappedTypeof> | 'null' | 'array';
+export const typeOf = (val: unknown): Types => {
+	const type = typeof val;
+	if (type === 'object') {
+		if (Array.isArray(val)) return 'array';
+		if (val === null) return 'null';
+	}
+	return type;
+};
 export type Obj = { [_: string]: unknown | Obj };
-export const isObj = (obj: unknown): obj is Obj =>
-	typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+export const isObj = (obj: unknown): obj is Obj => typeOf(obj) === 'object';
 
-export const deepMerge = <T extends Obj>(obj: T, update: DeepPartial<T>): T => ({
-	...obj,
-	...Object.fromEntries(
-		Object.keys(update).map((k) => {
-			if (!(k in obj)) throw new Error(`Update property not in object: ${k}`);
-			if (
-				typeof obj[k] !== typeof update[k] ||
-				Array.isArray(obj[k]) !== Array.isArray(update[k]) ||
-				(obj[k] === null) !== (update[k] === null)
-			)
-				throw new Error(`Invalid value type in update for ${k}`);
-			const v = isObj(obj[k]) ? deepMerge(obj[k] as Obj, update[k] as Obj) : update[k];
-			return [k, v];
-		})
-	),
-});
+export const deepMerge = <T extends Obj>(obj: T, update: DeepPartial<T>, propertyPath = ''): T => {
+	if (!isObj(update)) throw new Error(`Update is not an object but ${update}`);
+	const updateProperty = (key: string) => {
+		const property = `${propertyPath}.${key}`;
+		if (!(key in obj)) throw new Error(`Update property ${property} not in object`);
+		if (typeOf(obj[key]) !== typeOf(update[key]))
+			throw new Error(
+				`Update property ${property} is ${typeOf(update[key])}, not ${typeOf(obj[key])}`
+			);
+		const v = isObj(obj[key])
+			? deepMerge(obj[key] as Obj, update[key] as Obj, property)
+			: update[key];
+		return [key, v];
+	};
+	return {
+		...obj,
+		...Object.fromEntries(Object.keys(update).map(updateProperty)),
+	};
+};

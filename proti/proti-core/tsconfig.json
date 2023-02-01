@@ -2,7 +2,12 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./bin"
+    "outDir": "./bin",
+    "plugins": [
+      {
+        "transform": "typia/lib/transform",
+      }
+    ]
   },
   "include": [
     "src/**/*"
