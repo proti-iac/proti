@@ -818,6 +818,36 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@netleaf/common@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "@netleaf/common@npm:0.2.1"
+  checksum: 99186fe8a318cbed866c999c345836877c930a651113315d7ddc6ea71f3e1600e6221f2d0ddb2a8390e4c98f765c19a6671888b95cc28eb255cd309c15eafded
+  languageName: node
+  linkType: hard
+
+"@netleaf/extensions-configuration@npm:^0.5.2":
+  version: 0.5.2
+  resolution: "@netleaf/extensions-configuration@npm:0.5.2"
+  dependencies:
+    "@netleaf/common": ^0.2.1
+    "@netleaf/extensions-file-provider": ^0.3.2
+    json5: ^2.2.0
+    minimist: ^1.2.6
+  peerDependencies:
+    deasync: ^0.1.28
+  checksum: b0c8b390a70dcf5de811c949d2a9f30d12ef20bea90c1ce2dde899f1dff82465f934f96449e40928c7bd6b180f6a9b354eca009d850ac7d13a9f623818cc1410
+  languageName: node
+  linkType: hard
+
+"@netleaf/extensions-file-provider@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "@netleaf/extensions-file-provider@npm:0.3.2"
+  dependencies:
+    "@netleaf/common": ^0.2.1
+  checksum: 27ef0aa7d8fb7a1d3667bba9e6e4c52cff7ccbd5a807928c167cd1b5202c1b9812ea951a651895c70b7bc24bcb503aa3aad5f94ac5083a19ff68f1b81c89223e
+  languageName: node
+  linkType: hard
+
 "@nodelib/fs.scandir@npm:2.1.5":
   version: 2.1.5
   resolution: "@nodelib/fs.scandir@npm:2.1.5"
@@ -1067,6 +1097,9 @@ __metadata:
   dependencies:
     "@types/jest": ^29.4.0
     "@types/node": ^18.11.18
+    rttist: alpha
+    tst-reflect: ^0.12.0
+    tst-reflect-transformer: alpha
     ttypescript: ^1.5.15
     typescript: ^4.9.5
     typia: ^3.4.22
@@ -1150,6 +1183,13 @@ __metadata:
   version: 0.3.0
   resolution: "@pulumi/query@npm:0.3.0"
   checksum: 4e579c56937313a4e60211510dd0dcb71bb3014707f727015f5458d5f1e227a83b3a15bfd97c5b44500d022ee15f81917d45de0f6c2b11d47e6fba333b3b6195
+  languageName: node
+  linkType: hard
+
+"@rttist/core@npm:^1.0.0-alpha.3":
+  version: 1.0.0-alpha.3
+  resolution: "@rttist/core@npm:1.0.0-alpha.3"
+  checksum: 98843428e08c2f7c08ae83d3310f01fb676f49944dc1b92de4a2db40b4240ae01e0b648b7dc815531ba129ee804fed9c21710a84646dd246fe6603a2d5f69a44
   languageName: node
   linkType: hard
 
@@ -1926,6 +1966,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"base32768@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "base32768@npm:3.0.1"
+  checksum: f609ee1c131071bdff4169b71da748b5faa5de47e330b6972a783f3be1d60fe8ac04d8752fd1a8e8b2902f2c890afc7dae6d4422fb385fdd2d0077c28769d37f
+  languageName: node
+  linkType: hard
+
+"bindings@npm:^1.5.0":
+  version: 1.5.0
+  resolution: "bindings@npm:1.5.0"
+  dependencies:
+    file-uri-to-path: 1.0.0
+  checksum: 65b6b48095717c2e6105a021a7da4ea435aa8d3d3cd085cb9e85bcb6e5773cf318c4745c3f7c504412855940b585bdf9b918236612a1c7a7942491de176f1ae7
+  languageName: node
+  linkType: hard
+
 "brace-expansion@npm:^1.1.7":
   version: 1.1.11
   resolution: "brace-expansion@npm:1.1.11"
@@ -2256,6 +2312,16 @@ __metadata:
     shebang-command: ^2.0.0
     which: ^2.0.1
   checksum: 671cc7c7288c3a8406f3c69a3ae2fc85555c04169e9d611def9a675635472614f1c0ed0ef80955d5b6d4e724f6ced67f0ad1bb006c2ea643488fcfef994d7f52
+  languageName: node
+  linkType: hard
+
+"deasync@npm:^0.1.28":
+  version: 0.1.28
+  resolution: "deasync@npm:0.1.28"
+  dependencies:
+    bindings: ^1.5.0
+    node-addon-api: ^1.7.1
+  checksum: e0c1ef427875c897e0d903a08410df1d0a3dfd0d2a0a1e43fb6c2824dfbc504b810bd08a0d30653117259316e1aa65409c96dbed40101c934f75bac7499e1265
   languageName: node
   linkType: hard
 
@@ -2934,6 +3000,13 @@ __metadata:
   dependencies:
     flat-cache: ^3.0.4
   checksum: f49701feaa6314c8127c3c2f6173cfefff17612f5ed2daaafc6da13b5c91fd43e3b2a58fd0d63f9f94478a501b167615931e7200e31485e320f74a33885a9c74
+  languageName: node
+  linkType: hard
+
+"file-uri-to-path@npm:1.0.0":
+  version: 1.0.0
+  resolution: "file-uri-to-path@npm:1.0.0"
+  checksum: b648580bdd893a008c92c7ecc96c3ee57a5e7b6c4c18a9a09b44fb5d36d79146f8e442578bc0e173dc027adf3987e254ba1dfd6e3ec998b7c282873010502144
   languageName: node
   linkType: hard
 
@@ -4381,7 +4454,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json5@npm:^2.2.2, json5@npm:^2.2.3":
+"json5@npm:^2.2.0, json5@npm:^2.2.2, json5@npm:^2.2.3":
   version: 2.2.3
   resolution: "json5@npm:2.2.3"
   bin:
@@ -4598,6 +4671,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"minimatch@npm:^6.1.6":
+  version: 6.1.6
+  resolution: "minimatch@npm:6.1.6"
+  dependencies:
+    brace-expansion: ^2.0.1
+  checksum: 707b026e0adc610be6c02f24173d84811e5b8cc2e434881e47ef00a72be5fbea9323b7158d7bf065782b1e1d5c50d7d80cd72f2602255f2fddfb1d2f02e9092c
+  languageName: node
+  linkType: hard
+
 "minimist@npm:^1.2.0, minimist@npm:^1.2.6":
   version: 1.2.7
   resolution: "minimist@npm:1.2.7"
@@ -4750,6 +4832,15 @@ __metadata:
   version: 1.0.5
   resolution: "nice-try@npm:1.0.5"
   checksum: 0b4af3b5bb5d86c289f7a026303d192a7eb4417231fe47245c460baeabae7277bcd8fd9c728fb6bd62c30b3e15cd6620373e2cf33353b095d8b403d3e8a15aff
+  languageName: node
+  linkType: hard
+
+"node-addon-api@npm:^1.7.1":
+  version: 1.7.2
+  resolution: "node-addon-api@npm:1.7.2"
+  dependencies:
+    node-gyp: latest
+  checksum: 938922b3d7cb34ee137c5ec39df6289a3965e8cab9061c6848863324c21a778a81ae3bc955554c56b6b86962f6ccab2043dd5fa3f33deab633636bd28039333f
   languageName: node
   linkType: hard
 
@@ -5229,6 +5320,7 @@ __metadata:
     prettier: ^2.8.3
     ts-jest: ^29.0.5
     ts-node: ^10.9.1
+    tst-reflect-transformer: alpha
     ttypescript: ^1.5.15
     typescript: ^4.9.5
     typia: ^3.4.22
@@ -5441,6 +5533,15 @@ __metadata:
   bin:
     rimraf: bin.js
   checksum: 87f4164e396f0171b0a3386cc1877a817f572148ee13a7e113b238e48e8a9f2f31d009a92ec38a591ff1567d9662c6b67fd8818a2dbbaed74bc26a87a2a4a9a0
+  languageName: node
+  linkType: hard
+
+"rttist@npm:^1.0.0-alpha.6, rttist@npm:alpha":
+  version: 1.0.0-alpha.6
+  resolution: "rttist@npm:1.0.0-alpha.6"
+  dependencies:
+    "@rttist/core": ^1.0.0-alpha.3
+  checksum: 0b75f284ae7337d537e2aa2c2ff06e929316082a53193968f07d23a442be5482db5bd86958a50375fb2f1886607820b31cee7f9d1b1db1f50c5b3c2be153b918
   languageName: node
   linkType: hard
 
@@ -6011,6 +6112,31 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tst-reflect-transformer@npm:alpha":
+  version: 1.0.0-alpha.7
+  resolution: "tst-reflect-transformer@npm:1.0.0-alpha.7"
+  dependencies:
+    "@netleaf/extensions-configuration": ^0.5.2
+    "@rttist/core": ^1.0.0-alpha.3
+    base32768: ^3.0.1
+    deasync: ^0.1.28
+    minimatch: ^6.1.6
+    rttist: ^1.0.0-alpha.6
+    typescript: ^4.8.0
+  dependenciesMeta:
+    deasync:
+      optional: true
+  checksum: 5bf2aa70ab19cba0bf5d19b0a6830dd3697de264593a806e3dd75919d8924fe0d13b0df3d08645e2fcdc40ab5eadf5165a39b25374e9bf8e0403f5714bfce832
+  languageName: node
+  linkType: hard
+
+"tst-reflect@npm:^0.12.0":
+  version: 0.12.0
+  resolution: "tst-reflect@npm:0.12.0"
+  checksum: a19dd4f72c9fcf5680a361e1633ef58145e96a885077543bc6d4120323922a384578ee30d42464197826ecba5a6e96ce15efa195d0d52c0650d194c2bbc538b7
+  languageName: node
+  linkType: hard
+
 "tsutils@npm:^3.21.0":
   version: 3.21.0
   resolution: "tsutils@npm:3.21.0"
@@ -6078,7 +6204,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^4.9.5":
+"typescript@npm:^4.8.0, typescript@npm:^4.9.5":
   version: 4.9.5
   resolution: "typescript@npm:4.9.5"
   bin:
@@ -6098,7 +6224,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
+"typescript@patch:typescript@^4.8.0#~builtin<compat/typescript>, typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
   version: 4.9.5
   resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=ad5954"
   bin:

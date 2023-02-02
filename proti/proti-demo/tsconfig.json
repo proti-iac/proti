@@ -6,6 +6,14 @@
     "plugins": [
       {
         "transform": "typia/lib/transform",
+      },
+      {
+        "transform": "tst-reflect-transformer",
+        "reflection": {
+            "metadata": {
+                "metadataTypelibPath": "../bin/metadata.typelib.js"
+            }
+        }
       }
     ]
   },

@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "clean": "yarn g:clean",
-    "build": "yarn g:build",
+    "build": "yarn g:build:ttsc",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
     "prepack": "yarn g:prepack"
@@ -19,10 +19,13 @@
   "devDependencies": {
     "@types/jest": "^29.4.0",
     "@types/node": "^18.11.18",
+    "tst-reflect-transformer": "alpha",
     "ttypescript": "^1.5.15",
     "typescript": "^4.9.5"
   },
   "dependencies": {
+    "rttist": "alpha",
+    "tst-reflect": "^0.12.0",
     "typia": "^3.4.22"
   }
 }
