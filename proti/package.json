@@ -10,19 +10,19 @@
     "proti-test-runner"
   ],
   "scripts": {
-    "g:all": "yarn workspaces foreach -pti --exclude proti-monorepo run $0",
+    "g:all": "yarn workspaces foreach $1 --exclude proti-monorepo run $0",
     "g:pkgroot": "bash -c 'if [ -e \"$0/$1\" ] && [ $0 != $PROJECT_CWD ]; then cd $0 && eval $3; else echo \"\\\"$2\\\" must be executed in a package root with a $1, not in $0\"; fi'",
     "g:clean": "yarn g:pkgroot $INIT_CWD package.json clean 'rm -rf bin'",
-    "clean": "yarn g:all clean",
-    "g:build": "yarn g:pkgroot $INIT_CWD tsconfig.json build tsc",
-    "g:build:ttsc": "yarn g:pkgroot $INIT_CWD tsconfig.json build ttsc",
-    "build": "yarn g:all build",
+    "clean": "yarn g:all clean -vip",
+    "g:build": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn tsc'",
+    "g:build:ttsc": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn ttsc'",
+    "build": "yarn g:all build -vitp",
     "g:lint": "eslint --ext .ts --ignore-pattern bin/ $INIT_CWD",
     "lint": "yarn g:lint",
     "g:test": "yarn g:pkgroot $INIT_CWD tsconfig.json test 'yarn build && INIT_CWD=$(pwd) && cd $PROJECT_CWD && jest --roots $INIT_CWD'",
     "test": "yarn build && yarn jest",
     "g:prepack": "yarn g:pkgroot $INIT_CWD package.json prepack 'yarn clean && yarn build'",
-    "prepack": "yarn g:all prepack"
+    "prepack": "yarn g:all prepack -vitp"
   },
   "devDependencies": {
     "@types/jest": "^29.4.0",
