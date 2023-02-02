@@ -1,5 +1,6 @@
 import { getType } from 'rttist';
 import { assertEquals } from 'typia';
+import * as aws from '@pulumi/aws';
 
 export type OProgram = { a: number; b: string; c: boolean[]; d: { e: null } };
 export const osProgram = [
@@ -19,12 +20,31 @@ try {
 	throw new Error('Typia fails at run time', { cause: e });
 }
 try {
-	const t = JSON.stringify(getType<OProgram>());
+	const t = getType<OProgram>();
 	if (
-		t !==
-		'{"_isIterable":false,"_id":"@@proti/demo/bin/index::OProgram","_kind":62,"_name":"OProgram","_exported":false,"_moduleRef":{"_reference":"@@proti/demo/bin/index"},"_isGenericTypeDefinition":false,"_typeArgumentsRef":{"_references":[],"length":0},"_properties":[{"name":{"name":"a"},"_type":{"_reference":[10]},"_decorators":[],"metadata":{"name":"a","type":[10],"flags":0},"accessModifier":0,"accessor":0,"optional":false,"readonly":false},{"name":{"name":"b"},"_type":{"_reference":[12]},"_decorators":[],"metadata":{"name":"b","type":[12],"flags":0},"accessModifier":0,"accessor":0,"optional":false,"readonly":false},{"name":{"name":"c"},"_type":{"_reference":"::native::Array{::native::Boolean}"},"_decorators":[],"metadata":{"name":"c","type":"::native::Array{::native::Boolean}","flags":0},"accessModifier":0,"accessor":0,"optional":false,"readonly":false},{"name":{"name":"d"},"_type":{"_reference":"@@proti/demo/bin/index::AnonymousType:136"},"_decorators":[],"metadata":{"name":"d","type":"@@proti/demo/bin/index::AnonymousType:136","flags":0},"accessModifier":0,"accessor":0,"optional":false,"readonly":false}],"_methods":[],"_indexes":[]}'
+		t.toString() !== 'Object{@@proti/demo/bin/index::OProgram}' ||
+		!t.isObject() ||
+		t
+			.getProperties()
+			.map((p) => p.name.name)
+			.toString() !== 'a,b,c,d'
 	)
 		throw new Error('RTTIST type information not as expected');
 } catch (e) {
 	throw new Error('RTTIST fails at run time', { cause: e });
+}
+try {
+	const t = getType<aws.s3.Bucket>();
+	if (
+		!t.isClass() ||
+		t.getConstructors().length !== 1 ||
+		t
+			.getConstructors()[0]
+			.getParameters()
+			.map((p) => p.name)
+			.toString() !== 'name,args,opts'
+	)
+		throw new Error('RTTIST type information not as expected');
+} catch (e) {
+	throw new Error('RTTIST fails on @pulumi/aws at run time', { cause: e });
 }

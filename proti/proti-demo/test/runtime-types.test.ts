@@ -1,5 +1,7 @@
 import { assertEquals } from 'typia';
 import { getType } from 'rttist';
+import * as aws from '@pulumi/aws';
+
 import { OProgram, osProgram, notOsProgram } from '../src/index';
 
 type OTests = { a: number; b: string; c: boolean[]; d: { e: null } };
@@ -60,5 +62,25 @@ describe('rttist', () => {
 	it('should find different type for different things', () => {
 		osProgram.forEach((o) => expect(getType<typeof o>()).not.toStrictEqual(getType<OTests>()));
 		osTests.forEach((o) => expect(getType<typeof o>()).not.toStrictEqual(getType<OProgram>()));
+	});
+
+	it('should work on @pulumi/aws if type T is used with getType<T>() in program', () => {
+		const t = getType<aws.s3.Bucket>();
+		expect(t.isClass()).toBe(true);
+		if (t.isClass()) {
+			expect(t.getConstructors().length).toBe(1);
+			t.getConstructors().forEach((c) => {
+				expect(c.getParameters().map((p) => p.name)).toStrictEqual([
+					'name',
+					'args',
+					'opts',
+				]);
+			});
+		}
+	});
+
+	it('fail on @pulumi/aws if type T is not used with getType<T>() in program', () => {
+		const t = getType<aws.s3.BucketMetric>();
+		expect(t.isClass()).toBe(false);
 	});
 });
