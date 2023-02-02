@@ -8,103 +8,20 @@ import * as Resolver from 'jest-resolve';
 import { DependencyResolver } from 'jest-resolve-dependencies';
 import { buildSnapshotResolver } from 'jest-snapshot';
 
-import { Config as ProtiConfig, readPulumiProject } from '@proti/core';
+import {
+	Config as ProtiConfig,
+	isConfig,
+	isHasteFS,
+	isResolver,
+	readPulumiProject,
+} from '@proti/core';
 
-type RunResult = {
-	title: string;
-	duration?: number;
-	passedAsserts: number;
-	errors: Error[];
-};
-type AppendRunResult = (result: RunResult) => void;
-
-type RunnerState = {
-	testPath: string;
-	start: number;
-	end: number;
-	runResults: RunResult[];
-};
-
-const hasFailed = (result: RunResult): boolean => result.errors.length > 0;
-
-const toErrorMessage = (error: Error): string =>
-	(error.stack ? error.stack : error.message) +
-	(error.cause instanceof Error ? `\ncaused by ${toErrorMessage(error.cause)}` : '');
-
-const toFailureMessage = (result: RunResult, id: number): string =>
-	`${'#'.repeat(80)}\n# 🐞 ${id}: ${result.title}\n\n${result.errors
-		.map(toErrorMessage)
-		.join('\n\n')}`;
-
-const toTestResult = (state: RunnerState): TestResult => {
-	const failures = state.runResults.filter(hasFailed);
-	return {
-		failureMessage:
-			failures.length === 0
-				? null
-				: `ProTI found ${'🐞'.repeat(failures.length)}\n\n${failures
-						.map(toFailureMessage)
-						.join('\n\n')}`,
-		leaks: false,
-		numFailingTests: failures.length,
-		numPassingTests: state.runResults.filter(
-			(r) => r.duration !== undefined && r.errors.length === 0
-		).length,
-		numPendingTests: state.runResults.filter((r) => r.duration === undefined).length,
-		numTodoTests: 0,
-		openHandles: [],
-		perfStats: {
-			end: new Date(state.end).getTime(),
-			runtime: state.end - state.start,
-			slow: false,
-			start: new Date(state.start).getTime(),
-		},
-		skipped: false,
-		snapshot: {
-			added: 0,
-			fileDeleted: false,
-			matched: 0,
-			unchecked: 0,
-			uncheckedKeys: [],
-			unmatched: 0,
-			updated: 0,
-		},
-		testFilePath: state.testPath,
-		testResults: state.runResults.map((result) => ({
-			ancestorTitles: [],
-			duration: result.duration,
-			failureDetails: [],
-			failureMessages: result.errors.map(toErrorMessage),
-			fullName: `${state.testPath}#${result.title}`,
-			numPassingAsserts: result.passedAsserts,
-			status: result.duration === undefined || hasFailed(result) ? 'failed' : 'passed',
-			title: result.title,
-		})),
-	};
-};
-
-const isProtiConfig = (object: any): object is ProtiConfig =>
-	typeof object === 'object' && typeof object?.moduleLoading === 'object';
-
-const isHasteFS = (object: any): object is IHasteFS =>
-	typeof object === 'object' &&
-	// eslint-disable-next-line no-underscore-dangle
-	typeof object?._rootDir === 'string' &&
-	// eslint-disable-next-line no-underscore-dangle
-	(object?._files instanceof Map || typeof object?._files === 'object');
-
-const isResolver = (object: any): object is Resolver.default =>
-	typeof object === 'object' &&
-	// eslint-disable-next-line no-underscore-dangle
-	typeof object?._moduleMap === 'object' &&
-	// eslint-disable-next-line no-underscore-dangle
-	(object?._moduleIDCache instanceof Map || typeof object?._moduleIDCache === 'object') &&
-	// eslint-disable-next-line no-underscore-dangle
-	(object?._modulePathCache instanceof Map || typeof object?._modulePathCache === 'object');
+import { RunResult, toTestResult } from './test-result';
 
 const onErrorThrow = <T>(errorMsg: string, action: Promise<T>) =>
 	action.catch<T>((cause) => Promise.reject(new Error(errorMsg, { cause })));
 
+type AppendRunResult = (result: RunResult) => void;
 const makeRunTest =
 	(appendResult: AppendRunResult) =>
 	async <T>(title: string, test: Promise<T>): Promise<T> => {
@@ -127,20 +44,15 @@ const makeRunTest =
 const getGlobals = async (
 	globals: Config.ConfigGlobals
 ): Promise<[ProtiConfig, Resolver.default, IHasteFS]> => {
-	// @TODO: replace these checks with better type guards
-	if (!isProtiConfig(globals.proti)) throw new Error('no proti conf');
-	if (!isResolver(globals.resolver))
-		throw Error(
-			'No Resolver available in config.globals.resolver. ' +
+	const err = (subject: string, property: string) =>
+		new Error(
+			`No ${subject} available in config.globals.${property}. ` +
 				'Are you using the @proti/runner runner?\n' +
-				`Received ${JSON.stringify(globals?.resolver)}`
+				`Received ${JSON.stringify(globals[property])}`
 		);
-	if (!isHasteFS(globals.hasteFS))
-		throw Error(
-			'No HasteFS available in config.globals.hasteFS. ' +
-				'Are you using the @proti/runner runner?\n' +
-				`Received ${JSON.stringify(globals?.hasteFS)}`
-		);
+	if (!isConfig(globals.proti)) throw err('Proti Config', 'proti');
+	if (!isResolver(globals.resolver)) throw err('Resolver', 'resolver');
+	if (!isHasteFS(globals.hasteFS)) throw err('HasteFS', 'hasteFS');
 	return [globals.proti, globals.resolver, globals.hasteFS];
 };
 
@@ -153,10 +65,10 @@ const resolveModuleFromPath = async (
 		.resolveModuleAsync(path, module)
 		.catch(() => resolver.resolveModuleFromDirIfExists(path, module))
 		.then(
-			(result: string | null): Promise<string> =>
-				result === null
+			(resolvedPath: string | null): Promise<string> =>
+				resolvedPath === null
 					? Promise.reject(new Error(`Module ${module} resolved to null in ${path}`))
-					: Promise.resolve(module)
+					: Promise.resolve(resolvedPath)
 		)
 		.catch((e) =>
 			Promise.reject(new Error(`Failed to resolve ${module} from path ${path}`, { cause: e }))
@@ -170,8 +82,8 @@ const testRunner = async (
 	testPath: string
 ): Promise<TestResult> => {
 	const start = Date.now();
-	const testResults: RunResult[] = [];
-	const runTest = makeRunTest((result) => testResults.push(result));
+	const results: RunResult[] = [];
+	const runTest = makeRunTest((result) => results.push(result));
 
 	try {
 		const [proti, resolver, hasteFS] = await onErrorThrow(
@@ -191,7 +103,7 @@ const testRunner = async (
 		}
 
 		const pulumiProgram = await onErrorThrow(
-			'Failed to find Pulumi program',
+			`Failed to find Pulumi program with main ${pulumiProject.main}`,
 			resolveModuleFromPath(resolver, pulumiProject.main, '.')
 		);
 			// // 		pulumiProject.main,
@@ -208,8 +120,10 @@ const testRunner = async (
 			// console.log(dependencyResolver.resolve(`${pulumiProject.main}/Pulumi.yaml`));
 			// Run test subject in `environment`
 			// runtime.requireModule('./src/a.ts');
+		// Wait for async code to settle
+		if (proti.testRunner.waitTick) await new Promise(process.nextTick);
 	} catch (e) {
-		testResults.push({
+		results.push({
 			title: 'ProTI test runner failed',
 			duration: Date.now() - start,
 			passedAsserts: 0,
@@ -222,7 +136,7 @@ const testRunner = async (
 
 	const end = Date.now();
 
-	return toTestResult({ testPath, start, end, runResults: testResults });
+	return toTestResult({ testPath, start, end, results });
 };
 
 export default testRunner;

@@ -1,4 +1,4 @@
-import { assertEquals } from 'typia';
+import { assertEquals, equals } from 'typia';
 import { deepMerge } from './utils';
 
 export const defaultTestRunnerConfig = () => ({
@@ -21,3 +21,4 @@ export const config = (partialConfig: any): Config =>
 	partialConfig === undefined
 		? defaultConfig()
 		: assertEquals<Config>(deepMerge(defaultConfig(), partialConfig));
+export const isConfig = (conf: any): conf is Config => equals<Config>(conf);
