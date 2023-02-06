@@ -1,25 +1,23 @@
 import type { JestEnvironment } from '@jest/environment';
 import { jestExpect } from '@jest/expect';
-import { TestResult } from '@jest/test-result';
+import type { TestResult } from '@jest/test-result';
 import type { Config } from '@jest/types';
-import { IHasteFS } from 'jest-haste-map';
-import Runtime from 'jest-runtime';
-import * as Resolver from 'jest-resolve';
-import { DependencyResolver } from 'jest-resolve-dependencies';
-import { buildSnapshotResolver } from 'jest-snapshot';
+import type { IHasteFS } from 'jest-haste-map';
+import type Runtime from 'jest-runtime';
+import type Resolver from 'jest-resolve';
+import type pulumi from '@pulumi/pulumi';
 
 import {
 	Config as ProtiConfig,
+	errMsg,
 	isConfig,
 	isHasteFS,
 	isResolver,
+	ModuleLoader,
 	readPulumiProject,
 } from '@proti/core';
 
 import { RunResult, toTestResult } from './test-result';
-
-const onErrorThrow = <T>(errorMsg: string, action: Promise<T>) =>
-	action.catch<T>((cause) => Promise.reject(new Error(errorMsg, { cause })));
 
 type AppendRunResult = (result: RunResult) => void;
 const makeRunTest =
@@ -34,7 +32,7 @@ const makeRunTest =
 				errors: [],
 				...partialResult,
 			});
-		const resultVal = onErrorThrow(`Failed to ${title}`, test);
+		const resultVal = errMsg(test, `Failed to ${title}`);
 		resultVal
 			.then(() => result({ passedAsserts: 1 }))
 			.catch((e) => result({ errors: [e as Error] }));
@@ -43,7 +41,7 @@ const makeRunTest =
 
 const getGlobals = async (
 	globals: Config.ConfigGlobals
-): Promise<[ProtiConfig, Resolver.default, IHasteFS]> => {
+): Promise<[ProtiConfig, Resolver, IHasteFS]> => {
 	const err = (subject: string, property: string) =>
 		new Error(
 			`No ${subject} available in config.globals.${property}. ` +
@@ -55,24 +53,6 @@ const getGlobals = async (
 	if (!isHasteFS(globals.hasteFS)) throw err('HasteFS', 'hasteFS');
 	return [globals.proti, globals.resolver, globals.hasteFS];
 };
-
-const resolveModuleFromPath = async (
-	resolver: Resolver.default,
-	path: string,
-	module: string
-): Promise<string> =>
-	resolver
-		.resolveModuleAsync(path, module)
-		.catch(() => resolver.resolveModuleFromDirIfExists(path, module))
-		.then(
-			(resolvedPath: string | null): Promise<string> =>
-				resolvedPath === null
-					? Promise.reject(new Error(`Module ${module} resolved to null in ${path}`))
-					: Promise.resolve(resolvedPath)
-		)
-		.catch((e) =>
-			Promise.reject(new Error(`Failed to resolve ${module} from path ${path}`, { cause: e }))
-		);
 
 const testRunner = async (
 	globalConfig: Config.GlobalConfig,
@@ -86,14 +66,19 @@ const testRunner = async (
 	const runTest = makeRunTest((result) => results.push(result));
 
 	try {
-		const [proti, resolver, hasteFS] = await onErrorThrow(
-			'Failed to get configuration from globals',
-			getGlobals(config.globals)
+		const [proti, resolver, hasteFS] = await errMsg(
+			getGlobals(config.globals),
+			'Failed to get configuration from globals'
 		);
 		const pulumiProject = await runTest('Read Pulumi.yaml', readPulumiProject(testPath));
-
-		const snapshotResolver = await buildSnapshotResolver(config);
-		const dependencyResolver = new DependencyResolver(resolver, hasteFS, snapshotResolver);
+		const moduleLoader = new ModuleLoader(
+			config,
+			proti.moduleLoading,
+			runtime,
+			resolver,
+			hasteFS,
+			pulumiProject.main
+		);
 
 		if (config.injectGlobals) {
 			const globals = {
@@ -102,24 +87,34 @@ const testRunner = async (
 			Object.assign(environment.global, globals);
 		}
 
-		const pulumiProgram = await onErrorThrow(
-			`Failed to find Pulumi program with main ${pulumiProject.main}`,
-			resolveModuleFromPath(resolver, pulumiProject.main, '.')
-		);
-			// // 		pulumiProject.main,
-			// // 		'.'
-			// // 	)
-			// // );
-			// // // console.log((config.globals.resolver as Resolver.default).resolveModuleFromDirIfExists(pulumiProject.main + '/Pulumi.yaml', '.'));
-			// console.log(
-			// 	(config.globals.resolver as Resolver.default).resolveModule(
-			// 		`${pulumiProject.main}/index.ts`,
-			// 		'.'
-			// 	)
-			// );
-			// console.log(dependencyResolver.resolve(`${pulumiProject.main}/Pulumi.yaml`));
-			// Run test subject in `environment`
-			// runtime.requireModule('./src/a.ts');
+		const preloads = await runTest('Preload modules', moduleLoader.preload());
+		if (!preloads.has('@pulumi/pulumi')) throw new Error('Did not to preload @pulumi/pulumi');
+		const programPulumi = preloads.get('@pulumi/pulumi') as typeof pulumi;
+
+		const test = async () => {
+			await runtime.isolateModulesAsync(async () => {
+				await moduleLoader.mockModules(preloads);
+				programPulumi.runtime.setMocks({
+					newResource(args: pulumi.runtime.MockResourceArgs): {
+						id: string;
+						state: any;
+					} {
+						return {
+							id: '',
+							state: {}, // ...args.inputs, versioning: { enabled: true }, bucket: null },
+						};
+					},
+					call(args: pulumi.runtime.MockCallArgs) {
+						return args.inputs;
+					},
+				});
+				await moduleLoader.loadProgram();
+			});
+		};
+		for (let i = 0; i < proti.testRunner.numRuns; i += 1)
+			// eslint-disable-next-line no-await-in-loop
+			await runTest(`Test ${i}`, test());
+
 		// Wait for async code to settle
 		if (proti.testRunner.waitTick) await new Promise(process.nextTick);
 	} catch (e) {
