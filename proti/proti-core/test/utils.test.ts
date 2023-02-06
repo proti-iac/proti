@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
-import { DeepPartial, deepMerge, isObj, Obj } from '../src/utils';
+import { DeepPartial, deepMerge, errMsg, isObj, Obj } from '../src/utils';
 
 describe('util', () => {
 	describe('deep partial', () => {
@@ -167,5 +167,21 @@ describe('util', () => {
 				})
 			);
 		});
+	});
+
+	describe('errMsg', () => {
+		it('should not alter resolving promises', () =>
+			fc.assert(
+				fc.asyncProperty(fc.anything(), fc.string(), (val: any, msg: string) =>
+					expect(errMsg(Promise.resolve(val), msg)).resolves.toBe(val)
+				)
+			));
+
+		it('should wrap failing promise errors', () =>
+			fc.assert(
+				fc.asyncProperty(fc.anything(), fc.string(), (val: any, msg: string) =>
+					expect(errMsg(Promise.reject(val), msg)).rejects.toThrow(msg)
+				)
+			));
 	});
 });

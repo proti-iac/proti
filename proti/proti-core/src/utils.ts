@@ -41,3 +41,6 @@ export const deepMerge = <T extends Obj>(obj: T, update: DeepPartial<T>, propert
 		...Object.fromEntries(Object.keys(update).map(updateProperty)),
 	};
 };
+
+export const errMsg = <T>(p: Promise<T>, errorMsg: string): Promise<T> =>
+	p.catch<T>((cause) => Promise.reject(new Error(errorMsg, { cause })));
