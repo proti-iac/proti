@@ -30,7 +30,7 @@ describe('config', () => {
 	it.each([
 		{},
 		{ testRunner: { waitTick: false } },
-		{ testRunner: { waitTick: true }, moduleLoading: { preload: [] } },
+		{ testRunner: { waitTick: true }, moduleLoading: { preload: [] as string[] } },
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
 			isObj(partialConf)
