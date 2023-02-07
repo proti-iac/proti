@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
-import { DeepPartial, deepMerge, errMsg, isObj, Obj } from '../src/utils';
+import { DeepPartial, deepMerge, errMsg, isObj, Obj, interceptConstructor } from '../src/utils';
 
 describe('util', () => {
 	describe('deep partial', () => {
@@ -183,5 +183,40 @@ describe('util', () => {
 					expect(errMsg(Promise.reject(val), msg)).rejects.toThrow(msg)
 				)
 			));
+	});
+
+	describe('interceptConstructor', () => {
+		class A {
+			private w: number;
+
+			constructor(private v: number) {
+				this.w = 34;
+			}
+
+			public static x = 56;
+
+			public getVW = () => this.v * this.w;
+		}
+		let a: A;
+		const B = interceptConstructor(A, (t: A) => {
+			a = t;
+		});
+		const b: A = new B(12);
+
+		it('should call interceptFn with this', () => {
+			expect(a).toBe(b);
+		});
+
+		it('should be instance of original class', () => {
+			expect(b).toBeInstanceOf(A);
+		});
+
+		it('should have static property of original class', () => {
+			expect(B.x).toBe(56);
+		});
+
+		it('should have dynamic property of original class', () => {
+			expect(b.getVW()).toBe(408);
+		});
 	});
 });
