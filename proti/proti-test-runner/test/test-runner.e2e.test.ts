@@ -13,11 +13,11 @@ describe('runner end-to-end', () => {
 		(project) => expect(cp.execSync(jestCmd(project)).toString()).toBe('')
 	);
 
-	it.each(['abc', '../../../examples/s3-website/invalid'])(
-		// '../../../examples/s3-website/flat-throws',])( Not implemented yet, but flat-throws should fail!
-		'should fail on %s',
-		(project) => {
-			expect(() => cp.execSync(jestCmd(project))).toThrow('Command failed');
-		}
-	);
+	it.each([
+		'abc',
+		'../../../examples/s3-website/invalid',
+		'../../../examples/s3-website/flat-throws',
+	])('should fail on %s', (project) => {
+		expect(() => cp.execSync(jestCmd(project))).toThrow('Command failed');
+	});
 });
