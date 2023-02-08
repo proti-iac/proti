@@ -6,14 +6,18 @@ import type { IHasteFS } from 'jest-haste-map';
 import type Runtime from 'jest-runtime';
 import type Resolver from 'jest-resolve';
 import type pulumi from '@pulumi/pulumi';
+import type pulumiOutput from '@pulumi/pulumi/output';
+import type { Output } from '@pulumi/pulumi';
 
 import {
 	Config as ProtiConfig,
 	errMsg,
+	interceptConstructor,
 	isConfig,
 	isHasteFS,
 	isResolver,
 	ModuleLoader,
+	MutableWaiter,
 	readPulumiProject,
 } from '@proti/core';
 
@@ -90,9 +94,18 @@ const testRunner = async (
 		const preloads = await runTest('Preload modules', moduleLoader.preload());
 		if (!preloads.has('@pulumi/pulumi')) throw new Error('Did not to preload @pulumi/pulumi');
 		const programPulumi = preloads.get('@pulumi/pulumi') as typeof pulumi;
+		if (!preloads.has('@pulumi/pulumi/output'))
+			throw new Error('Did not to preload @pulumi/pulumi/output');
+		const programPulumiOutput = preloads.get('@pulumi/pulumi/output') as typeof pulumiOutput;
+		const outputsWaiter = new MutableWaiter();
+		(programPulumiOutput.Output as any) = interceptConstructor(
+			programPulumiOutput.Output as unknown as { new (...v: any[]): Output<any> },
+			(output) => outputsWaiter.wait((output as any).promise())
+		);
 
 		const test = async () => {
 			await runtime.isolateModulesAsync(async () => {
+				outputsWaiter.reset();
 				await moduleLoader.mockModules(preloads);
 				programPulumi.runtime.setMocks({
 					newResource(args: pulumi.runtime.MockResourceArgs): {
@@ -109,6 +122,7 @@ const testRunner = async (
 					},
 				});
 				await moduleLoader.loadProgram();
+				await outputsWaiter.isCompleted();
 			});
 		};
 		for (let i = 0; i < proti.testRunner.numRuns; i += 1)

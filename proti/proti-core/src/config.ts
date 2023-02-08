@@ -8,7 +8,7 @@ export const defaultTestRunnerConfig = () => ({
 export type TestRunnerConfig = ReturnType<typeof defaultTestRunnerConfig>;
 
 export const defaultModuleLoadingConfig = () => ({
-	preload: ['@pulumi/pulumi', '@pulumi/pulumi/runtime/stack'], // resolved in project and preloaded before tests
+	preload: ['@pulumi/pulumi', '@pulumi/pulumi/output', '@pulumi/pulumi/runtime/stack'], // resolved in project and preloaded before tests
 	preloadDependencies: ['.*/node_modules/.*'], // preload dependencies found in the program that match any of these regular expressions
 	verbose: false, // Log detailed information
 	showIsolated: false, // Log all isolated modules of a test run (requires `verbose`)

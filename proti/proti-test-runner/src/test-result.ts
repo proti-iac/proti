@@ -1,4 +1,4 @@
-import { TestResult } from '@jest/test-result';
+import type { TestResult } from '@jest/test-result';
 
 export type RunResult = {
 	title: string;
