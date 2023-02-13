@@ -16,6 +16,8 @@ export class ModuleLoader {
 
 	private program: Promise<string>;
 
+	private programDependencies: Promise<string[]>;
+
 	private preloads: Promise<string[]>;
 
 	private modules: () => Map<string, unknown>;
@@ -46,6 +48,7 @@ export class ModuleLoader {
 				hasteFS,
 				await buildSnapshotResolver(this.projectConfig)
 			))();
+		this.programDependencies = this.findProgramDependencies();
 		this.preloads = this.findPreloads();
 	}
 
@@ -65,7 +68,22 @@ export class ModuleLoader {
 		return preloads;
 	};
 
-	public loadProgram = async <T>(): Promise<T> => {
+	/**
+	 * Transforms program including its dependencies. Can be used to trigger code transformation
+	 * eplicitely before its execution, e.g., with `execProgram`.
+	 */
+	public transformProgram = async (): Promise<void> => {
+		const programModules = [await this.program, ...(await this.programDependencies)];
+		const logModules = this.config.showTransformed ? [':', ...programModules].join('\n') : '';
+		this.log(`Transforming ${programModules.length} modules${logModules}`);
+		programModules.forEach((module) => (this.runtime as any).transformFile(module));
+	};
+
+	/**
+	 * Loads the program module, causing it to execute. Reuses transformded verison in cache.
+	 * @returns Loaded program module.
+	 */
+	public execProgram = async <T>(): Promise<T> => {
 		const program = await this.program;
 		this.log(`Loading program ${program}`);
 		const module: T = this.runtime.requireActual(program, '.');
@@ -113,9 +131,12 @@ export class ModuleLoader {
 		return recResolve(module);
 	};
 
+	private findProgramDependencies = async () =>
+		this.resolveDependenciesRecursively(await this.program);
+
 	private findPreloads = async () => [
 		...this.config.preload,
-		...(await this.resolveDependenciesRecursively(await this.program)).filter((dependency) =>
+		...(await this.programDependencies).filter((dependency) =>
 			this.config.preloadDependencies.some((pattern) => new RegExp(pattern).test(dependency))
 		),
 	];

@@ -91,6 +91,7 @@ const testRunner = async (
 			Object.assign(environment.global, globals);
 		}
 
+		await runTest('Transform program', moduleLoader.transformProgram());
 		const preloads = await runTest('Preload modules', moduleLoader.preload());
 		if (!preloads.has('@pulumi/pulumi')) throw new Error('Did not to preload @pulumi/pulumi');
 		const programPulumi = preloads.get('@pulumi/pulumi') as typeof pulumi;
@@ -121,7 +122,7 @@ const testRunner = async (
 						return args.inputs;
 					},
 				});
-				await moduleLoader.loadProgram();
+				await moduleLoader.execProgram();
 				await outputsWaiter.isCompleted();
 			});
 		};
