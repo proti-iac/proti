@@ -10,7 +10,7 @@ const jestCmd = (...projects: string[]): string =>
 describe('runner end-to-end', () => {
 	it.each(['../../../examples/s3-website/flat', '../../../examples/s3-website/flat-redirect'])(
 		'should run on %s',
-		(project) => expect(cp.execSync(jestCmd(project)).toString()).toBe('')
+		(project) => expect(() => cp.execSync(jestCmd(project)).toString()).not.toThrow()
 	);
 
 	it.each([

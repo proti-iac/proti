@@ -21,6 +21,7 @@
     "@jest/expect": "^29.4.1",
     "@proti/core": "workspace:^",
     "@proti/runner": "workspace:^",
+    "@proti/transformer": "workspace:^",
     "immutable": "^4.2.2",
     "jest": "^29.4.1",
     "jest-config": "^29.4.1",

@@ -3,6 +3,21 @@ import type { JestConfigWithTsJest } from 'ts-jest';
 
 const config: JestConfigWithTsJest = {
 	preset: 'ts-jest',
+	transform: {
+		'^.+\\.tsx?$': [
+			'ts-jest',
+			{
+				compiler: 'ttypescript',
+				tsconfig: {
+					plugins: [
+						{
+							transform: '@proti/transformer',
+						},
+					],
+				},
+			},
+		],
+	},
 
 	injectGlobals: true, // Inject globals into each test environment, e.g., expect, otherwise explicit import is required
 	moduleFileExtensions: [...defaults.moduleFileExtensions, 'yaml', 'yml'],

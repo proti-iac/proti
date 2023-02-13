@@ -1138,6 +1138,7 @@ __metadata:
     "@jest/types": ^29.4.1
     "@proti/core": "workspace:^"
     "@proti/runner": "workspace:^"
+    "@proti/transformer": "workspace:^"
     "@pulumi/pulumi": ^3.53.1
     "@types/jest": ^29.4.0
     "@types/node": ^18.11.18
@@ -1149,6 +1150,17 @@ __metadata:
     jest-runtime: ^29.4.1
     ts-jest: ^29.0.5
     ts-node: ^10.9.1
+    typescript: ^4.9.5
+  languageName: unknown
+  linkType: soft
+
+"@proti/transformer@workspace:^, @proti/transformer@workspace:proti-transformer":
+  version: 0.0.0-use.local
+  resolution: "@proti/transformer@workspace:proti-transformer"
+  dependencies:
+    "@types/jest": ^29.4.0
+    "@types/node": ^18.13.0
+    ts-morph: ^17.0.1
     typescript: ^4.9.5
   languageName: unknown
   linkType: soft
@@ -1413,6 +1425,13 @@ __metadata:
   version: 18.11.18
   resolution: "@types/node@npm:18.11.18"
   checksum: 03f17f9480f8d775c8a72da5ea7e9383db5f6d85aa5fefde90dd953a1449bd5e4ffde376f139da4f3744b4c83942166d2a7603969a6f8ea826edfb16e6e3b49d
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^18.13.0":
+  version: 18.13.0
+  resolution: "@types/node@npm:18.13.0"
+  checksum: 4ea10f8802848b01672bce938f678b6774ca2cee0c9774f12275ab064ae07818419c3e2e41d6257ce7ba846d1ea26c63214aa1dfa4166fa3746291752b8c6416
   languageName: node
   linkType: hard
 
@@ -5431,6 +5450,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "proti-monorepo@workspace:."
   dependencies:
+    "@proti/transformer": "workspace:^"
     "@types/jest": ^29.4.0
     "@typescript-eslint/eslint-plugin": ^5.50.0
     "@typescript-eslint/parser": ^5.50.0
