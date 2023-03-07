@@ -17,7 +17,7 @@ describe('test coordinator', () => {
 			const coordinator = new TestCoordinator(defaultTestCoordinatorConfig());
 			await coordinator.isReady;
 			expect(coordinator.testClasses.length).toBeGreaterThan(0);
-			coordinator.testClasses.forEach((Test) => expect(isTest(new Test())).toBe(true));
+			coordinator.testClasses.forEach((tc) => expect(isTest(new tc.Ctor())).toBe(true));
 		});
 	});
 });

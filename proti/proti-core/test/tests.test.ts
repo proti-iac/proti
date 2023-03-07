@@ -4,6 +4,7 @@ import {
 	isAsyncDeploymentTest,
 	isResourceTest,
 	isDeploymentTest,
+	isTest,
 } from '../src/tests';
 
 describe('type guards', () => {
@@ -30,5 +31,22 @@ describe('type guards', () => {
 				expect(testTypeGuard(test)).toBe(prop in test);
 			})
 		);
+	});
+
+	it('should identify test', () => {
+		fc.assert(
+			fc.property(testArb, (test) => {
+				expect(isTest(test)).toBe(
+					'validateResource' in test ||
+						'asyncValidateResource' in test ||
+						'validateDeployment' in test ||
+						'asyncValidateDeployment' in test
+				);
+			})
+		);
+	});
+
+	it('should not identify test', () => {
+		expect(isTest({ testName: 'a' })).toBe(false);
 	});
 });

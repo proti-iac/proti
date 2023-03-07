@@ -2,6 +2,7 @@ import { assertEquals, equals } from 'typia';
 import { deepMerge } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
+	failFast: false, // Stop execution as soon as a validation fails
 	tests: ['./tests/unique-urns-test'], // Test classes to run
 });
 export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
