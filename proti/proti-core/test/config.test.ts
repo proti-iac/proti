@@ -3,20 +3,28 @@ import {
 	Config,
 	defaultConfig,
 	defaultModuleLoadingConfig,
+	defaultTestCoordinatorConfig,
 	defaultTestRunnerConfig,
 	ModuleLoadingConfig,
+	TestCoordinatorConfig,
 	TestRunnerConfig,
 } from '../src/config';
 import { DeepPartial, isObj, Obj } from '../src/utils';
 
 describe('config defaults', () => {
 	it.each([
+		['test coordinator config', defaultTestCoordinatorConfig as () => TestCoordinatorConfig],
 		['test runner config', defaultTestRunnerConfig as () => TestRunnerConfig],
 		['module loading config', defaultModuleLoadingConfig as () => ModuleLoadingConfig],
 		['config', defaultConfig as () => Config],
 	])('%s should work', (_, defConfig) => expect(typeof defConfig()).toBe('object'));
 
 	it.each([
+		[
+			'test coordinator config',
+			defaultConfig().testCoordinator,
+			defaultTestCoordinatorConfig(),
+		],
 		['test runner config', defaultConfig().testRunner, defaultTestRunnerConfig()],
 		['module loading config', defaultConfig().moduleLoading, defaultModuleLoadingConfig()],
 	])('%s should be in config', (_, conf, refConfig) => expect(conf).toStrictEqual(refConfig));

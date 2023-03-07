@@ -1,6 +1,11 @@
 import { assertEquals, equals } from 'typia';
 import { deepMerge } from './utils';
 
+export const defaultTestCoordinatorConfig = () => ({
+	tests: ['./tests/unique-urns-test'], // Test classes to run
+});
+export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
+
 export const defaultTestRunnerConfig = () => ({
 	numRuns: 100, // Number of test iterations
 	waitTick: true, // Wait for a process tick before ending the test run
@@ -19,6 +24,7 @@ export const defaultModuleLoadingConfig = () => ({
 export type ModuleLoadingConfig = ReturnType<typeof defaultModuleLoadingConfig>;
 
 export const defaultConfig = () => ({
+	testCoordinator: defaultTestCoordinatorConfig(),
 	testRunner: defaultTestRunnerConfig(),
 	moduleLoading: defaultModuleLoadingConfig(),
 });
