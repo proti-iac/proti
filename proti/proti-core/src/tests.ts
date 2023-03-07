@@ -1,32 +1,36 @@
 import type { MockResourceArgs } from '@pulumi/pulumi/runtime';
 import type { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
 
-interface TestCaseMetadata {
+export interface Test {
 	readonly testName: string;
 	readonly description?: string;
 }
+export const isTest = (test: any): test is Test => typeof test?.testName === 'string';
 
 export type ResourceTestArgs = MockResourceArgs & { urn: string };
-export abstract class ResourceTest implements TestCaseMetadata {
-	abstract readonly testName: string;
 
-	abstract readonly description?: string;
-
-	abstract readonly validateResource: (resource: ResourceTestArgs) => Error | void;
+export interface ResourceTest extends Test {
+	readonly validateResource: (resource: ResourceTestArgs) => Error | void;
 }
 export const isResourceTest = (test: any): test is ResourceTest =>
-	typeof test?.testName === 'string' && typeof test?.validateResource === 'function';
+	typeof test?.validateResource === 'function' && isTest(test);
+
+export interface AsyncResourceTest extends Test {
+	readonly asyncValidateResource: (resource: ResourceTestArgs) => Promise<Error | void>;
+}
+export const isAsyncResourceTest = (test: any): test is AsyncResourceTest =>
+	typeof test?.asyncValidateResource === 'function' && isTest(test);
 
 export type DeploymentTestArgs = MockMonitor['resources'];
-export abstract class DeploymentTest implements TestCaseMetadata {
-	abstract readonly testName: string;
 
-	abstract readonly description?: string;
-
-	abstract readonly validateDeployment: (resources: DeploymentTestArgs) => Error | void;
+export interface DeploymentTest extends Test {
+	readonly validateDeployment: (resources: DeploymentTestArgs) => Error | void;
 }
 export const isDeploymentTest = (test: any): test is DeploymentTest =>
-	typeof test?.testName === 'string' && typeof test?.validateDeployment === 'function';
+	typeof test?.validateDeployment === 'function' && isTest(test);
 
-export type Test = ResourceTest | DeploymentTest;
-export const isTest = (test: any): test is Test => isResourceTest(test) || isDeploymentTest(test);
+export interface AsyncDeploymentTest extends Test {
+	readonly asyncValidateDeployment: (resources: DeploymentTestArgs) => Promise<Error | void>;
+}
+export const isAsyncDeploymentTest = (test: any): test is AsyncDeploymentTest =>
+	typeof test?.asyncValidateDeployment === 'function' && isTest(test);
