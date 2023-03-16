@@ -6,8 +6,9 @@ import type { IHasteFS } from 'jest-haste-map';
 import type Runtime from 'jest-runtime';
 import type Resolver from 'jest-resolve';
 import type pulumi from '@pulumi/pulumi';
-import type pulumiOutput from '@pulumi/pulumi/output';
 import type { Output } from '@pulumi/pulumi';
+import type pulumiOutput from '@pulumi/pulumi/output';
+import type { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
 
 import {
 	Config as ProtiConfig,
@@ -19,6 +20,7 @@ import {
 	ModuleLoader,
 	MutableWaiter,
 	readPulumiProject,
+	TestCoordinator,
 } from '@proti/core';
 
 import { RunResult, toTestResult } from './test-result';
@@ -104,31 +106,65 @@ const testRunner = async (
 			(output) => outputsWaiter.wait((output as any).promise())
 		);
 
-		const test = async () => {
+		const testCoordinator = new TestCoordinator(proti.testCoordinator);
+		await testCoordinator.isReady; // Required to ensure all test classes are loaded before first test run
+
+		const test = async (runId: number): Promise<boolean> => {
+			const testRunCoordinator = testCoordinator.newRunCoordinator();
 			await runtime.isolateModulesAsync(async () => {
 				outputsWaiter.reset();
 				await moduleLoader.mockModules(preloads);
+
+				let monitor: MockMonitor;
 				programPulumi.runtime.setMocks({
 					newResource(args: pulumi.runtime.MockResourceArgs): {
 						id: string;
 						state: any;
 					} {
+						testRunCoordinator.validateResource({
+							urn: (monitor as any).newUrn(undefined, args.type, args.name),
+							...args,
+						});
+
 						return {
 							id: '',
 							state: {}, // ...args.inputs, versioning: { enabled: true }, bucket: null },
 						};
 					},
 					call(args: pulumi.runtime.MockCallArgs) {
-						return args.inputs;
+						const msg = `ProTI does not support provider functions 😢 Called: ${args.token}`;
+						throw new Error(msg);
 					},
 				});
-				await moduleLoader.execProgram();
-				await outputsWaiter.isCompleted();
+				monitor = programPulumi.runtime.getMonitor() as MockMonitor;
+
+				const startRun = Date.now();
+				await Promise.race([
+					(async () => {
+						await moduleLoader.execProgram();
+						await outputsWaiter.isCompleted();
+						testRunCoordinator.validateDeployment(monitor.resources);
+						await testRunCoordinator.isDone;
+					})(),
+					testRunCoordinator.isDone,
+				]);
+
+				testRunCoordinator.fails.forEach((fail) => {
+					results.push({
+						title: `${fail.test.testName} on ${
+							fail.resource ? `${fail.resource.urn}` : 'deployment'
+						} (run ${runId})`,
+						duration: Date.now() - startRun,
+						passedAsserts: 0,
+						errors: [fail.error],
+					});
+				});
 			});
+			return testRunCoordinator.fails.length === 0;
 		};
 		for (let i = 0; i < proti.testRunner.numRuns; i += 1)
 			// eslint-disable-next-line no-await-in-loop
-			await runTest(`Test ${i}`, test());
+			if (!(await test(i)) && proti.testCoordinator.failFast) break;
 
 		// Wait for async code to settle
 		if (proti.testRunner.waitTick) await new Promise(process.nextTick);
