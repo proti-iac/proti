@@ -1,4 +1,4 @@
-import { ResourceTest, ResourceTestArgs } from '../tests';
+import { ResourceTest, ResourceTestArgs, TestResult } from '../tests';
 
 class UniqueUrnsTest implements ResourceTest {
 	testName = 'Unique URNs';
@@ -7,7 +7,7 @@ class UniqueUrnsTest implements ResourceTest {
 
 	private urns: Set<string> = new Set();
 
-	validateResource = (resource: ResourceTestArgs): Error | void => {
+	validateResource = (resource: ResourceTestArgs): TestResult => {
 		if (this.urns.has(resource.urn))
 			return new Error(`Duplicated definition of resource ${resource.urn}`);
 		this.urns.add(resource.urn);

@@ -11,6 +11,7 @@ import {
 	ResourceTest,
 	ResourceTestArgs,
 	Test,
+	TestResult,
 } from './tests';
 
 type TestClasses = {
@@ -65,12 +66,12 @@ export class TestRunCoordinator {
 		});
 	}
 
-	private handleAsyncResolut(result: Promise<Error | void>): void {
+	private handleAsyncResolut(result: Promise<TestResult>): void {
 		this.pendingTests.push(result);
 		result.then(this.handleResult);
 	}
 
-	private handleResult(result: Error | void): void {
+	private handleResult(result: TestResult): void {
 		if (result instanceof Error) {
 			this.errors.push(result);
 			if (this.failFast) {
