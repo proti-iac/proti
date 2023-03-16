@@ -26,6 +26,8 @@ type TestClasses = {
 
 type Fail = {
 	test: TestMetadata;
+	deployment?: DeploymentTestArgs;
+	resource?: ResourceTestArgs;
 	error: Error;
 };
 
@@ -77,15 +79,27 @@ export class TestRunCoordinator {
 		});
 	}
 
-	private handleAsyncResolut(test: TestMetadata, asyncResult: Promise<TestResult>): void {
+	private handleAsyncResolut(
+		test: TestMetadata,
+		asyncResult: Promise<TestResult>,
+		resource?: ResourceTestArgs,
+		deployment?: DeploymentTestArgs
+	): void {
 		this.pendingTests.push(asyncResult);
-		asyncResult.then((result) => this.handleResult(test, result));
+		asyncResult.then((result) => this.handleResult(test, result, resource, deployment));
 	}
 
-	private handleResult(test: TestMetadata, result: TestResult): void {
+	private handleResult(
+		test: TestMetadata,
+		result: TestResult,
+		resource?: ResourceTestArgs,
+		deployment?: DeploymentTestArgs
+	): void {
 		if (result !== undefined) {
 			this.fails.push({
 				test,
+				resource,
+				deployment,
 				error: result,
 			});
 			if (this.failFast) {
@@ -98,25 +112,30 @@ export class TestRunCoordinator {
 		if (this.done) return;
 		this.asyncResourceTests.forEach((asyncTest) => {
 			if (this.done) return;
-			this.handleAsyncResolut(asyncTest, asyncTest.asyncValidateResource(resource));
+			this.handleAsyncResolut(asyncTest, asyncTest.asyncValidateResource(resource), resource);
 		});
 		this.resourceTests.forEach((test) => {
 			if (this.done) return;
-			this.handleResult(test, test.validateResource(resource));
+			this.handleResult(test, test.validateResource(resource), resource);
 		});
 	}
 
-	public validateDeployment(resources: DeploymentTestArgs): void {
+	public validateDeployment(deployment: DeploymentTestArgs): void {
 		if (this.done) return;
 		this.initTests(this.delayedInstantiation);
 
 		this.asyncDeploymentTests.forEach((asyncTest) => {
 			if (this.done) return;
-			this.handleAsyncResolut(asyncTest, asyncTest.asyncValidateDeployment(resources));
+			this.handleAsyncResolut(
+				asyncTest,
+				asyncTest.asyncValidateDeployment(deployment),
+				undefined,
+				deployment
+			);
 		});
 		this.deploymentTests.forEach((test) => {
 			if (this.done) return;
-			this.handleResult(test, test.validateDeployment(resources));
+			this.handleResult(test, test.validateDeployment(deployment), undefined, deployment);
 		});
 
 		Promise.all(this.pendingTests).then(() => this.complete());
