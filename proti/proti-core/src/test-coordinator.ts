@@ -11,6 +11,7 @@ import {
 	ResourceTest,
 	ResourceTestArgs,
 	Test,
+	TestMetadata,
 	TestResult,
 } from './tests';
 
@@ -23,6 +24,11 @@ type TestClasses = {
 	delayedInstantiation: boolean;
 }[];
 
+type Fail = {
+	test: TestMetadata;
+	error: Error;
+};
+
 export class TestRunCoordinator {
 	private readonly resourceTests: ResourceTest[] = [];
 
@@ -34,14 +40,16 @@ export class TestRunCoordinator {
 
 	private readonly delayedInstantiation: TestClasses = [];
 
-	public readonly errors: Error[] = [];
+	public readonly fails: Fail[] = [];
 
-	private readonly pendingTests: Promise<Error | void>[] = [];
+	private readonly pendingTests: Promise<TestResult>[] = [];
 
 	// eslint-disable-next-line class-methods-use-this
 	private complete: () => void = () => {
 		throw new Error('Test run coordinator completed before completing initialization');
 	};
+
+	private done: boolean = false;
 
 	public readonly isDone: Promise<void>;
 
@@ -52,7 +60,10 @@ export class TestRunCoordinator {
 		});
 		this.initTests(directInstantiation);
 		this.isDone = new Promise((resolve) => {
-			this.complete = resolve;
+			this.complete = () => {
+				this.done = true;
+				resolve();
+			};
 		});
 	}
 
@@ -66,37 +77,47 @@ export class TestRunCoordinator {
 		});
 	}
 
-	private handleAsyncResolut(result: Promise<TestResult>): void {
-		this.pendingTests.push(result);
-		result.then(this.handleResult);
+	private handleAsyncResolut(test: TestMetadata, asyncResult: Promise<TestResult>): void {
+		this.pendingTests.push(asyncResult);
+		asyncResult.then((result) => this.handleResult(test, result));
 	}
 
-	private handleResult(result: TestResult): void {
-		if (result instanceof Error) {
-			this.errors.push(result);
+	private handleResult(test: TestMetadata, result: TestResult): void {
+		if (result !== undefined) {
+			this.fails.push({
+				test,
+				error: result,
+			});
 			if (this.failFast) {
 				this.complete();
-				throw result;
 			}
 		}
 	}
 
 	public validateResource(resource: ResourceTestArgs): void {
-		this.asyncResourceTests.forEach((asyncTest) =>
-			this.handleAsyncResolut(asyncTest.asyncValidateResource(resource))
-		);
-		this.resourceTests.forEach((test) => this.handleResult(test.validateResource(resource)));
+		if (this.done) return;
+		this.asyncResourceTests.forEach((asyncTest) => {
+			if (this.done) return;
+			this.handleAsyncResolut(asyncTest, asyncTest.asyncValidateResource(resource));
+		});
+		this.resourceTests.forEach((test) => {
+			if (this.done) return;
+			this.handleResult(test, test.validateResource(resource));
+		});
 	}
 
 	public validateDeployment(resources: DeploymentTestArgs): void {
+		if (this.done) return;
 		this.initTests(this.delayedInstantiation);
 
-		this.asyncDeploymentTests.forEach((asyncTest) =>
-			this.handleAsyncResolut(asyncTest.asyncValidateDeployment(resources))
-		);
-		this.deploymentTests.forEach((test) =>
-			this.handleResult(test.validateDeployment(resources))
-		);
+		this.asyncDeploymentTests.forEach((asyncTest) => {
+			if (this.done) return;
+			this.handleAsyncResolut(asyncTest, asyncTest.asyncValidateDeployment(resources));
+		});
+		this.deploymentTests.forEach((test) => {
+			if (this.done) return;
+			this.handleResult(test, test.validateDeployment(resources));
+		});
 
 		Promise.all(this.pendingTests).then(() => this.complete());
 	}
