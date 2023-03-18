@@ -1,4 +1,5 @@
 import { TestCoordinatorConfig } from './config';
+import { isOutputGenerator, OutputGenerator, ResourceOutput } from './output-generator';
 import {
 	AsyncDeploymentTest,
 	AsyncResourceTest,
@@ -55,7 +56,12 @@ export class TestRunCoordinator {
 
 	public readonly isDone: Promise<void>;
 
-	constructor(testClasses: TestClasses, private readonly failFast: boolean) {
+	constructor(
+		private readonly runId: number,
+		testClasses: TestClasses,
+		private readonly outputGenerator: OutputGenerator,
+		private readonly failFast: boolean
+	) {
 		const directInstantiation = testClasses.filter((tc) => {
 			if (tc.delayedInstantiation) this.delayedInstantiation.push(tc);
 			return !tc.delayedInstantiation;
@@ -140,44 +146,68 @@ export class TestRunCoordinator {
 
 		Promise.all(this.pendingTests).then(() => this.complete());
 	}
+
+	public generateResourceOutput(resource: ResourceTestArgs): ResourceOutput {
+		return this.outputGenerator.generateResourceOutput(this.runId, resource);
+	}
 }
 
 export class TestCoordinator {
-	public readonly testClasses: TestClasses = [];
+	public testClasses: TestClasses = [];
+
+	public outputGenerator?: OutputGenerator;
 
 	public readonly isReady: Promise<void>;
 
 	constructor(private readonly config: TestCoordinatorConfig) {
-		this.isReady = this.loadTestClasses();
+		this.isReady = Promise.all([this.loadTestClasses(), this.loadOutputGenerator()]).then(
+			() => undefined
+		);
 	}
 
 	private async loadTestClasses(): Promise<void> {
-		const tests = this.config.tests.map((moduleName) =>
-			import(moduleName).then((testModule) => {
-				const TestClass = testModule.default;
-				const test = new TestClass();
-				const [asyncDeplTest, asyncResTest, deplTest, resTest] = [
-					isAsyncDeploymentTest(test),
-					isAsyncResourceTest(test),
-					isDeploymentTest(test),
-					isResourceTest(test),
-				];
-				if (!asyncResTest && !asyncDeplTest && !deplTest && !resTest)
-					throw new Error(`Configured test has invalid interface: ${moduleName}`);
-				this.testClasses.push({
-					Ctor: TestClass,
-					resourceTest: resTest,
-					asyncResourceTest: asyncResTest,
-					deploymentTest: deplTest,
-					aysncDeploymentTest: asyncDeplTest,
-					delayedInstantiation: !resTest && !asyncResTest,
-				});
-			})
+		this.testClasses = await Promise.all(
+			this.config.tests.map((moduleName) =>
+				import(moduleName).then((testModule) => {
+					const TestClass = testModule.default;
+					const test = new TestClass();
+					const [asyncDeplTest, asyncResTest, deplTest, resTest] = [
+						isAsyncDeploymentTest(test),
+						isAsyncResourceTest(test),
+						isDeploymentTest(test),
+						isResourceTest(test),
+					];
+					if (!asyncResTest && !asyncDeplTest && !deplTest && !resTest)
+						throw new Error(`Configured test has invalid interface: ${moduleName}`);
+					return {
+						Ctor: TestClass,
+						resourceTest: resTest,
+						asyncResourceTest: asyncResTest,
+						deploymentTest: deplTest,
+						aysncDeploymentTest: asyncDeplTest,
+						delayedInstantiation: !resTest && !asyncResTest,
+					};
+				})
+			)
 		);
-		return Promise.all(tests).then(() => {});
 	}
 
-	public newRunCoordinator(): TestRunCoordinator {
-		return new TestRunCoordinator(this.testClasses, this.config.failFast);
+	private async loadOutputGenerator(): Promise<void> {
+		this.outputGenerator = await import(this.config.outputGenerator).then(
+			// eslint-disable-next-line new-cap
+			(outputGeneratorModule) => new outputGeneratorModule.default()
+		);
+		if (!isOutputGenerator(this.outputGenerator))
+			throw new Error(`Invalid output generator ${this.config.outputGenerator}`);
+	}
+
+	public newRunCoordinator(runId: number): TestRunCoordinator {
+		if (!this.outputGenerator) throw new Error('Output generator not initialized');
+		return new TestRunCoordinator(
+			runId,
+			this.testClasses,
+			this.outputGenerator,
+			this.config.failFast
+		);
 	}
 }

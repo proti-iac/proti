@@ -110,26 +110,20 @@ const testRunner = async (
 		await testCoordinator.isReady; // Required to ensure all test classes are loaded before first test run
 
 		const test = async (runId: number): Promise<boolean> => {
-			const testRunCoordinator = testCoordinator.newRunCoordinator();
+			const testRunCoordinator = testCoordinator.newRunCoordinator(runId);
 			await runtime.isolateModulesAsync(async () => {
 				outputsWaiter.reset();
 				await moduleLoader.mockModules(preloads);
 
 				let monitor: MockMonitor;
 				programPulumi.runtime.setMocks({
-					newResource(args: pulumi.runtime.MockResourceArgs): {
-						id: string;
-						state: any;
-					} {
-						testRunCoordinator.validateResource({
+					newResource(args: pulumi.runtime.MockResourceArgs) {
+						const resource = {
 							urn: (monitor as any).newUrn(undefined, args.type, args.name),
 							...args,
-						});
-
-						return {
-							id: '',
-							state: {}, // ...args.inputs, versioning: { enabled: true }, bucket: null },
 						};
+						testRunCoordinator.validateResource(resource);
+						return testRunCoordinator.generateResourceOutput(resource);
 					},
 					call(args: pulumi.runtime.MockCallArgs) {
 						const msg = `ProTI does not support provider functions 😢 Called: ${args.token}`;
