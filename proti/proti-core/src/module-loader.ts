@@ -80,7 +80,7 @@ export class ModuleLoader {
 	};
 
 	/**
-	 * Loads the program module, causing it to execute. Reuses transformded verison in cache.
+	 * Loads the program module, causing it to execute. Reuses transformed version in cache.
 	 * @returns Loaded program module.
 	 */
 	public execProgram = async <T>(): Promise<T> => {

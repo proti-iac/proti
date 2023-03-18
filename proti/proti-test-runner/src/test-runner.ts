@@ -101,9 +101,28 @@ const testRunner = async (
 			throw new Error('Did not to preload @pulumi/pulumi/output');
 		const programPulumiOutput = preloads.get('@pulumi/pulumi/output') as typeof pulumiOutput;
 		const outputsWaiter = new MutableWaiter();
+
+		// Ensure all Pulumi output are registered to be waited for.
+		// Patches the Output constructore for all output instantiation from out side Pulumi's output module.
+		// OutputImpl object instantiated from inside Pulumi's output module are not intercepted!
 		(programPulumiOutput.Output as any) = interceptConstructor(
 			programPulumiOutput.Output as unknown as { new (...v: any[]): Output<any> },
-			(output) => outputsWaiter.wait((output as any).promise())
+			(output: any) => {
+				// Registers all promises of outputs instantiated from outstide Pulumi's output module.
+				outputsWaiter.wait(output.promise());
+
+				// Outputs returend by outputs' apply-callbacks are instantiated in Pulumi's output model.
+				// Thus, for them, the constructor is not intercepted and we have to monkey patch apply:
+				const origApply = output.apply;
+				// eslint-disable-next-line no-param-reassign
+				output.apply = (...args: any[]) => {
+					const o = origApply.apply(output, args);
+					// Registers all promises of apply-callback outputs
+					// (these are instantiated from inside Pulumi's output module).
+					outputsWaiter.wait((o as any).promise());
+					return o;
+				};
+			}
 		);
 
 		const testCoordinator = new TestCoordinator(proti.testCoordinator);
