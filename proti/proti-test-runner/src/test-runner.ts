@@ -60,6 +60,12 @@ const getGlobals = async (
 	return [globals.proti, globals.resolver, globals.hasteFS];
 };
 
+// Make sure we ignore "unhandledRejection" or errors that we actually caught
+const ignoreUnhandledRejectionErrors: Set<Error> = new Set();
+process.on('unhandledRejection', (err: Error) => {
+	if (!ignoreUnhandledRejectionErrors.has(err)) throw err;
+});
+
 const testRunner = async (
 	globalConfig: Config.GlobalConfig,
 	config: Config.ProjectConfig,
@@ -157,6 +163,7 @@ const testRunner = async (
 						const errors = [];
 						await moduleLoader.execProgram().catch((error) => errors.push(error));
 						errors.push(...(await outputsWaiter.isCompleted()));
+						errors.forEach((err) => ignoreUnhandledRejectionErrors.add(err));
 						if (errors.length > 0)
 							results.push({
 								title: `run ${runId} (${errors.length} errors)`,
