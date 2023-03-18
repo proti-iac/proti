@@ -154,8 +154,17 @@ const testRunner = async (
 				const startRun = Date.now();
 				await Promise.race([
 					(async () => {
-						await moduleLoader.execProgram();
-						await outputsWaiter.isCompleted();
+						const errors = [];
+						await moduleLoader.execProgram().catch((error) => errors.push(error));
+						errors.push(...(await outputsWaiter.isCompleted()));
+						if (errors.length > 0)
+							results.push({
+								title: `run ${runId} (${errors.length} errors)`,
+								duration: Date.now() - startRun,
+								passedAsserts: 0,
+								errors,
+							});
+
 						testRunCoordinator.validateDeployment(monitor.resources);
 						await testRunCoordinator.isDone;
 					})(),
