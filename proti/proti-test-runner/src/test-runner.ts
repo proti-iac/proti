@@ -131,7 +131,7 @@ const testRunner = async (
 			}
 		);
 
-		const testCoordinator = new TestCoordinator(proti.testCoordinator);
+		const testCoordinator = new TestCoordinator(proti.testCoordinator, globalConfig.seed);
 		await testCoordinator.isReady; // Required to ensure all test classes are loaded before first test run
 
 		const test = async (runId: number): Promise<boolean> => {
@@ -205,9 +205,6 @@ const testRunner = async (
 			errors: [e as Error],
 		});
 	}
-
-	// random seed
-	// options.globalConfig.seed
 
 	const end = Date.now();
 

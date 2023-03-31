@@ -159,8 +159,8 @@ export class TestCoordinator {
 
 	public readonly isReady: Promise<void>;
 
-	constructor(private readonly config: TestCoordinatorConfig) {
-		this.isReady = Promise.all([this.loadTestClasses(), this.loadOutputGenerator()]).then(
+	constructor(private readonly config: TestCoordinatorConfig, seed: number) {
+		this.isReady = Promise.all([this.loadTestClasses(), this.loadOutputGenerator(seed)]).then(
 			() => undefined
 		);
 	}
@@ -192,10 +192,10 @@ export class TestCoordinator {
 		);
 	}
 
-	private async loadOutputGenerator(): Promise<void> {
+	private async loadOutputGenerator(seed: number): Promise<void> {
 		this.outputGenerator = await import(this.config.outputGenerator).then(
 			// eslint-disable-next-line new-cap
-			(outputGeneratorModule) => new outputGeneratorModule.default()
+			(outputGeneratorModule) => new outputGeneratorModule.default(seed)
 		);
 		if (!isOutputGenerator(this.outputGenerator))
 			throw new Error(`Invalid output generator ${this.config.outputGenerator}`);
