@@ -1,8 +1,8 @@
 diff --git a/index.d.ts b/index.d.ts
-index 5201510824b0d1467bfde34337ad3a9de71990b0..02146510c209bead2dfab392680172bc95693501 100755
+index 719fb1c0709dc7fbe802a12cabf4cfcd57cf2c3f..71138e4e26bbf26eef5edd85c0df85976d872825 100755
 --- a/index.d.ts
 +++ b/index.d.ts
-@@ -151,6 +151,7 @@ interface LegacyFakeTimersConfig {
+@@ -152,6 +152,7 @@ interface LegacyFakeTimersConfig {
  }
  
  declare namespace jest {

@@ -1,12 +1,12 @@
 diff --git a/build/index.js b/build/index.js
-index 303abb4a460f5ec7ac9313eefb4b73d3471e6621..d6cd08e8e8055d0153e773a37e870aed15cb49b6 100644
+index 0ba01789d77b081f2cbdaa689e851ad94e221820..720d5209265e12e73c6d0866abbd92751aad4ddb 100644
 --- a/build/index.js
 +++ b/build/index.js
-@@ -2110,6 +2110,7 @@ class Runtime {
+@@ -2006,6 +2006,7 @@ class Runtime {
        return jestObject;
      };
      const jestObject = {
 +      getIsolatedModuleRegistry: () => this._isolatedModuleRegistry,
        advanceTimersByTime: msToRun =>
          _getFakeTimers().advanceTimersByTime(msToRun),
-       advanceTimersToNextTimer: steps =>
+       advanceTimersByTimeAsync: async msToRun => {
