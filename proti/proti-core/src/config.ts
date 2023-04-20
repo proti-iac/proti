@@ -1,14 +1,15 @@
+import * as fc from 'fast-check';
 import { assertEquals, equals } from 'typia';
+import { Generator } from './generator';
 import { deepMerge } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
-	failFast: false, // Stop execution as soon as a validation fails
-	generator: './generators/empty-state-generator', // Test generator to use
+	arbitrary: './arbitraries/empty-state-generator-arbitrary', // Test generator arbitrary to use
 	oracles: ['./oracles/unique-urns-oracle'], // Test oracles to run
 });
 export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
 
-export const defaultTestRunnerConfig = () => ({
+export const defaultTestRunnerConfig = (): fc.Parameters<Generator> & { waitTick: boolean } => ({
 	numRuns: 100, // Number of test iterations
 	waitTick: true, // Wait for a process tick before ending the test run
 });

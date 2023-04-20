@@ -17,6 +17,7 @@
     "prepack": "yarn g:prepack"
   },
   "dependencies": {
+    "fast-check": "^3.8.0",
     "jest-resolve-dependencies": "^29.5.0",
     "jest-snapshot": "^29.5.0",
     "js-yaml": "^4.1.0",
@@ -28,7 +29,6 @@
     "@types/jest": "^29.5.0",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "^18.15.11",
-    "fast-check": "^3.8.0",
     "jest-haste-map": "^29.5.0",
     "jest-resolve": "^29.5.0",
     "jest-runtime": "^29.5.0",

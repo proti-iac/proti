@@ -2,17 +2,19 @@ import type { JestEnvironment } from '@jest/environment';
 import { jestExpect } from '@jest/expect';
 import type { TestResult } from '@jest/test-result';
 import type { Config } from '@jest/types';
-import type { IHasteFS } from 'jest-haste-map';
-import type Runtime from 'jest-runtime';
-import type Resolver from 'jest-resolve';
 import type pulumi from '@pulumi/pulumi';
 import type { Output } from '@pulumi/pulumi';
 import type pulumiOutput from '@pulumi/pulumi/output';
 import type { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
+import * as fc from 'fast-check';
+import type { IHasteFS } from 'jest-haste-map';
+import type Runtime from 'jest-runtime';
+import type Resolver from 'jest-resolve';
 
 import {
 	Config as ProtiConfig,
 	errMsg,
+	Generator,
 	interceptConstructor,
 	isConfig,
 	isHasteFS,
@@ -131,11 +133,14 @@ const testRunner = async (
 			}
 		);
 
-		const testCoordinator = new TestCoordinator(proti.testCoordinator, globalConfig.seed);
-		await testCoordinator.isReady; // Required to ensure all test classes are loaded before first test run
+		const testCoordinator = new TestCoordinator(proti.testCoordinator);
 
-		const test = async (runId: number): Promise<boolean> => {
-			const testRunCoordinator = testCoordinator.newRunCoordinator(runId);
+		let runIdCounter = 0;
+		const testPredicate = async (generator: Generator): Promise<boolean> => {
+			// eslint-disable-next-line no-plusplus
+			const runId = runIdCounter++;
+			const errors: Error[] = [];
+			const testRunCoordinator = await testCoordinator.newRunCoordinator(generator);
 			await runtime.isolateModulesAsync(async () => {
 				outputsWaiter.reset();
 				await moduleLoader.mockModules(preloads);
@@ -160,17 +165,8 @@ const testRunner = async (
 				const startRun = Date.now();
 				await Promise.race([
 					(async () => {
-						const errors = [];
 						await moduleLoader.execProgram().catch((error) => errors.push(error));
 						errors.push(...(await outputsWaiter.isCompleted()));
-						errors.forEach((err) => ignoreUnhandledRejectionErrors.add(err));
-						if (errors.length > 0)
-							results.push({
-								title: `run ${runId} (${errors.length} errors)`,
-								duration: Date.now() - startRun,
-								passedAsserts: 0,
-								errors,
-							});
 
 						testRunCoordinator.validateDeployment(monitor.resources);
 						await testRunCoordinator.isDone;
@@ -178,6 +174,16 @@ const testRunner = async (
 					testRunCoordinator.isDone,
 				]);
 
+				errors.forEach((err) => ignoreUnhandledRejectionErrors.add(err));
+				if (errors.length > 0)
+					results.push({
+						title: `run ${runId} (${errors.length} error${
+							errors.length > 1 ? 's' : ''
+						})`,
+						duration: Date.now() - startRun,
+						passedAsserts: 0,
+						errors,
+					});
 				testRunCoordinator.fails.forEach((fail) => {
 					results.push({
 						title: `${fail.oracle.name} on ${
@@ -189,11 +195,12 @@ const testRunner = async (
 					});
 				});
 			});
-			return testRunCoordinator.fails.length === 0;
+			return errors.length === 0 && testRunCoordinator.fails.length === 0;
 		};
-		for (let i = 0; i < proti.testRunner.numRuns; i += 1)
-			// eslint-disable-next-line no-await-in-loop
-			if (!(await test(i)) && proti.testCoordinator.failFast) break;
+		await fc.check(
+			fc.asyncProperty(await testCoordinator.arbitrary, testPredicate),
+			proti.testRunner as fc.Parameters<Generator[]>
+		);
 
 		// Wait for async code to settle
 		if (proti.testRunner.waitTick) await new Promise(process.nextTick);

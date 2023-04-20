@@ -1202,6 +1202,7 @@ __metadata:
     "@pulumi/pulumi": ^3.61.0
     "@types/jest": ^29.5.0
     "@types/node": ^18.15.11
+    fast-check: ^3.8.0
     immutable: ^4.3.0
     jest: ^29.5.0
     jest-config: ^29.5.0

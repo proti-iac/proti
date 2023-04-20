@@ -1,5 +1,8 @@
+import * as fc from 'fast-check';
+import { Arbitrary } from 'fast-check';
+import { is } from 'typia';
 import { TestCoordinatorConfig } from './config';
-import { isGenerator, Generator, ResourceOutput } from './generator';
+import { Generator, ResourceOutput } from './generator';
 import {
 	AsyncDeploymentOracle,
 	AsyncResourceOracle,
@@ -57,12 +60,7 @@ export class TestRunCoordinator {
 
 	public readonly isDone: Promise<void>;
 
-	constructor(
-		private readonly runId: number,
-		oracleClasses: OracleClasses,
-		private readonly generator: Generator,
-		private readonly failFast: boolean
-	) {
+	constructor(private readonly generator: Generator, oracleClasses: OracleClasses) {
 		const directInstantiation = oracleClasses.filter((oracleClass) => {
 			if (oracleClass.delayedInstantiation) this.delayedInstantiation.push(oracleClass);
 			return !oracleClass.delayedInstantiation;
@@ -111,9 +109,7 @@ export class TestRunCoordinator {
 				deployment,
 				error: result,
 			});
-			if (this.failFast) {
-				this.complete();
-			}
+			this.complete();
 		}
 	}
 
@@ -151,25 +147,22 @@ export class TestRunCoordinator {
 	}
 
 	public generateResourceOutput(resource: ResourceOracleArgs): ResourceOutput {
-		return this.generator.generateResourceOutput(this.runId, resource);
+		return this.generator.generateResourceOutput(resource);
 	}
 }
 
 export class TestCoordinator {
-	public oracles: OracleClasses = [];
+	public readonly oracles: Promise<OracleClasses>;
 
-	public generator?: Generator;
+	public readonly arbitrary: Promise<fc.Arbitrary<Generator>>;
 
-	public readonly isReady: Promise<void>;
-
-	constructor(private readonly config: TestCoordinatorConfig, seed: number) {
-		this.isReady = Promise.all([this.loadOracles(), this.loadGenerator(seed)]).then(
-			() => undefined
-		);
+	constructor(private readonly config: TestCoordinatorConfig) {
+		this.oracles = this.loadOracles();
+		this.arbitrary = this.loadArbitrary();
 	}
 
-	private async loadOracles(): Promise<void> {
-		this.oracles = await Promise.all(
+	private async loadOracles(): Promise<OracleClasses> {
+		return Promise.all(
 			this.config.oracles.map((moduleName) =>
 				import(moduleName).then((oracleModule): OracleClass => {
 					const OracleConstructor = oracleModule.default;
@@ -193,17 +186,16 @@ export class TestCoordinator {
 		);
 	}
 
-	private async loadGenerator(seed: number): Promise<void> {
-		this.generator = await import(this.config.generator).then(
-			// eslint-disable-next-line new-cap
-			(generatorModule) => new generatorModule.default(seed)
-		);
-		if (!isGenerator(this.generator))
-			throw new Error(`Invalid test generator ${this.config.generator}`);
+	private async loadArbitrary(): Promise<Arbitrary<Generator>> {
+		return import(this.config.arbitrary).then((generatorArbitraryModule) => {
+			if (!is<fc.Arbitrary<Generator>>(this.arbitrary))
+				throw new Error(`Invalid test generator arbitrary ${this.config.arbitrary}`);
+			return generatorArbitraryModule.default;
+		});
 	}
 
-	public newRunCoordinator(runId: number): TestRunCoordinator {
-		if (!this.generator) throw new Error('Test generator not initialized');
-		return new TestRunCoordinator(runId, this.oracles, this.generator, this.config.failFast);
+	public async newRunCoordinator(generator: Generator): Promise<TestRunCoordinator> {
+		if (!this.arbitrary) throw new Error('Test generator not initialized');
+		return new TestRunCoordinator(generator, await this.oracles);
 	}
 }
