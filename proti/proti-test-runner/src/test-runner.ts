@@ -180,7 +180,7 @@ const testRunner = async (
 
 				testRunCoordinator.fails.forEach((fail) => {
 					results.push({
-						title: `${fail.test.testName} on ${
+						title: `${fail.oracle.name} on ${
 							fail.resource ? `${fail.resource.urn}` : 'deployment'
 						} (run ${runId})`,
 						duration: Date.now() - startRun,

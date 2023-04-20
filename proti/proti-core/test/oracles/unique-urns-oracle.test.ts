@@ -1,12 +1,12 @@
 import * as fc from 'fast-check';
 
-import UniqueUrnsTest from '../../src/tests/unique-urns-test';
+import UniqueUrnsOracle from '../../src/oracles/unique-urns-oracle';
 
-describe('unique URNs test', () => {
+describe('unique URNs oracle', () => {
 	it('should not fail on unique strings', () => {
 		fc.assert(
 			fc.property(fc.uniqueArray(fc.string()), (urns) => {
-				const test = new UniqueUrnsTest();
+				const test = new UniqueUrnsOracle();
 				urns.forEach((urn) => {
 					const resource = { urn, type: 'a', name: 'name', inputs: {} };
 					expect(test.validateResource(resource)).toBe(undefined);
@@ -28,7 +28,7 @@ describe('unique URNs test', () => {
 						)
 					),
 				([urns, duplicatePos, insertPos]) => {
-					const test = new UniqueUrnsTest();
+					const test = new UniqueUrnsOracle();
 					const duplicateUrns = [
 						...urns.slice(0, insertPos),
 						urns[duplicatePos],

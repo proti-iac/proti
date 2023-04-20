@@ -1,13 +1,13 @@
-import { ResourceTest, ResourceTestArgs, TestResult } from '../tests';
+import { ResourceOracle, ResourceOracleArgs, TestResult } from '../oracle';
 
-class UniqueUrnsTest implements ResourceTest {
-	testName = 'Unique URNs';
+class UniqueUrnsOracle implements ResourceOracle {
+	name = 'Unique URNs';
 
 	description = 'Checks that the URNs of all resources are not duplicated';
 
 	private urns: Set<string> = new Set();
 
-	validateResource = (resource: ResourceTestArgs): TestResult => {
+	validateResource = (resource: ResourceOracleArgs): TestResult => {
 		if (this.urns.has(resource.urn))
 			return new Error(`Duplicated definition of resource ${resource.urn}`);
 		this.urns.add(resource.urn);
@@ -15,4 +15,4 @@ class UniqueUrnsTest implements ResourceTest {
 	};
 }
 
-export default UniqueUrnsTest;
+export default UniqueUrnsOracle;

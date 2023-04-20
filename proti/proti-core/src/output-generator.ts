@@ -1,4 +1,4 @@
-import { ResourceTestArgs } from './tests';
+import { ResourceOracleArgs } from './oracle';
 
 export type ResourceOutput = { id: string; state: Record<string, any> };
 
@@ -7,7 +7,7 @@ export abstract class OutputGenerator {
 
 	public abstract generateResourceOutput(
 		runId: number,
-		resource: ResourceTestArgs
+		resource: ResourceOracleArgs
 	): ResourceOutput;
 }
 
