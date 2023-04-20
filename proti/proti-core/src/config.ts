@@ -3,7 +3,7 @@ import { deepMerge } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
 	failFast: false, // Stop execution as soon as a validation fails
-	outputGenerator: './output-generators/empty-state-output-generator', // Output generator to use
+	generator: './generators/empty-state-generator', // Test generator to use
 	oracles: ['./oracles/unique-urns-oracle'], // Test oracles to run
 });
 export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;

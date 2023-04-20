@@ -2,7 +2,7 @@ export * from './config';
 export * from './jest';
 export * from './module-loader';
 export * from './mutable-waiter';
-export * from './output-generator';
+export * from './generator';
 export * from './pulumi-project';
 export * from './oracle';
 export * from './test-coordinator';

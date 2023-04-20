@@ -1,5 +1,5 @@
 import { TestCoordinatorConfig } from './config';
-import { isOutputGenerator, OutputGenerator, ResourceOutput } from './output-generator';
+import { isGenerator, Generator, ResourceOutput } from './generator';
 import {
 	AsyncDeploymentOracle,
 	AsyncResourceOracle,
@@ -60,7 +60,7 @@ export class TestRunCoordinator {
 	constructor(
 		private readonly runId: number,
 		oracleClasses: OracleClasses,
-		private readonly outputGenerator: OutputGenerator,
+		private readonly generator: Generator,
 		private readonly failFast: boolean
 	) {
 		const directInstantiation = oracleClasses.filter((oracleClass) => {
@@ -151,19 +151,19 @@ export class TestRunCoordinator {
 	}
 
 	public generateResourceOutput(resource: ResourceOracleArgs): ResourceOutput {
-		return this.outputGenerator.generateResourceOutput(this.runId, resource);
+		return this.generator.generateResourceOutput(this.runId, resource);
 	}
 }
 
 export class TestCoordinator {
 	public oracles: OracleClasses = [];
 
-	public outputGenerator?: OutputGenerator;
+	public generator?: Generator;
 
 	public readonly isReady: Promise<void>;
 
 	constructor(private readonly config: TestCoordinatorConfig, seed: number) {
-		this.isReady = Promise.all([this.loadOracles(), this.loadOutputGenerator(seed)]).then(
+		this.isReady = Promise.all([this.loadOracles(), this.loadGenerator(seed)]).then(
 			() => undefined
 		);
 	}
@@ -193,22 +193,17 @@ export class TestCoordinator {
 		);
 	}
 
-	private async loadOutputGenerator(seed: number): Promise<void> {
-		this.outputGenerator = await import(this.config.outputGenerator).then(
+	private async loadGenerator(seed: number): Promise<void> {
+		this.generator = await import(this.config.generator).then(
 			// eslint-disable-next-line new-cap
-			(outputGeneratorModule) => new outputGeneratorModule.default(seed)
+			(generatorModule) => new generatorModule.default(seed)
 		);
-		if (!isOutputGenerator(this.outputGenerator))
-			throw new Error(`Invalid output generator ${this.config.outputGenerator}`);
+		if (!isGenerator(this.generator))
+			throw new Error(`Invalid test generator ${this.config.generator}`);
 	}
 
 	public newRunCoordinator(runId: number): TestRunCoordinator {
-		if (!this.outputGenerator) throw new Error('Output generator not initialized');
-		return new TestRunCoordinator(
-			runId,
-			this.oracles,
-			this.outputGenerator,
-			this.config.failFast
-		);
+		if (!this.generator) throw new Error('Test generator not initialized');
+		return new TestRunCoordinator(runId, this.oracles, this.generator, this.config.failFast);
 	}
 }

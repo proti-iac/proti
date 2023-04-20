@@ -1,8 +1,9 @@
+import { is } from 'typia';
 import { ResourceOracleArgs } from './oracle';
 
 export type ResourceOutput = { id: string; state: Record<string, any> };
 
-export abstract class OutputGenerator {
+export abstract class Generator {
 	public constructor(protected readonly seed: number) {}
 
 	public abstract generateResourceOutput(
@@ -11,5 +12,5 @@ export abstract class OutputGenerator {
 	): ResourceOutput;
 }
 
-export const isOutputGenerator = (outputGenerator: any): outputGenerator is OutputGenerator =>
-	typeof outputGenerator?.generateResourceOutput === 'function';
+export const isGenerator = (generator: any): generator is Generator =>
+	typeof generator?.generateResourceOutput === 'function' && is<Generator>(generator);
