@@ -1173,7 +1173,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@proti/reporter@workspace:^, @proti/reporter@workspace:proti-reporter":
+"@proti/reporter@workspace:proti-reporter":
   version: 0.0.0-use.local
   resolution: "@proti/reporter@workspace:proti-reporter"
   dependencies:
@@ -1212,7 +1212,6 @@ __metadata:
     "@jest/types": ^29.5.0
     "@proti/core": "workspace:^"
     "@proti/runner": "workspace:^"
-    "@proti/transformer": "workspace:^"
     "@pulumi/pulumi": ^3.61.0
     "@types/jest": ^29.5.0
     "@types/node": ^18.15.11
