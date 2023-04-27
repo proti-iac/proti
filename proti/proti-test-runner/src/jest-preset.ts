@@ -7,16 +7,21 @@ const config: JestConfigWithTsJest = {
 		'^.+\\.tsx?$': [
 			'ts-jest',
 			{
-				compiler: 'ttypescript',
-				tsconfig: {
-					plugins: [
-						{
-							transform: '@proti/transformer',
-						},
-					],
-				},
+				// compiler: 'ttypescript',
+				// tsconfig: {
+				// 	plugins: [
+				// 		{
+				// 			transform: '@proti/transformer',
+				// 		},
+				// 	],
+				// },
 			},
 		],
+	},
+	globals: {
+		proti: {
+			testCoordinator: {},
+		},
 	},
 
 	injectGlobals: true, // Inject globals into each test environment, e.g., expect, otherwise explicit import is required
