@@ -199,7 +199,7 @@ const runProti = async (
 		proti.testRunner as fc.Parameters<Generator[]>
 	);
 	// Wait for async code to settle
-	// if (proti.testRunner.waitTick) await new Promise(process.nextTick);
+	if (proti.testRunner.waitTick) await new Promise(process.nextTick);
 	const report = fc.defaultReportMessage(checkDetails);
 
 	return (({ failed, interrupted, numRuns, numShrinks, numSkips }) => ({
