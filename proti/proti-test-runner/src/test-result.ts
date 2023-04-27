@@ -1,20 +1,30 @@
-import type { TestResult } from '@jest/test-result';
+import type { AssertionResult, TestResult } from '@jest/test-result';
+import type { RunDetailsCommon } from 'fast-check';
 
-export type RunResult = {
+export type Result = {
 	title: string;
-	duration?: number;
-	passedAsserts: number;
+	duration: number;
 	errors: Error[];
 };
 
-type RunnerState = {
+export type CheckResult = Pick<
+	RunDetailsCommon<unknown>,
+	'failed' | 'interrupted' | 'numRuns' | 'numSkips' | 'numShrinks'
+> & {
+	duration: number;
+	runResults: Result[];
+	report?: string;
+};
+
+type RunnerResult = {
 	testPath: string;
 	start: number;
 	end: number;
-	results: RunResult[];
+	accompanyingResults: Result[];
+	checkResult?: CheckResult;
 };
 
-const hasFailed = (result: RunResult): boolean => result.errors.length > 0;
+const hasFailed = (result: Result): boolean => result.errors.length > 0;
 
 const toErrorMessage = (error: Error): string =>
 	(error.stack ? error.stack : error.message) +
@@ -22,26 +32,49 @@ const toErrorMessage = (error: Error): string =>
 		? `\ncaused by ${toErrorMessage(error.cause as Error)}`
 		: '');
 
-const toFailureMessage = (result: RunResult, id: number): string =>
-	`${'#'.repeat(80)}\n# 🐞 ${id}: ${result.title}\n\n${result.errors
-		.map(toErrorMessage)
-		.join('\n\n')}`;
+const toHeader = (headline: string): string => `${'#'.repeat(80)}\n# ${headline}\n\n`;
 
-export const toTestResult = (state: RunnerState): TestResult => {
-	const failures = state.results.filter(hasFailed);
+const toFailureMessage = (result: Result, id: number): string =>
+	`${toHeader(`🐞 ${id}: ${result.title}`)}${result.errors.map(toErrorMessage).join('\n\n')}\n\n`;
+
+export const toTestResult = (state: RunnerResult): TestResult => {
+	const accompanyingFailures = state.accompanyingResults.filter(hasFailed);
+	const accompanyingSuccesses = state.accompanyingResults.filter((r) => !hasFailed(r));
+	const checkResult: CheckResult = state.checkResult || {
+		failed: true,
+		interrupted: true,
+		duration: 0,
+		numRuns: 0,
+		numShrinks: 0,
+		numSkips: 0,
+		report: '',
+		runResults: [],
+	};
+	const checkFailures = checkResult.runResults.filter(hasFailed);
+	const checkErrors = checkFailures.reduce(
+		(errors, result) => [...errors, ...result.errors],
+		[] as Error[]
+	);
+	const failures = [...accompanyingFailures, ...checkFailures];
 	return {
 		failureMessage:
-			failures.length === 0
+			accompanyingFailures.length === 0 && checkResult.failed === false
 				? null
 				: `ProTI found ${'🐞'.repeat(failures.length)}\n\n${failures
 						.map(toFailureMessage)
-						.join('\n\n')}`,
+						.join('\n\n')}${
+						checkResult.report
+							? toHeader('Check program report') + checkResult.report
+							: ''
+				  }`,
 		leaks: false,
-		numFailingTests: failures.length,
-		numPassingTests: state.results.filter(
-			(r) => r.duration !== undefined && r.errors.length === 0
-		).length,
-		numPendingTests: state.results.filter((r) => r.duration === undefined).length,
+		numFailingTests: accompanyingFailures.length + (checkResult.failed ? 1 : 0),
+		numPassingTests:
+			accompanyingSuccesses.length +
+			(state.checkResult // -1 on failure, beause numRuns contains failed run
+				? state.checkResult.numRuns + (state.checkResult.failed ? -1 : 0)
+				: 0),
+		numPendingTests: 0,
 		numTodoTests: 0,
 		openHandles: [],
 		perfStats: {
@@ -61,15 +94,27 @@ export const toTestResult = (state: RunnerState): TestResult => {
 			updated: 0,
 		},
 		testFilePath: state.testPath,
-		testResults: state.results.map((result) => ({
-			ancestorTitles: [],
-			duration: result.duration,
-			failureDetails: [],
-			failureMessages: result.errors.map(toErrorMessage),
-			fullName: `${state.testPath}#${result.title}`,
-			numPassingAsserts: result.passedAsserts,
-			status: result.duration === undefined || hasFailed(result) ? 'failed' : 'passed',
-			title: result.title,
-		})),
+		testResults: [
+			...state.accompanyingResults.map((result) => ({
+				ancestorTitles: [],
+				duration: result.duration,
+				failureDetails: [],
+				failureMessages: result.errors.map(toErrorMessage),
+				fullName: `${state.testPath}#${result.title}`,
+				numPassingAsserts: 0,
+				status: hasFailed(result) ? 'failed' : 'passed',
+				title: result.title,
+			})),
+			{
+				ancestorTitles: [],
+				duration: checkResult.duration,
+				failureDetails: [checkResult],
+				failureMessages: checkErrors.map(toErrorMessage),
+				fullName: `${state.testPath}#Check program`,
+				numPassingAsserts: 0,
+				status: checkResult.failed ? 'failed' : 'passed',
+				title: 'Check program',
+			},
+		] as AssertionResult[],
 	};
 };
