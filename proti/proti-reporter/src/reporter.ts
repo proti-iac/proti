@@ -1,17 +1,29 @@
 import { Reporter } from '@jest/reporters';
-import { Test, TestResult } from '@jest/test-result';
+import { AssertionResult, Test, TestResult } from '@jest/test-result';
 import { createHash } from 'crypto';
 import { stringify } from 'csv-stringify/sync';
 import * as fs from 'fs';
 import * as path from 'path';
 import { hrtime } from 'process';
+import { assert } from 'typia';
+
+import type { SerializableCheckResult, SerializableResult } from '@proti/test-runner';
 
 export const reportDir: string = 'proti-report';
 const reportExecutionsFile: string = path.join(reportDir, 'executions.csv');
-const executionReportTestsFilename: string = 'tests.csv';
+const executionProgramsFilename: string = 'programs.csv';
+// Tests: List of Jest tests (including summary of "check program")
+const programTestsPrefix: string = 'program-tests-';
+// Checks: List of fast-check check runs
+const programChecksPrefix: string = 'program-checks-';
 const toCsv = (data: any): string => stringify(data, { quoted_string: true });
 
 const generateHash = (s: string) => createHash('sha3-224').update(s, 'utf8').digest('base64url');
+const isCheckProgramsTest = (result: AssertionResult): boolean => {
+	const title = result.fullName.split('#');
+	if (title.length < 2) return false;
+	return title[1] === 'Check program';
+};
 
 export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 	private readonly executionId = Date.now();
@@ -107,11 +119,11 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 			] as any[])
 		);
 		fs.writeFileSync(
-			path.join(executionReportDir, executionReportTestsFilename),
+			path.join(executionReportDir, executionProgramsFilename),
 			toCsv(executionReport)
 		);
 
-		// Write execution test file reports
+		// Write program execution test reports
 		this.testFiles.forEach((test, file) => {
 			const report: any[][] = [['Name', 'Duration', 'Status', 'Failures']];
 			test.result?.testResults.forEach((result) =>
@@ -122,8 +134,39 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 					result.failureMessages,
 				])
 			);
-			report.push([]);
-			fs.writeFileSync(path.join(executionReportDir, generateHash(file)), toCsv(report));
+			fs.writeFileSync(
+				path.join(executionReportDir, programTestsPrefix + generateHash(file)),
+				toCsv(report)
+			);
+
+			const checkProgramResults = test.result?.testResults.filter(isCheckProgramsTest);
+			if (checkProgramResults?.length !== 1)
+				console.warn(
+					`Could not find test "Check program" results for ${file}. Did you use @proti/test-runner?`
+				);
+			else {
+				// Write program execution checks report
+				const checksResult = assert<SerializableCheckResult>(
+					checkProgramResults[0]?.failureDetails[0]
+				);
+				const checksReport: any[][] = [
+					['Title', 'Start', 'End', 'Duration', 'Failed', 'Errors'],
+				];
+				checksResult.runResults.forEach((checkResult: SerializableResult) =>
+					checksReport.push([
+						checkResult.title,
+						checkResult.start,
+						checkResult.end,
+						checkResult.duration,
+						checkResult.errors.length > 0,
+						checkResult.errors,
+					])
+				);
+				fs.writeFileSync(
+					path.join(executionReportDir, programChecksPrefix + generateHash(file)),
+					toCsv(checksReport)
+				);
+			}
 		});
 	}
 }

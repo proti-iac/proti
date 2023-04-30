@@ -6,10 +6,10 @@
     "proti-cli",
     "proti-core",
     "proti-demo",
-    "proti-reporter",
     "proti-runner",
     "proti-test-runner",
-    "proti-transformer"
+    "proti-transformer",
+    "proti-reporter"
   ],
   "scripts": {
     "g:all": "yarn workspaces foreach $1 --exclude proti-monorepo run $0",
