@@ -36,13 +36,17 @@ const makeAccompanyingTest =
 	(appendResult: AppendAccompanyingResult) =>
 	async <T>(title: string, test: Promise<T>): Promise<T> => {
 		const start = now();
-		const result = (partialResult: Partial<Result>): void =>
-			appendResult({
+		const result = (partialResult: Partial<Result>): void => {
+			const end = now();
+			return appendResult({
 				title,
-				duration: nsToMs(now() - start),
+				start: nsToMs(start),
+				end: nsToMs(end),
+				duration: nsToMs(end - start),
 				errors: [],
 				...partialResult,
 			});
+		};
 		const resultVal = errMsg(test, `Failed to ${title}`);
 		resultVal.then(() => result({})).catch((e) => result({ errors: [e as Error] }));
 		return resultVal;
@@ -185,9 +189,12 @@ const runProti = async (
 					)
 				);
 			});
+			const runEnd = now();
 			runStats.push({
 				title: `Check program (run ${runId})`,
-				duration: nsToMs(runStart - now()),
+				start: nsToMs(runStart),
+				end: nsToMs(runEnd),
+				duration: nsToMs(runEnd - runStart),
 				errors,
 			});
 		});
@@ -202,10 +209,13 @@ const runProti = async (
 	if (proti.testRunner.waitTick) await new Promise(process.nextTick);
 	const report = fc.defaultReportMessage(checkDetails);
 
+	const end = now();
 	return (({ failed, interrupted, numRuns, numShrinks, numSkips }) => ({
 		failed,
 		interrupted,
-		duration: nsToMs(now() - start),
+		start: nsToMs(start),
+		end: nsToMs(end),
+		duration: nsToMs(end - start),
 		numRuns,
 		numShrinks,
 		numSkips,

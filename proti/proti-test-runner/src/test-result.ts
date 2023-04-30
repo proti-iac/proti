@@ -3,17 +3,25 @@ import type { RunDetailsCommon } from 'fast-check';
 
 export type Result = {
 	title: string;
+	start: number;
+	end: number;
 	duration: number;
 	errors: Error[];
 };
+export type SerializableResult = Omit<Result, 'errors'> & { errors: string[] };
 
 export type CheckResult = Pick<
 	RunDetailsCommon<unknown>,
 	'failed' | 'interrupted' | 'numRuns' | 'numSkips' | 'numShrinks'
 > & {
+	start: number;
+	end: number;
 	duration: number;
 	runResults: Result[];
 	report?: string;
+};
+export type SerializableCheckResult = Omit<CheckResult, 'runResults'> & {
+	runResults: SerializableResult[];
 };
 
 type RunnerResult = {
@@ -43,12 +51,21 @@ export const toTestResult = (state: RunnerResult): TestResult => {
 	const checkResult: CheckResult = state.checkResult || {
 		failed: true,
 		interrupted: true,
+		start: 0,
+		end: 0,
 		duration: 0,
 		numRuns: 0,
 		numShrinks: 0,
 		numSkips: 0,
 		report: '',
 		runResults: [],
+	};
+	const serializableCheckResult: SerializableCheckResult = {
+		...checkResult,
+		runResults: checkResult.runResults.map((result) => ({
+			...result,
+			errors: result.errors.map(toErrorMessage),
+		})),
 	};
 	const checkFailures = checkResult.runResults.filter(hasFailed);
 	const checkErrors = checkFailures.reduce(
@@ -108,8 +125,8 @@ export const toTestResult = (state: RunnerResult): TestResult => {
 			{
 				ancestorTitles: [],
 				duration: checkResult.duration,
-				failureDetails: [checkResult],
-				failureMessages: checkErrors.map(toErrorMessage),
+				failureDetails: [serializableCheckResult],
+				failureMessages: [...checkErrors.map(toErrorMessage)],
 				fullName: `${state.testPath}#Check program`,
 				numPassingAsserts: 0,
 				status: checkResult.failed ? 'failed' : 'passed',
