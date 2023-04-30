@@ -18,7 +18,7 @@
     "clean": "yarn g:all clean -vip",
     "g:build": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn tsc'",
     "g:build:ttsc": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn ttsc'",
-    "build": "yarn g:all build -vitp",
+    "build": "yarn g:all build '-vip --topological-dev'",
     "g:lint": "eslint --ext .ts --ignore-pattern bin/ $INIT_CWD",
     "lint": "yarn g:lint",
     "g:test": "yarn g:pkgroot $INIT_CWD tsconfig.json test 'yarn build && INIT_CWD=$(pwd) && cd $PROJECT_CWD && jest --roots $INIT_CWD'",
