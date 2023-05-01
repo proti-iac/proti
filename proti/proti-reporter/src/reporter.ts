@@ -100,7 +100,7 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 		// Write execution report
 		const executionReport: any[][] = [
 			[
-				...['TestFile', 'FileName', 'Start', 'End', 'Memory', 'Success', 'Error'],
+				...['Program', 'ProgramFile', 'Start', 'End', 'Memory', 'Success', 'Error'],
 				...['TestCountPassed', 'TestCountFailing', 'TestCountPending'],
 			],
 		];
@@ -135,7 +135,7 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 				])
 			);
 			fs.writeFileSync(
-				path.join(executionReportDir, programTestsPrefix + generateHash(file)),
+				path.join(executionReportDir, `${programTestsPrefix + generateHash(file)}.csv`),
 				toCsv(report)
 			);
 
@@ -163,7 +163,10 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 					])
 				);
 				fs.writeFileSync(
-					path.join(executionReportDir, programChecksPrefix + generateHash(file)),
+					path.join(
+						executionReportDir,
+						`${programChecksPrefix + generateHash(file)}.csv`
+					),
 					toCsv(checksReport)
 				);
 			}
