@@ -1,0 +1,12 @@
+{
+    "name": "random-word-webpage-transpilation-error",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/node": "^18"
+    },
+    "dependencies": {
+        "@pulumi/aws": "^5.39.0",
+        "@pulumi/pulumi": "^3.65.1",
+        "@pulumi/random": "^4.13.0"
+    }
+}
