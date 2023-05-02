@@ -9,9 +9,8 @@ export const defaultTestCoordinatorConfig = () => ({
 });
 export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
 
-export const defaultTestRunnerConfig = (): fc.Parameters<Generator> & { waitTick: boolean } => ({
+export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> => ({
 	numRuns: 100, // Number of test iterations
-	waitTick: true, // Wait for a process tick before ending the test run
 });
 export type TestRunnerConfig = ReturnType<typeof defaultTestRunnerConfig>;
 

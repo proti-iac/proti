@@ -203,10 +203,8 @@ const runProti = async (
 	const start = now();
 	const checkDetails = await fc.check(
 		fc.asyncProperty(await testCoordinator.arbitrary, testPredicate),
-		proti.testRunner as fc.Parameters<Generator[]>
+		proti.testRunner
 	);
-	// Wait for async code to settle
-	if (proti.testRunner.waitTick) await new Promise(process.nextTick);
 	const report = fc.defaultReportMessage(checkDetails);
 
 	const end = now();
