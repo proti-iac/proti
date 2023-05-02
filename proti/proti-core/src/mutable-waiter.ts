@@ -9,14 +9,14 @@ export class MutableWaiter {
 
 	private complete?: () => void;
 
-	private waiting: Set<Promise<any>> = new Set();
+	private waiting: number = 0;
 
 	private errors: Error[] = [];
 
 	private checkCompleted(): void {
 		if (!this.complete && this.completed)
 			throw new Error('Waiter checked for completion after completing');
-		if (this.complete && this.waiting.size === 0) this.complete();
+		if (this.complete && this.waiting === 0) this.complete();
 	}
 
 	/**
@@ -24,13 +24,16 @@ export class MutableWaiter {
 	 * @param promise Promise to wait for.
 	 */
 	public wait(promise: Promise<any>): void {
+		this.waiting += 1;
 		if (!this.complete && this.completed)
 			throw new Error('Adding promise to waiter after completing. Did you forget to reset?');
-		this.waiting.add(promise);
 		promise
 			.catch((e) => this.errors.push(e))
-			.finally(() => {
-				this.waiting.delete(promise);
+			// Delay decreasing waiting counter in the event loop
+			// to ensure callbacks that create a new promise are executed before
+			.finally(() => new Promise(process.nextTick))
+			.then(() => {
+				this.waiting -= 1;
 				this.checkCompleted();
 			});
 	}
