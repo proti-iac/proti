@@ -1,0 +1,11 @@
+{
+    "name": "scaling-independent-1000",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/node": "^18"
+    },
+    "dependencies": {
+        "@pulumi/pulumi": "^3.65.1",
+        "@pulumi/aws": "^5.39.0"
+    }
+}
