@@ -40,6 +40,6 @@ const bucketPolicy = new aws.s3.BucketPolicy('bucketPolicy', {
 			},
 		],
 	},
-});
+}, { dependsOn: ownershipControls });
 
 export const url = bucket.websiteEndpoint;
