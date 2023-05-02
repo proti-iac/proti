@@ -24,6 +24,15 @@ const example = new aws.s3.BucketObject('example', {
 	websiteRedirect: 'example.com' // Fix: 'https://example.com'
 })
 
+// Set the public access policy requires updating ownership controls and disabling block public access since May 2023 
+const ownershipControls = new aws.s3.BucketOwnershipControls("ownership-controls", {
+    bucket: bucket.id,
+    rule: { objectOwnership: "ObjectWriter" }
+});
+const publicAccessBlock = new aws.s3.BucketPublicAccessBlock("public-access-block", {
+    bucket: bucket.id,
+    blockPublicAcls: false,
+});
 // Set the access policy for the bucket so all objects are readable
 const bucketPolicy = new aws.s3.BucketPolicy('bucketPolicy', {
 	bucket: bucket.bucket, // Direct dependency
