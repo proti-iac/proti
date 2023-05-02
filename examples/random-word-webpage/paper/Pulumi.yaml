@@ -1,0 +1,3 @@
+name: random-word-webpage-paper
+runtime: nodejs
+description: An AWS TypeScript Pulumi program deploying a static website to AWS S3 showing a random word

@@ -1,3 +1,0 @@
-name: s3-website-random-word-buggy
-runtime: nodejs
-description: A simple static website hosted in an AWS S3 bucket.
