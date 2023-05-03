@@ -1,5 +1,5 @@
 {
-    "name": "scaling-independent-1000",
+    "name": "scaling-dependent-50",
     "main": "index.ts",
     "devDependencies": {
         "@types/node": "^18"

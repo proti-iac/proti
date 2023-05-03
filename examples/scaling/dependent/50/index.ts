@@ -8,7 +8,7 @@ const defineBuckets = (count: number): Output<string[]> =>
 				new aws.s3.Bucket(`${count}`).id.apply((j) => [...i, j])
 		  );
 
-const buckets = defineBuckets(1000);
+const buckets = defineBuckets(50);
 
 // Export the names of the buckets
 export const bucketNames = buckets;
