@@ -9,6 +9,9 @@ import { assert } from 'typia';
 
 import type { SerializableCheckResult, SerializableResult } from '@proti/test-runner';
 
+const now: () => bigint = hrtime.bigint;
+const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
+
 export const reportDir: string = 'proti-report';
 const reportExecutionsFile: string = path.join(reportDir, 'executions.csv');
 const executionProgramsFilename: string = 'programs.csv';
@@ -43,26 +46,26 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 
 	onRunStart() {
 		if (this.startTime) throw new Error('Start time already set');
-		this.startTime = hrtime.bigint();
+		this.startTime = now();
 	}
 
 	onTestFileStart(test: Test) {
 		if (this.testFiles.has(test.path))
 			throw new Error(`Test file already in report: ${test.path}`);
-		this.testFiles.set(test.path, { startTime: process.hrtime.bigint() });
+		this.testFiles.set(test.path, { startTime: now() });
 	}
 
 	onTestFileResult(test: Test, testResult: TestResult) {
 		const fileResult = this.testFiles.get(test.path);
 		if (!fileResult) throw new Error(`Test file not in report: ${test.path}`);
 		if (fileResult.endTime) throw new Error(`Test file's end time already set: ${test.path}`);
-		fileResult.endTime = hrtime.bigint();
+		fileResult.endTime = now();
 		fileResult.result = testResult;
 	}
 
 	onRunComplete() {
 		if (this.endTime) throw new Error('End time already set');
-		this.endTime = hrtime.bigint();
+		this.endTime = now();
 		this.writeReport();
 	}
 
@@ -90,8 +93,8 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 			toCsv([
 				[
 					this.executionId,
-					this.startTime,
-					this.endTime,
+					nsToMs(this.startTime),
+					nsToMs(this.endTime),
 					Array.from(this.testFiles.keys()).map(generateHash),
 				],
 			])
@@ -108,8 +111,8 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 			executionReport.push([
 				generateHash(file),
 				file,
-				test.startTime,
-				test.endTime,
+				nsToMs(test.startTime),
+				test.endTime ? nsToMs(test.endTime) : undefined,
 				test.result?.memoryUsage,
 				test.result?.failureMessage == null,
 				test.result?.failureMessage,
