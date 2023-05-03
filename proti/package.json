@@ -24,7 +24,7 @@
     "g:test": "yarn g:pkgroot $INIT_CWD tsconfig.json test 'yarn build && INIT_CWD=$(pwd) && cd $PROJECT_CWD && jest --roots $INIT_CWD'",
     "test": "yarn build && yarn jest",
     "g:prepack": "yarn g:pkgroot $INIT_CWD package.json prepack 'yarn clean && yarn build'",
-    "prepack": "yarn g:all prepack -vitp"
+    "prepack": "yarn g:all prepack '-vip --topological-dev'"
   },
   "devDependencies": {
     "@proti/transformer": "workspace:^",
