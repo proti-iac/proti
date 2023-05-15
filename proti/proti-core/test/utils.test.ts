@@ -5,33 +5,35 @@ import { DeepPartial, deepMerge, errMsg, isObj, Obj, interceptConstructor } from
 describe('util', () => {
 	describe('deep partial', () => {
 		type T = { a: number; b: string; c: boolean[]; d: { e: boolean; f: { g: number } } };
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		let t: DeepPartial<T>;
 		it('should type check', () => {
-			({ a: 1, b: '2', c: [true, false], d: { e: true, f: { g: 3 } } }) as DeepPartial<T>;
-			({ a: 1, b: '2', c: [true, false], d: {} }) as DeepPartial<T>;
-			({ b: '2', c: [] as boolean[] }) as DeepPartial<T>;
-			({}) as DeepPartial<T>;
+			t = { a: 1, b: '2', c: [true, false], d: { e: true, f: { g: 3 } } };
+			t = { a: 1, b: '2', c: [true, false], d: {} };
+			t = { b: '2', c: [] as boolean[] };
+			t = {};
 		});
 
 		it('should alert invalid property', () => {
 			// @ts-expect-error
-			({ e: '1' }) as DeepPartial<T>;
+			t = { e: '1' };
 		});
 
 		it('should alert invalid property value type', () => {
 			// @ts-expect-error
-			({ a: '1' }) as DeepPartial<T>;
+			t = { a: '1' };
 			// @ts-expect-error
-			({ c: [1, 2] }) as DeepPartial<T>;
+			t = { c: [1, 2] };
 		});
 
 		it('should alert invalid nested property', () => {
 			// @ts-expect-error
-			({ d: { f: { gh: 1 } } }) as DeepPartial<T>;
+			t = { d: { f: { gh: 1 } } };
 		});
 
 		it('should alert invalid nested property value type', () => {
 			// @ts-expect-error
-			({ d: { f: { g: '1' } } }) as DeepPartial<T>;
+			t = { d: { f: { g: '1' } } };
 		});
 	});
 

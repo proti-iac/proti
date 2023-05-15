@@ -2,7 +2,7 @@
  * Like built-in Partial<T> type, but recursive on object properties.
  */
 export type DeepPartial<T> = {
-	[P in keyof T]: T[P] extends (infer U)[]
+	[P in keyof T]?: T[P] extends (infer U)[]
 		? DeepPartial<U>[]
 		: T[P] extends object
 		? DeepPartial<T[P]>
