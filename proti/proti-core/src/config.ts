@@ -4,8 +4,8 @@ import { Generator } from './generator';
 import { deepMerge } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
-	arbitrary: './arbitraries/empty-state-generator-arbitrary', // Test generator arbitrary to use
-	oracles: ['./oracles/unique-urns-oracle'], // Test oracles to run
+	arbitrary: '@proti/core/empty-state-generator-arbitrary', // Test generator arbitrary to use
+	oracles: ['@proti/core/unique-urns-oracle'], // Test oracles to run
 });
 export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
 
