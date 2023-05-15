@@ -4,21 +4,14 @@ ProTI automates unit testing of Pulumi TypeScript programs leveraging fuzzing an
 
 This project contains the following packages:
 
-* [jest-runner-proti]: A jest runner to run ProTI on Pulumi TypeScript programs.
-* [proti-cli]: The ProTI CLI providing a convenient interface to run ProTI.
-* [proti-core]: Implements the ProTI.
-
-## ProTI Jest Runner
-
-A Jest runner to be executed on `Pulumi.yaml` to run ProTI on the respective Pulumi TypeScript programs.
-
-## ProTI CLI
-
-Implements a ProTI's CLI providing a convenient interface to run ProTI through Jest and the ProTI Jest Runner on Pulumi TypeScript programs.
-
-## ProTI Core
-
-Implement ProTI.
+* [@proti/cli](./proti-cli/): The ProTI CLI providing a convenient interface to run ProTI. *Defunct and deprecated, use Jest instead.*
+* [@proti/core](./proti-core/): Implements the ProTI.
+* [@proti/demo](./proti-demo/): Used to test some libraries; not part of the ProTI distribution.
+* [@proti/pulumi-packages-schema](./proti-pulumi-packages-schema/): ProTI generator arbitrary and oracle based on Pulumi packages schema.
+* [@proti/reporter](./proti-reporter/): Jest reporter exporting detailed run information in CSV format that is provided by ProTI test runner.
+* [@proti/runner](./proti-runner/): Jest runner of ProTI, providing additional context to the ProTI test runner.
+* [@proti/test-runner](./proti-test-runner/): Jest test runner, running ProTI on a single Pulumi TypeScript project.
+* [@proti/transformer](./proti-transformer/): Custom TypeScript transfomer for ProTI. *Not used currently.*
 
 # Known Issues
 
