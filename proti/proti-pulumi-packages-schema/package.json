@@ -4,7 +4,10 @@
   "description": "Automated Testing for IaC Programs",
   "author": "Daniel Sokolowski <github@d.sokolowski.org>",
   "license": "Apache-2.0",
-  "main": "./bin/index.js",
+  "exports": {
+    "./arbitrary": "./bin/arbitrary.js",
+    "./oracle": "./bin/oracle.js"
+  },
   "types": "./bin/index.d.ts",
   "files": [
     "bin"
@@ -17,8 +20,12 @@
     "prepack": "yarn g:prepack"
   },
   "devDependencies": {
+    "@proti/core": "workspace:^",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
     "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "fast-check": "^3.8.1"
   }
 }
