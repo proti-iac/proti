@@ -6,6 +6,7 @@
     "proti-cli",
     "proti-core",
     "proti-demo",
+    "proti-pulumi-packages-schema",
     "proti-runner",
     "proti-test-runner",
     "proti-transformer",
