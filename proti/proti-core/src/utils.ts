@@ -30,26 +30,37 @@ export const isObj = (obj: unknown): obj is Obj => typeOf(obj) === 'object';
  * structure, including types, is a subset of `obj`'s structure.
  * @param obj Object to update.
  * @param update Update to merge onto `obj`.
+ * @param ignorePaths Ignores the properties of the update, which's paths are contained in this list.
  * @param propertyPath Current property path. Used for nicer error messages.
  * @returns Updated copy of `obj`.
  */
-export const deepMerge = <T extends Obj>(obj: T, update: DeepPartial<T>, propertyPath = ''): T => {
+export const deepMerge = <T extends Obj>(
+	obj: T,
+	update: DeepPartial<T>,
+	ignorePaths: string[] = [],
+	propertyPath = ''
+): T => {
 	if (!isObj(update)) throw new Error(`Update is not an object but ${update}`);
 	const updateProperty = (key: string) => {
 		const property = `${propertyPath}.${key}`;
+		if (ignorePaths.indexOf(property) >= 0) return [];
 		if (!(key in obj)) throw new Error(`Update property ${property} not in object`);
 		if (typeOf(obj[key]) !== typeOf(update[key]))
 			throw new Error(
 				`Update property ${property} is ${typeOf(update[key])}, not ${typeOf(obj[key])}`
 			);
 		const v = isObj(obj[key])
-			? deepMerge(obj[key] as Obj, update[key] as Obj, property)
+			? deepMerge(obj[key] as Obj, update[key] as Obj, ignorePaths, property)
 			: update[key];
 		return [key, v];
 	};
 	return {
 		...obj,
-		...Object.fromEntries(Object.keys(update).map(updateProperty)),
+		...Object.fromEntries(
+			Object.keys(update)
+				.map(updateProperty)
+				.filter((e) => e.length === 2)
+		),
 	};
 };
 

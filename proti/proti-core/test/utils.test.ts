@@ -86,7 +86,7 @@ describe('util', () => {
 			);
 		});
 
-		it('throws if update contains unknown property', () => {
+		it('throws if update contains unknown property, but not if it is on ignored path', () => {
 			const objWInvalidUpdate = fc
 				.tuple(fc.string(), objAndUpdateArb(), fc.anything())
 				.filter(([addProp, [obj]]) => !(addProp in obj))
@@ -96,11 +96,13 @@ describe('util', () => {
 					return [obj, update];
 				});
 			fc.assert(
-				fc.property(objWInvalidUpdate, ([obj, update]) =>
+				fc.property(objWInvalidUpdate, ([obj, update]) => {
+					const properties = Object.keys(update).map((p) => `.${p}`);
+					expect(() => deepMerge(obj, update, properties)).not.toThrow();
 					expect(() => deepMerge(obj, update)).toThrow(
 						/^Update property .* not in object$/
-					)
-				)
+					);
+				})
 			);
 		});
 
