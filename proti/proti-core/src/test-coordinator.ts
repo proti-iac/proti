@@ -1,7 +1,7 @@
 import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
 import { is } from 'typia';
-import { TestCoordinatorConfig } from './config';
+import { PluginsConfig, TestCoordinatorConfig } from './config';
 import { Generator, ResourceOutput } from './generator';
 import {
 	AsyncDeploymentOracle,
@@ -156,7 +156,11 @@ export class TestCoordinator {
 
 	public readonly arbitrary: Promise<fc.Arbitrary<Generator>>;
 
-	constructor(private readonly config: TestCoordinatorConfig) {
+	constructor(
+		private readonly config: TestCoordinatorConfig,
+		private readonly pluginsConfig: PluginsConfig,
+		private readonly cacheDir: string
+	) {
 		this.oracles = this.loadOracles();
 		this.arbitrary = this.loadArbitrary();
 	}
