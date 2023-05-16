@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
-import { is } from 'typia';
+import { assertEquals, is } from 'typia';
 import { PluginsConfig, TestCoordinatorConfig } from './config';
 import { Generator, ResourceOutput } from './generator';
 import {
@@ -35,6 +35,8 @@ type Fail = {
 	resource?: ResourceOracleArgs;
 	error: Error;
 };
+
+export type TestModuleInitFn = (pluginsConfig: PluginsConfig, cacheDir: string) => Promise<void>;
 
 export class TestRunCoordinator {
 	private readonly resourceOracles: ResourceOracle[] = [];
@@ -168,7 +170,13 @@ export class TestCoordinator {
 	private async loadOracles(): Promise<OracleClasses> {
 		return Promise.all(
 			this.config.oracles.map((moduleName) =>
-				import(moduleName).then((oracleModule): OracleClass => {
+				import(moduleName).then(async (oracleModule): Promise<OracleClass> => {
+					// If the module exports an `init` function, call it initilize it.
+					if (typeof oracleModule.init === 'function')
+						await assertEquals<TestModuleInitFn>(oracleModule.init)(
+							this.pluginsConfig,
+							this.cacheDir
+						);
 					const OracleConstructor = oracleModule.default;
 					const oracle = new OracleConstructor();
 					const isOracle = {
@@ -191,9 +199,15 @@ export class TestCoordinator {
 	}
 
 	private async loadArbitrary(): Promise<Arbitrary<Generator>> {
-		return import(this.config.arbitrary).then((generatorArbitraryModule) => {
+		return import(this.config.arbitrary).then(async (generatorArbitraryModule) => {
 			if (!is<fc.Arbitrary<Generator>>(this.arbitrary))
 				throw new Error(`Invalid test generator arbitrary ${this.config.arbitrary}`);
+			// If the module exports an `init` function, call it initilize it.
+			if (typeof generatorArbitraryModule.init === 'function')
+				await assertEquals<TestModuleInitFn>(generatorArbitraryModule.init)(
+					this.pluginsConfig,
+					this.cacheDir
+				);
 			return generatorArbitraryModule.default;
 		});
 	}
