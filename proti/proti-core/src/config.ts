@@ -1,7 +1,7 @@
 import * as fc from 'fast-check';
 import { assertEquals, equals } from 'typia';
 import { Generator } from './generator';
-import { deepMerge } from './utils';
+import { deepMerge, isObj } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
 	arbitrary: '@proti/core/empty-state-generator-arbitrary', // Test generator arbitrary to use
@@ -25,15 +25,25 @@ export const defaultModuleLoadingConfig = () => ({
 });
 export type ModuleLoadingConfig = ReturnType<typeof defaultModuleLoadingConfig>;
 
+export type PluginsConfig = Record<string, any>;
+export const defaultPluginsConfig = (): PluginsConfig => ({});
+
 export const defaultConfig = () => ({
 	testCoordinator: defaultTestCoordinatorConfig(),
 	testRunner: defaultTestRunnerConfig(),
 	moduleLoading: defaultModuleLoadingConfig(),
+	plugins: defaultPluginsConfig(),
 });
 export type Config = ReturnType<typeof defaultConfig>;
 
-export const config = (partialConfig: any): Config =>
-	partialConfig === undefined
-		? defaultConfig()
-		: assertEquals<Config>(deepMerge(defaultConfig(), partialConfig));
+export const config = (partialConfig: any = {}): Config => {
+	// Deep merge only handles structure present in the default config. Hence, plugins config has to be treated manually.
+	const configCandidate = deepMerge(defaultConfig(), partialConfig, ['.plugins']);
+	if (partialConfig.plugins) {
+		if (!isObj(partialConfig.plugins))
+			throw new Error(`Plugins config is not an object but ${typeof partialConfig.plugins}`);
+		configCandidate.plugins = partialConfig.plugins;
+	}
+	return assertEquals<Config>(configCandidate);
+};
 export const isConfig = (conf: any): conf is Config => equals<Config>(conf);

@@ -1,4 +1,4 @@
-import { Config } from '@proti/core';
+import { Config, DeepPartial } from '@proti/core';
 import { defaults } from 'jest-config';
 import type { JestConfigWithTsJest } from 'ts-jest';
 
@@ -20,7 +20,7 @@ const config: JestConfigWithTsJest = {
 		],
 	},
 	globals: {
-		proti: {} as Config,
+		proti: {} as DeepPartial<Config>,
 	},
 
 	injectGlobals: true, // Inject globals into each test environment, e.g., expect, otherwise explicit import is required
