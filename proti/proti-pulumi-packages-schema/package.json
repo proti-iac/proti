@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@proti/core": "workspace:^",
+    "@pulumi/pulumi": "^3.68.0",
     "fast-check": "^3.8.0",
     "typia": "^3.7.0"
   },
