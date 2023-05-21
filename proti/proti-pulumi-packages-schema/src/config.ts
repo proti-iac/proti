@@ -1,6 +1,6 @@
 import { assertEquals, equals } from 'typia';
 import { deepMerge } from '@proti/core';
-import { Schema, Schemas } from './schemas';
+import type { Schema, Schemas } from './schemas';
 
 export const defaultConfig = () => ({
 	// Schemas to load into the registry. Overrides schema files and cached and loaded schemas.
@@ -15,12 +15,20 @@ export const defaultConfig = () => ({
 });
 export type Config = ReturnType<typeof defaultConfig>;
 
-export const config = (partialConfig: any = {}): Config => {
-	// Deep merge only handles structure present in the default config. Hence, schemas have to be treated manually.
-	const configCandidate = deepMerge(defaultConfig(), partialConfig, ['.schemas']);
-	console.error(partialConfig);
-	if ('schemas' in partialConfig)
-		configCandidate.schemas = assertEquals<Schemas>(partialConfig.schemas);
-	return assertEquals<Config>(configCandidate);
+let cachedConfig: Config;
+export const config = (partialConfig: any = {}, ignoreCache: boolean = false): Config => {
+	if (cachedConfig === undefined || ignoreCache) {
+		// Deep merge only handles structure present in the default config. Hence, schemas have to be treated manually.
+		const configCandidate = deepMerge(
+			defaultConfig(),
+			partialConfig,
+			['.plugins.pulumi-packages-schema.schemas'],
+			'.plugins.pulumi-packages-schema'
+		);
+		if ('schemas' in partialConfig)
+			configCandidate.schemas = assertEquals<Schemas>(partialConfig.schemas);
+		cachedConfig = assertEquals<Config>(configCandidate);
+	}
+	return cachedConfig;
 };
 export const isConfig = (conf: any): conf is Config => equals<Config>(conf);

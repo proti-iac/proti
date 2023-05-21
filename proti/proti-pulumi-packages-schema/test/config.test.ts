@@ -2,8 +2,18 @@ import { DeepPartial, isObj, Obj } from '@proti/core';
 import { config, Config, defaultConfig } from '../src/config';
 
 describe('config', () => {
+	it('should cache config', () => {
+		const cached = config();
+		expect(config()).toBe(cached);
+	});
+
+	it('should not cache config', () => {
+		const cached = config();
+		expect(config({}, true)).not.toBe(cached);
+	});
+
 	it('should return default config', () => {
-		expect(config(undefined)).toStrictEqual(defaultConfig());
+		expect(config(undefined, true)).toStrictEqual(defaultConfig());
 	});
 
 	it.each([
@@ -16,13 +26,13 @@ describe('config', () => {
 						check((conf as Obj)[k], v as DeepPartial<Obj>)
 				  )
 				: expect(conf).toStrictEqual(partialConf);
-		check(config(partialConfig), partialConfig);
+		check(config(partialConfig, true), partialConfig);
 	});
 
 	it.each([false, null, { a: false }, { schemas: 5 }, { schemas: { a: 5 }, loadSchemas: 5 }])(
 		'should throw on invalid config %s',
 		(partialConfig) => {
-			expect(() => config(partialConfig)).toThrow();
+			expect(() => config(partialConfig, true)).toThrow();
 		}
 	);
 });
