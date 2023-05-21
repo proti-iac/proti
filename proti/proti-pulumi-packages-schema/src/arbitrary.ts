@@ -1,5 +1,6 @@
 import * as fc from 'fast-check';
-import type { Generator, ResourceOracleArgs, ResourceOutput } from '@proti/core';
+import type { Generator, ResourceOracleArgs, ResourceOutput, TestModuleInitFn } from '@proti/core';
+import { initModule } from './utils';
 
 // @TODO implement
 export default fc.constant<Generator>({
@@ -10,3 +11,5 @@ export default fc.constant<Generator>({
 		};
 	},
 });
+
+export const init: TestModuleInitFn = initModule;

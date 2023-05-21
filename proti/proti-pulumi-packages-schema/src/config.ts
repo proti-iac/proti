@@ -15,9 +15,13 @@ export const defaultConfig = () => ({
 });
 export type Config = ReturnType<typeof defaultConfig>;
 
-let cachedConfig: Config;
+let cachedConfig: Config | undefined;
+export const resetCachedConfig = () => {
+	cachedConfig = undefined;
+};
 export const config = (partialConfig: any = {}, ignoreCache: boolean = false): Config => {
-	if (cachedConfig === undefined || ignoreCache) {
+	if (ignoreCache) resetCachedConfig();
+	if (cachedConfig === undefined) {
 		// Deep merge only handles structure present in the default config. Hence, schemas have to be treated manually.
 		const configCandidate = deepMerge(
 			defaultConfig(),

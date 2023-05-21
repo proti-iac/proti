@@ -1,15 +1,15 @@
 import { DeepPartial, isObj, Obj } from '@proti/core';
-import { config, Config, defaultConfig } from '../src/config';
+import { config, Config, defaultConfig, resetCachedConfig } from '../src/config';
 
 describe('config', () => {
+	beforeEach(() => resetCachedConfig());
+
 	it('should cache config', () => {
-		const cached = config();
-		expect(config()).toBe(cached);
+		expect(config()).toBe(config());
 	});
 
 	it('should not cache config', () => {
-		const cached = config();
-		expect(config({}, true)).not.toBe(cached);
+		expect(config()).not.toBe(config({}, true));
 	});
 
 	it('should return default config', () => {

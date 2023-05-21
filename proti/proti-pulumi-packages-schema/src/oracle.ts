@@ -1,4 +1,5 @@
-import type { ResourceOracle, ResourceOracleArgs, TestResult } from '@proti/core';
+import type { ResourceOracle, ResourceOracleArgs, TestModuleInitFn, TestResult } from '@proti/core';
+import { initModule } from './utils';
 
 class PulumiPackagesSchemaOracle implements ResourceOracle {
 	name = 'Pulumi Packages Schema Types';
@@ -11,3 +12,5 @@ class PulumiPackagesSchemaOracle implements ResourceOracle {
 }
 
 export default PulumiPackagesSchemaOracle;
+
+export const init: TestModuleInitFn = initModule;
