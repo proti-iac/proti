@@ -1,16 +1,18 @@
 import { assertEquals, equals } from 'typia';
 import { deepMerge } from '@proti/core';
-import type { Schema, Schemas } from './schemas';
+import type { ResourceType, Schema, Schemas } from './schemas';
 
 export const defaultConfig = () => ({
 	// Schemas to load into the registry. Overrides schema files and cached and loaded schemas.
-	schemas: {} as Record<string, Schema>,
+	schemas: {} as Record<ResourceType, Schema>,
 	// Schema files to load into the registry. Overrides cached and loaded schemas.
 	schemaFiles: [] as string[],
-	// If true, try to load schemas that missing in the registry using `pulumi package get-schema`.
+	// If true, try to load schemas that are missing in the registry using `pulumi package get-schema`.
 	loadSchemas: true,
 	// If true, cache loaded schemas in the Jest project cache directory for subsequent executions.
 	cacheSchemas: true,
+	// Sub-directory in Jest project cache directory to cache Pulumi package schemas in.
+	cacheSubdir: 'pulumi-packages-schemas',
 	verbose: false,
 });
 export type Config = ReturnType<typeof defaultConfig>;
