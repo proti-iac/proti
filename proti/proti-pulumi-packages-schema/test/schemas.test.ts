@@ -1,3 +1,4 @@
+import type { ModuleLoader } from '@proti/core';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -11,6 +12,7 @@ import {
 } from '../src/schemas';
 
 describe('schema registry', () => {
+	const moduleLoader = new (jest.fn<ModuleLoader, []>())();
 	const conf = config();
 	const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'foo-'));
 
@@ -41,28 +43,31 @@ describe('schema registry', () => {
 	});
 
 	describe('initialization', () => {
+		const init = (reInit: boolean = false) =>
+			SchemaRegistry.initInstance(moduleLoader, conf, cacheDir, reInit);
+
 		it('should fail without initialization', () => {
 			expect(() => SchemaRegistry.getInstance()).toThrow(/registry not initialized/);
 		});
 
 		it('should initialize once', () => {
-			SchemaRegistry.initInstance(conf, cacheDir);
+			init();
 			const firstRegistry = SchemaRegistry.getInstance();
-			SchemaRegistry.initInstance(conf, cacheDir);
+			init();
 			expect(SchemaRegistry.getInstance()).toBe(firstRegistry);
 		});
 
 		it('should replace on forced re-initialization', () => {
-			SchemaRegistry.initInstance(conf, cacheDir);
+			init();
 			const firstRegistry = SchemaRegistry.getInstance();
-			SchemaRegistry.initInstance(conf, cacheDir, true);
+			init(true);
 			expect(SchemaRegistry.getInstance()).not.toBe(firstRegistry);
 		});
 	});
 
 	describe('initial schema loading', () => {
 		const init = (c: Partial<Config>) =>
-			SchemaRegistry.initInstance({ ...conf, ...c }, cacheDir, true);
+			SchemaRegistry.initInstance(moduleLoader, { ...conf, ...c }, cacheDir, true);
 		const getSchema = () => SchemaRegistry.getInstance().getSchema(schemaType);
 
 		it('loads schema from cache', () => {

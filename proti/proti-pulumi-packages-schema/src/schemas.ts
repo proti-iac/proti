@@ -1,3 +1,4 @@
+import type { ModuleLoader } from '@proti/core';
 import fs from 'fs';
 import path from 'path';
 import { assertEquals, is, TypeGuardError } from 'typia';
@@ -20,6 +21,7 @@ export class SchemaRegistry {
 	private readonly schemas = new Map<ResourceType, ResourceSchema>();
 
 	private constructor(
+		private readonly moduleLoader: ModuleLoader,
 		private readonly config: Config,
 		private readonly cacheDir: string,
 		private readonly log: (msg: string) => void
@@ -39,13 +41,20 @@ export class SchemaRegistry {
 
 	/**
 	 * (Re-)initializes registry instance. Must be called before `getInstance`.
+	 * @param moduleLoader
 	 * @param config Plugin config.
 	 * @param cacheDir Jest project cache directory.
 	 * @param forceInit If false, re-initialization is ignored. If true, a new registry replaces previous one.
 	 */
-	public static initInstance(config: Config, cacheDir: string, forceInit = false): void {
+	public static initInstance(
+		moduleLoader: ModuleLoader,
+		config: Config,
+		cacheDir: string,
+		forceInit = false
+	): void {
 		if (!SchemaRegistry.instance || forceInit)
 			SchemaRegistry.instance = new SchemaRegistry(
+				moduleLoader,
 				config,
 				path.resolve(cacheDir, config.cacheSubdir),
 				config.verbose ? console.log : () => {}

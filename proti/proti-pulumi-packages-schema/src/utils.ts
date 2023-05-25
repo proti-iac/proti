@@ -10,5 +10,5 @@ export const initModule: TestModuleInitFn = async (
 ) => {
 	const pluginConfig: unknown =
 		pluginName in pluginsConfig ? pluginsConfig[pluginName] : undefined;
-	SchemaRegistry.initInstance(config(pluginConfig), cacheDir);
+	SchemaRegistry.initInstance(moduleLoader, config(pluginConfig), cacheDir);
 };
