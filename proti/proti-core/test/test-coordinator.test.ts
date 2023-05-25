@@ -2,16 +2,19 @@ import * as path from 'path';
 import type * as fc from 'fast-check';
 import { is } from 'typia';
 import { defaultPluginsConfig, defaultTestCoordinatorConfig } from '../src/config';
-import { TestCoordinator } from '../src/test-coordinator';
+import type { ModuleLoader } from '../src/module-loader';
 import { isOracle } from '../src/oracle';
+import { TestCoordinator } from '../src/test-coordinator';
 
 describe('test coordinator', () => {
+	const moduleLoader = new (jest.fn<ModuleLoader, []>())();
 	const pluginConfig = defaultPluginsConfig();
 	const cacheDir = 'CACHE';
 
 	describe('loading test oracles', () => {
 		const coordinatorForOracles = (oracles: string[]): TestCoordinator =>
 			new TestCoordinator(
+				moduleLoader,
 				{
 					...defaultTestCoordinatorConfig(),
 					oracles,
@@ -41,9 +44,11 @@ describe('test coordinator', () => {
 		it('should init loaded oracle module', async () => {
 			// eslint-disable-next-line import/no-dynamic-require, global-require
 			const module = require(initOraclePath);
+			expect(module.initModuleLoader).toBe(undefined);
 			expect(module.initPluginsConfig).toBe(undefined);
 			expect(module.initCacheDir).toBe(undefined);
 			await coordinatorForOracles([initOraclePath]).oracles;
+			expect(module.initModuleLoader).toBe(moduleLoader);
 			expect(module.initPluginsConfig).toBe(pluginConfig);
 			expect(module.initCacheDir).toBe(cacheDir);
 		});
@@ -52,6 +57,7 @@ describe('test coordinator', () => {
 	describe('loading generator arbitrary', () => {
 		const coordinatorForArbitrary = (arbitrary: string): TestCoordinator =>
 			new TestCoordinator(
+				moduleLoader,
 				{
 					...defaultTestCoordinatorConfig(),
 					arbitrary,
@@ -75,9 +81,11 @@ describe('test coordinator', () => {
 		it('should init loaded arbitrary module', async () => {
 			// eslint-disable-next-line import/no-dynamic-require, global-require
 			const module = require(initArbPath);
+			expect(module.initModuleLoader).toBe(undefined);
 			expect(module.initPluginsConfig).toBe(undefined);
 			expect(module.initCacheDir).toBe(undefined);
 			await coordinatorForArbitrary(initArbPath).arbitrary;
+			expect(module.initModuleLoader).toBe(moduleLoader);
 			expect(module.initPluginsConfig).toBe(pluginConfig);
 			expect(module.initCacheDir).toBe(cacheDir);
 		});

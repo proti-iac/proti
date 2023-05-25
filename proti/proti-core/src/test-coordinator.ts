@@ -3,6 +3,7 @@ import { Arbitrary } from 'fast-check';
 import { assertEquals, is } from 'typia';
 import { PluginsConfig, TestCoordinatorConfig } from './config';
 import { Generator, ResourceOutput } from './generator';
+import { ModuleLoader } from './module-loader';
 import {
 	AsyncDeploymentOracle,
 	AsyncResourceOracle,
@@ -36,7 +37,11 @@ type Fail = {
 	error: Error;
 };
 
-export type TestModuleInitFn = (pluginsConfig: PluginsConfig, cacheDir: string) => Promise<void>;
+export type TestModuleInitFn = (
+	moduleLoader: ModuleLoader,
+	pluginsConfig: PluginsConfig,
+	cacheDir: string
+) => Promise<void>;
 
 export class TestRunCoordinator {
 	private readonly resourceOracles: ResourceOracle[] = [];
@@ -159,6 +164,7 @@ export class TestCoordinator {
 	public readonly arbitrary: Promise<fc.Arbitrary<Generator>>;
 
 	constructor(
+		private readonly moduleLoader: ModuleLoader,
 		private readonly config: TestCoordinatorConfig,
 		private readonly pluginsConfig: PluginsConfig,
 		private readonly cacheDir: string
@@ -174,6 +180,7 @@ export class TestCoordinator {
 					// If the module exports an `init` function, call it initilize it.
 					if (typeof oracleModule.init === 'function')
 						await assertEquals<TestModuleInitFn>(oracleModule.init)(
+							this.moduleLoader,
 							this.pluginsConfig,
 							this.cacheDir
 						);
@@ -205,6 +212,7 @@ export class TestCoordinator {
 			// If the module exports an `init` function, call it initilize it.
 			if (typeof generatorArbitraryModule.init === 'function')
 				await assertEquals<TestModuleInitFn>(generatorArbitraryModule.init)(
+					this.moduleLoader,
 					this.pluginsConfig,
 					this.cacheDir
 				);

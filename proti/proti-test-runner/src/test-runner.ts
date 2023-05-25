@@ -137,6 +137,7 @@ const runProti = async (
 	);
 
 	const testCoordinator = new TestCoordinator(
+		moduleLoader,
 		proti.testCoordinator,
 		proti.plugins,
 		config.cacheDirectory
