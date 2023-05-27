@@ -1,5 +1,5 @@
 import type { ModuleLoader } from '@proti/core';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import { Config, config } from '../src/config';
@@ -14,36 +14,39 @@ import {
 describe('schema registry', () => {
 	const moduleLoader = new (jest.fn<ModuleLoader, []>())();
 	const conf = config();
-	const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'foo-'));
+	let cacheDir: string;
 
 	const schema: ResourceSchema = {};
 	const schemaType: ResourceType = 'a';
 	const schemaPkgName: string = 'foo';
 	const schemaPkgVersion: string = '1.2.3';
 	const schemaPkg: string = `${schemaPkgName}@${schemaPkgVersion}`;
-	const schemaFileName: string = path.join(cacheDir, `${schemaPkg}.json`);
+	let schemaFileName: string;
 	const schemaFile: PkgSchema = {
 		name: schemaPkgName,
 		version: schemaPkgVersion,
 		resources: { a: schema },
 	};
 	const cachedSchema: ResourceSchema = { a: 2 };
-	const cachedSchemaFileName: string = path.join(cacheDir, conf.cacheSubdir, `bar-1.2.3.json`);
+	let cachedSchemaFileName: string;
 	const cachedSchemaFile: PkgSchema = {
 		name: 'bar',
 		version: '1.2.3',
 		resources: { a: cachedSchema },
 	};
 
-	beforeAll(() => {
-		fs.mkdirSync(path.join(cacheDir, conf.cacheSubdir));
-		fs.writeFileSync(schemaFileName, JSON.stringify(schemaFile));
-		fs.writeFileSync(cachedSchemaFileName, JSON.stringify(cachedSchemaFile));
+	beforeAll(async () => {
+		cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'foo-'));
+		schemaFileName = path.join(cacheDir, `${schemaPkg}.json`);
+		cachedSchemaFileName = path.join(cacheDir, conf.cacheSubdir, `bar-1.2.3.json`);
+		await Promise.all([
+			fs.writeFile(schemaFileName, JSON.stringify(schemaFile)),
+			fs.writeFile(cachedSchemaFileName, JSON.stringify(cachedSchemaFile)),
+			fs.mkdir(path.join(cacheDir, conf.cacheSubdir)),
+		]);
 	});
 
-	afterAll(() => {
-		fs.rmSync(cacheDir, { recursive: true });
-	});
+	afterAll(async () => fs.rm(cacheDir, { recursive: true }));
 
 	describe('initialization', () => {
 		const init = (reInit: boolean = false) =>
@@ -53,17 +56,17 @@ describe('schema registry', () => {
 			expect(() => SchemaRegistry.getInstance()).toThrow(/registry not initialized/);
 		});
 
-		it('should initialize once', () => {
-			init();
+		it('should initialize once', async () => {
+			await init();
 			const firstRegistry = SchemaRegistry.getInstance();
-			init();
+			await init();
 			expect(SchemaRegistry.getInstance()).toBe(firstRegistry);
 		});
 
-		it('should replace on forced re-initialization', () => {
-			init();
+		it('should replace on forced re-initialization', async () => {
+			await init();
 			const firstRegistry = SchemaRegistry.getInstance();
-			init(true);
+			await init(true);
 			expect(SchemaRegistry.getInstance()).not.toBe(firstRegistry);
 		});
 	});
@@ -74,67 +77,67 @@ describe('schema registry', () => {
 		const getSchema = () => SchemaRegistry.getInstance().getSchema(schemaType);
 
 		describe('initial', () => {
-			it('loads package schema from cache', () => {
-				init({});
-				expect(getSchema()).toStrictEqual(cachedSchema);
+			it('loads package schema from cache', async () => {
+				await init({});
+				expect(await getSchema()).toStrictEqual(cachedSchema);
 			});
 
-			it('does not load package schema that is not in cache', () => {
-				init({ cacheSubdir: 'other' });
-				expect(getSchema).toThrow(/not in schema registry/);
+			it('does not load package schema that is not in cache', async () => {
+				await init({ cacheSubdir: 'other' });
+				expect(getSchema).rejects.toThrow(/not in schema registry/);
 			});
 
-			it('does not load package schema that is in cache, if disabled', () => {
-				init({ loadCachedSchemas: false });
-				expect(getSchema).toThrow(/not in schema registry/);
+			it('does not load package schema that is in cache, if disabled', async () => {
+				await init({ loadCachedSchemas: false });
+				expect(getSchema).rejects.toThrow(/not in schema registry/);
 			});
 
-			it('loads package schema from schemaFiles config', () => {
-				init({ loadCachedSchemas: false, schemaFiles: [cachedSchemaFileName] });
-				expect(getSchema()).toStrictEqual(cachedSchema);
+			it('loads package schema from schemaFiles config', async () => {
+				await init({ loadCachedSchemas: false, schemaFiles: [cachedSchemaFileName] });
+				expect(await getSchema()).toStrictEqual(cachedSchema);
 			});
 
 			it('does not load package schema from invalid schemaFiles config', () => {
 				expect(() =>
 					init({ loadCachedSchemas: false, schemaFiles: ['not-existing'] })
-				).toThrow(/Failed to load Pulumi package schema file/);
+				).rejects.toThrow(/Failed to load Pulumi package schema file/);
 			});
 
-			it('schemaFiles config overrides cached schema', () => {
-				init({ schemaFiles: [schemaFileName] });
-				expect(getSchema()).toStrictEqual(schema);
+			it('schemaFiles config overrides cached schema', async () => {
+				await init({ schemaFiles: [schemaFileName] });
+				expect(await getSchema()).toStrictEqual(schema);
 			});
 
-			it('loads resource schemas from schemas config', () => {
+			it('loads resource schemas from schemas config', async () => {
 				const schemas: MutableResourceSchemas = {};
 				schemas[schemaType] = cachedSchema;
-				init({ loadCachedSchemas: false, schemas });
-				expect(getSchema()).toStrictEqual(cachedSchema);
+				await init({ loadCachedSchemas: false, schemas });
+				expect(await getSchema()).toStrictEqual(cachedSchema);
 			});
 
-			it('schemas config overrides schemaFiles config schemas', () => {
+			it('schemas config overrides schemaFiles config schemas', async () => {
 				const schemas: MutableResourceSchemas = {};
 				schemas[schemaType] = schema;
-				init({ schemaFiles: [cachedSchemaFileName], schemas });
-				expect(getSchema()).toStrictEqual(schema);
+				await init({ schemaFiles: [cachedSchemaFileName], schemas });
+				expect(await getSchema()).toStrictEqual(schema);
 			});
 		});
 
 		describe('manually load packge schema file', () => {
-			it('should load schema from file', () => {
-				init({});
-				expect(getSchema()).toStrictEqual(cachedSchema);
-				SchemaRegistry.getInstance().loadPkgSchemaFile(schemaFileName);
-				expect(getSchema()).toStrictEqual(schema);
+			it('should load schema from file', async () => {
+				await init({});
+				expect(await getSchema()).toStrictEqual(cachedSchema);
+				await SchemaRegistry.getInstance().loadPkgSchemaFile(schemaFileName);
+				expect(await getSchema()).toStrictEqual(schema);
 			});
 
-			it('should not load file twice', () => {
-				init({});
-				fs.copyFileSync(schemaFileName, `${schemaFileName}2`);
-				SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
-				fs.rmSync(`${schemaFileName}2`);
+			it('should not load file twice', async () => {
+				await init({});
+				await fs.copyFile(schemaFileName, `${schemaFileName}2`);
+				await SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
+				await fs.rm(`${schemaFileName}2`);
 				// Next line does not fail because fail was already loaded and is not loaded again
-				SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
+				await SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
 			});
 		});
 	});

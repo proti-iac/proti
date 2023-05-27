@@ -1,5 +1,5 @@
 import type { ModuleLoader } from '@proti/core';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 import { assertEquals, is, TypeGuardError } from 'typia';
 import type { Config } from './config';
@@ -26,19 +26,26 @@ export class SchemaRegistry {
 
 	private readonly resourceSchemas = new Map<ResourceType, ResourceSchema>();
 
+	public readonly inited: Promise<void>;
+
 	private constructor(
 		private readonly moduleLoader: ModuleLoader,
 		private readonly config: Config,
 		private readonly cacheDir: string,
 		private readonly log: (msg: string) => void
 	) {
+		this.inited = this.init();
+	}
+
+	private async init(): Promise<void> {
 		this.log('Initializing Pulumi packages schema registry');
-		if (config.loadCachedSchemas) {
+		if (this.config.loadCachedSchemas) {
 			this.log('Loading cached package schemas');
-			this.findCachedPkgSchemaFiles().forEach((file) => this.loadPkgSchemaFile(file));
+			const cachedSchemaFiles = await this.findCachedPkgSchemaFiles();
+			await Promise.all(cachedSchemaFiles.map((file) => this.loadPkgSchemaFile(file)));
 		}
 		this.log('Loading configured package schema files');
-		this.config.schemaFiles.forEach((file) => this.loadPkgSchemaFile(file));
+		await Promise.all(this.config.schemaFiles.map((file) => this.loadPkgSchemaFile(file)));
 		this.log('Add configured resource schemas');
 		Object.entries(this.config.schemas).forEach(([type, resourceSchema]) =>
 			this.registerSchema(type, resourceSchema)
@@ -52,12 +59,12 @@ export class SchemaRegistry {
 	 * @param cacheDir Jest project cache directory.
 	 * @param forceInit If false, re-initialization is ignored. If true, a new registry replaces previous one.
 	 */
-	public static initInstance(
+	public static async initInstance(
 		moduleLoader: ModuleLoader,
 		config: Config,
 		cacheDir: string,
 		forceInit = false
-	): void {
+	): Promise<void> {
 		if (!SchemaRegistry.instance || forceInit)
 			SchemaRegistry.instance = new SchemaRegistry(
 				moduleLoader,
@@ -66,6 +73,7 @@ export class SchemaRegistry {
 				config.verbose ? console.log : () => {}
 			);
 		else SchemaRegistry.instance.log('Skipping Pulumi packages schema registry initalization');
+		await SchemaRegistry.instance.inited;
 	}
 
 	/**
@@ -78,26 +86,27 @@ export class SchemaRegistry {
 		return SchemaRegistry.instance;
 	}
 
-	private findCachedPkgSchemaFiles(): string[] {
-		return fs.existsSync(this.cacheDir)
-			? fs.readdirSync(this.cacheDir).map((file) => path.resolve(this.cacheDir, file))
-			: [];
+	private async findCachedPkgSchemaFiles(): Promise<string[]> {
+		try {
+			const files = await fs.readdir(this.cacheDir);
+			return files.map((file) => path.resolve(this.cacheDir, file));
+		} catch (e) {
+			this.log(`Failed finding Pulumi package schemas in ${this.cacheDir}. Cause: ${e}`);
+			return [];
+		}
 	}
 
 	/**
 	 * Load als resource schemas from a Pulumi package schema stored in a JSON file into the registry.
 	 */
-	public loadPkgSchemaFile(file: string): void {
-		if (this.loadedPkgSchemaFiles.has(file)) {
-			this.log(`Skip loading already loaded Pulumi package schema from ${file}`);
-			return;
-		}
+	public async loadPkgSchemaFile(file: string): Promise<void> {
+		if (this.loadedPkgSchemaFiles.has(file))
+			return this.log(`Skip loading already loaded Pulumi package schema from ${file}`);
 		this.log(`Loading Pulumi package schema from ${file}`);
 		try {
-			const schemaFileContent = fs.readFileSync(file).toString();
-			const schemaJson = JSON.parse(schemaFileContent);
-			const schema = assertEquals<PkgSchema>(schemaJson);
-			this.loadPkgSchema(schema, file);
+			const json = JSON.parse((await fs.readFile(file)).toString());
+			const schema = assertEquals<PkgSchema>(json);
+			return this.loadPkgSchema(schema, file);
 		} catch (e: unknown) {
 			const err = 'Failed to load Pulumi package schema file';
 			const typeGuardError = is<TypeGuardError>(e) ? ' due to invalid schema format' : '';
@@ -122,7 +131,7 @@ export class SchemaRegistry {
 		this.resourceSchemas.set(type, schema);
 	}
 
-	public getSchema(type: ResourceType): ResourceSchema {
+	public async getSchema(type: ResourceType): Promise<ResourceSchema> {
 		if (this.resourceSchemas.has(type) === false)
 			throw new Error(`Schema for resource type ${type} not in schema registry`);
 		return this.resourceSchemas.get(type);
