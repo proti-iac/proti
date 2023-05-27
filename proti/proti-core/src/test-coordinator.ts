@@ -37,11 +37,13 @@ type Fail = {
 	error: Error;
 };
 
-export type TestModuleInitFn = (
-	moduleLoader: ModuleLoader,
-	pluginsConfig: PluginsConfig,
-	cacheDir: string
-) => Promise<void>;
+export type TestModuleConfig = Readonly<{
+	readonly testPath: string;
+	readonly cacheDir: string;
+	readonly moduleLoader: ModuleLoader;
+	readonly pluginsConfig: PluginsConfig;
+}>;
+export type TestModuleInitFn = (config: TestModuleConfig) => Promise<void>;
 
 export class TestRunCoordinator {
 	private readonly resourceOracles: ResourceOracle[] = [];
@@ -164,10 +166,8 @@ export class TestCoordinator {
 	public readonly arbitrary: Promise<fc.Arbitrary<Generator>>;
 
 	constructor(
-		private readonly moduleLoader: ModuleLoader,
 		private readonly config: TestCoordinatorConfig,
-		private readonly pluginsConfig: PluginsConfig,
-		private readonly cacheDir: string
+		private readonly testModuleConfig: TestModuleConfig
 	) {
 		this.oracles = this.loadOracles();
 		this.arbitrary = this.loadArbitrary();
@@ -180,9 +180,7 @@ export class TestCoordinator {
 					// If the module exports an `init` function, call it initilize it.
 					if (typeof oracleModule.init === 'function')
 						await assertEquals<TestModuleInitFn>(oracleModule.init)(
-							this.moduleLoader,
-							this.pluginsConfig,
-							this.cacheDir
+							this.testModuleConfig
 						);
 					const OracleConstructor = oracleModule.default;
 					const oracle = new OracleConstructor();
@@ -212,9 +210,7 @@ export class TestCoordinator {
 			// If the module exports an `init` function, call it initilize it.
 			if (typeof generatorArbitraryModule.init === 'function')
 				await assertEquals<TestModuleInitFn>(generatorArbitraryModule.init)(
-					this.moduleLoader,
-					this.pluginsConfig,
-					this.cacheDir
+					this.testModuleConfig
 				);
 			return generatorArbitraryModule.default;
 		});

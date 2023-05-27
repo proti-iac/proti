@@ -136,12 +136,12 @@ const runProti = async (
 		}
 	);
 
-	const testCoordinator = new TestCoordinator(
+	const testCoordinator = new TestCoordinator(proti.testCoordinator, {
 		moduleLoader,
-		proti.testCoordinator,
-		proti.plugins,
-		config.cacheDirectory
-	);
+		pluginsConfig: proti.plugins,
+		testPath,
+		cacheDir: config.cacheDirectory,
+	});
 
 	const runStats: Result[] = [];
 	let runIdCounter = 0;

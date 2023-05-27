@@ -4,23 +4,24 @@ import { is } from 'typia';
 import { defaultPluginsConfig, defaultTestCoordinatorConfig } from '../src/config';
 import type { ModuleLoader } from '../src/module-loader';
 import { isOracle } from '../src/oracle';
-import { TestCoordinator } from '../src/test-coordinator';
+import { TestCoordinator, TestModuleConfig } from '../src/test-coordinator';
 
 describe('test coordinator', () => {
-	const moduleLoader = new (jest.fn<ModuleLoader, []>())();
-	const pluginConfig = defaultPluginsConfig();
-	const cacheDir = 'CACHE';
+	const testModuleConfig: TestModuleConfig = {
+		moduleLoader: new (jest.fn<ModuleLoader, []>())(),
+		pluginsConfig: defaultPluginsConfig(),
+		testPath: 'TEST_PATH',
+		cacheDir: 'CACHE',
+	};
 
 	describe('loading test oracles', () => {
 		const coordinatorForOracles = (oracles: string[]): TestCoordinator =>
 			new TestCoordinator(
-				moduleLoader,
 				{
 					...defaultTestCoordinatorConfig(),
 					oracles,
 				},
-				pluginConfig,
-				cacheDir
+				testModuleConfig
 			);
 		const oraclePath = path.resolve(__dirname, './test-coordinator-tests/oracle');
 		const initOraclePath = path.resolve(__dirname, './test-coordinator-tests/oracle-init');
@@ -44,26 +45,20 @@ describe('test coordinator', () => {
 		it('should init loaded oracle module', async () => {
 			// eslint-disable-next-line import/no-dynamic-require, global-require
 			const module = require(initOraclePath);
-			expect(module.initModuleLoader).toBe(undefined);
-			expect(module.initPluginsConfig).toBe(undefined);
-			expect(module.initCacheDir).toBe(undefined);
+			expect(module.config).toBe(undefined);
 			await coordinatorForOracles([initOraclePath]).oracles;
-			expect(module.initModuleLoader).toBe(moduleLoader);
-			expect(module.initPluginsConfig).toBe(pluginConfig);
-			expect(module.initCacheDir).toBe(cacheDir);
+			expect(module.config).toBe(testModuleConfig);
 		});
 	});
 
 	describe('loading generator arbitrary', () => {
 		const coordinatorForArbitrary = (arbitrary: string): TestCoordinator =>
 			new TestCoordinator(
-				moduleLoader,
 				{
 					...defaultTestCoordinatorConfig(),
 					arbitrary,
 				},
-				pluginConfig,
-				cacheDir
+				testModuleConfig
 			);
 		const arbPath = path.resolve(__dirname, './test-coordinator-tests/arbitrary');
 		const initArbPath = path.resolve(__dirname, './test-coordinator-tests/arbitrary-init');
@@ -81,13 +76,9 @@ describe('test coordinator', () => {
 		it('should init loaded arbitrary module', async () => {
 			// eslint-disable-next-line import/no-dynamic-require, global-require
 			const module = require(initArbPath);
-			expect(module.initModuleLoader).toBe(undefined);
-			expect(module.initPluginsConfig).toBe(undefined);
-			expect(module.initCacheDir).toBe(undefined);
+			expect(module.config).toBe(undefined);
 			await coordinatorForArbitrary(initArbPath).arbitrary;
-			expect(module.initModuleLoader).toBe(moduleLoader);
-			expect(module.initPluginsConfig).toBe(pluginConfig);
-			expect(module.initCacheDir).toBe(cacheDir);
+			expect(module.config).toBe(testModuleConfig);
 		});
 	});
 });
