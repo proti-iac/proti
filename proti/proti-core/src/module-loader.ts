@@ -20,11 +20,11 @@ export class ModuleLoader {
 
 	private preloads: Promise<string[]>;
 
-	private modules: () => Map<string, unknown>;
+	public readonly modules: () => ReadonlyMap<string, unknown>;
 
-	private mockedModules: () => Map<string, unknown>;
+	public readonly mockedModules: () => ReadonlyMap<string, unknown>;
 
-	private isolatedModules: () => Map<string, unknown>;
+	public readonly isolatedModules: () => ReadonlyMap<string, unknown>;
 
 	constructor(
 		private projectConfig: Config.ProjectConfig,
@@ -36,11 +36,11 @@ export class ModuleLoader {
 	) {
 		this.log = config.verbose ? console.log : () => {};
 		// eslint-disable-next-line no-underscore-dangle
-		this.modules = () => (runtime as any)._moduleRegistry;
+		this.modules = () => (runtime as any)._moduleRegistry || new Map();
 		// eslint-disable-next-line no-underscore-dangle
-		this.mockedModules = () => (runtime as any)._isolatedMockRegistry;
+		this.mockedModules = () => (runtime as any)._isolatedMockRegistry || new Map();
 		// eslint-disable-next-line no-underscore-dangle
-		this.isolatedModules = () => (runtime as any)._isolatedModuleRegistry;
+		this.isolatedModules = () => (runtime as any)._isolatedModuleRegistry || new Map();
 		this.program = this.resolveProgram(programPath);
 		this.dependencyResolver = (async () =>
 			new DependencyResolver(
