@@ -5,11 +5,11 @@ import type { ResourceType, ResourceSchema, ResourceSchemas } from './schemas';
 export const defaultConfig = () => ({
 	// Sub-directory in Jest project cache directory to use for Pulumi package schemas cache.
 	cacheSubdir: 'pulumi-packages-schemas',
-	// Load schema files cached in Jest project cache directory.
+	// Load package schema files cached in Jest project cache directory.
 	loadCachedSchemas: true,
-	// Schema files to load into the registry. Overrides cached schemas.
+	// Packge schema files to load into the registry. Overrides cached schemas.
 	schemaFiles: [] as string[],
-	// Schemas to load into the registry. Overrides cached schemas and schema files.
+	// Resource schemas to load into the registry. Overrides cached schemas and schema files.
 	schemas: {} as Record<ResourceType, ResourceSchema>,
 	// If true, try to load schemas that are missing in the registry using `pulumi package get-schema`.
 	loadSchemas: true,

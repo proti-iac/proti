@@ -7,8 +7,8 @@ import {
 	ResourceType,
 	ResourceSchema,
 	SchemaRegistry,
-	ResourceSchemas,
-	SchemaFile,
+	MutableResourceSchemas,
+	PkgSchema,
 } from '../src/schemas';
 
 describe('schema registry', () => {
@@ -18,15 +18,18 @@ describe('schema registry', () => {
 
 	const schema: ResourceSchema = {};
 	const schemaType: ResourceType = 'a';
-	const schemaFileName: string = path.join(cacheDir, `foo-1.2.3.json`);
-	const schemaFile: SchemaFile = {
-		name: 'foo',
-		version: '1.2.3',
+	const schemaPkgName: string = 'foo';
+	const schemaPkgVersion: string = '1.2.3';
+	const schemaPkg: string = `${schemaPkgName}@${schemaPkgVersion}`;
+	const schemaFileName: string = path.join(cacheDir, `${schemaPkg}.json`);
+	const schemaFile: PkgSchema = {
+		name: schemaPkgName,
+		version: schemaPkgVersion,
 		resources: { a: schema },
 	};
 	const cachedSchema: ResourceSchema = { a: 2 };
 	const cachedSchemaFileName: string = path.join(cacheDir, conf.cacheSubdir, `bar-1.2.3.json`);
-	const cachedSchemaFile: SchemaFile = {
+	const cachedSchemaFile: PkgSchema = {
 		name: 'bar',
 		version: '1.2.3',
 		resources: { a: cachedSchema },
@@ -65,54 +68,74 @@ describe('schema registry', () => {
 		});
 	});
 
-	describe('initial schema loading', () => {
+	describe('schema loading', () => {
 		const init = (c: Partial<Config>) =>
 			SchemaRegistry.initInstance(moduleLoader, { ...conf, ...c }, cacheDir, true);
 		const getSchema = () => SchemaRegistry.getInstance().getSchema(schemaType);
 
-		it('loads schema from cache', () => {
-			init({});
-			expect(getSchema()).toStrictEqual(cachedSchema);
+		describe('initial', () => {
+			it('loads package schema from cache', () => {
+				init({});
+				expect(getSchema()).toStrictEqual(cachedSchema);
+			});
+
+			it('does not load package schema that is not in cache', () => {
+				init({ cacheSubdir: 'other' });
+				expect(getSchema).toThrow(/not in schema registry/);
+			});
+
+			it('does not load package schema that is in cache, if disabled', () => {
+				init({ loadCachedSchemas: false });
+				expect(getSchema).toThrow(/not in schema registry/);
+			});
+
+			it('loads package schema from schemaFiles config', () => {
+				init({ loadCachedSchemas: false, schemaFiles: [cachedSchemaFileName] });
+				expect(getSchema()).toStrictEqual(cachedSchema);
+			});
+
+			it('does not load package schema from invalid schemaFiles config', () => {
+				expect(() =>
+					init({ loadCachedSchemas: false, schemaFiles: ['not-existing'] })
+				).toThrow(/Failed to load Pulumi package schema file/);
+			});
+
+			it('schemaFiles config overrides cached schema', () => {
+				init({ schemaFiles: [schemaFileName] });
+				expect(getSchema()).toStrictEqual(schema);
+			});
+
+			it('loads resource schemas from schemas config', () => {
+				const schemas: MutableResourceSchemas = {};
+				schemas[schemaType] = cachedSchema;
+				init({ loadCachedSchemas: false, schemas });
+				expect(getSchema()).toStrictEqual(cachedSchema);
+			});
+
+			it('schemas config overrides schemaFiles config schemas', () => {
+				const schemas: MutableResourceSchemas = {};
+				schemas[schemaType] = schema;
+				init({ schemaFiles: [cachedSchemaFileName], schemas });
+				expect(getSchema()).toStrictEqual(schema);
+			});
 		});
 
-		it('does not load schema that is not in cache', () => {
-			init({ cacheSubdir: 'other' });
-			expect(getSchema).toThrow(/not in schema registry/);
-		});
+		describe('manually load packge schema file', () => {
+			it('should load schema from file', () => {
+				init({});
+				expect(getSchema()).toStrictEqual(cachedSchema);
+				SchemaRegistry.getInstance().loadPkgSchemaFile(schemaFileName);
+				expect(getSchema()).toStrictEqual(schema);
+			});
 
-		it('does not load schema that is in cache, if disabled', () => {
-			init({ loadCachedSchemas: false });
-			expect(getSchema).toThrow(/not in schema registry/);
-		});
-
-		it('loads schema from schemaFiles config', () => {
-			init({ loadCachedSchemas: false, schemaFiles: [cachedSchemaFileName] });
-			expect(getSchema()).toStrictEqual(cachedSchema);
-		});
-
-		it('does not load schema from invalid schemaFiles config', () => {
-			expect(() => init({ loadCachedSchemas: false, schemaFiles: ['not-existing'] })).toThrow(
-				/Failed to load Pulumi package schema file/
-			);
-		});
-
-		it('schemaFiles config overrides cached schema', () => {
-			init({ schemaFiles: [schemaFileName] });
-			expect(getSchema()).toStrictEqual(schema);
-		});
-
-		it('loads schema from schemas config', () => {
-			const schemas: ResourceSchemas = {};
-			schemas[schemaType] = cachedSchema;
-			init({ loadCachedSchemas: false, schemas });
-			expect(getSchema()).toStrictEqual(cachedSchema);
-		});
-
-		it('schemas config overrides schemaFiles config schema', () => {
-			const schemas: ResourceSchemas = {};
-			schemas[schemaType] = schema;
-			init({ schemaFiles: [cachedSchemaFileName], schemas });
-			expect(getSchema()).toStrictEqual(schema);
+			it('should not load file twice', () => {
+				init({});
+				fs.copyFileSync(schemaFileName, `${schemaFileName}2`);
+				SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
+				fs.rmSync(`${schemaFileName}2`);
+				// Next line does not fail because fail was already loaded and is not loaded again
+				SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
+			});
 		});
 	});
 });
