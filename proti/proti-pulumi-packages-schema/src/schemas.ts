@@ -131,7 +131,7 @@ export class SchemaRegistry {
 		if (file !== undefined) this.loadedPkgSchemaFiles.add(file);
 		const pkgSchemaVersionsLoaded = this.loadedPkgSchemas.get(schema.name);
 		if (pkgSchemaVersionsLoaded === undefined)
-			this.loadedPkgSchemas.set(schema.name, new Set(schema.version));
+			this.loadedPkgSchemas.set(schema.name, new Set([schema.version]));
 		else pkgSchemaVersionsLoaded.add(schema.version);
 	}
 
