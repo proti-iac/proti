@@ -52,6 +52,8 @@ describe('schema registry', () => {
 		resources: { a: cachedSchema },
 	};
 
+	const getSchemaErrMsg = /not in schema registry/;
+
 	beforeAll(async () => {
 		[cacheDir, projectDir, schemaPkgJsonFile, schemaPkgJsonNoVFile] = await Promise.all(
 			['foo-', 'project-', 'pkg-', 'pkg-nov-'].map((name) =>
@@ -140,12 +142,12 @@ describe('schema registry', () => {
 
 			it('does not load package schema that is not in cache', async () => {
 				await init({ cacheSubdir: 'other' });
-				expect(getSchema).rejects.toThrow(/not in schema registry/);
+				await expect(getSchema).rejects.toThrow(getSchemaErrMsg);
 			});
 
 			it('does not load package schema that is in cache, if disabled', async () => {
 				await init({ loadCachedSchemas: false });
-				expect(getSchema).rejects.toThrow(/not in schema registry/);
+				await expect(getSchema).rejects.toThrow(getSchemaErrMsg);
 			});
 
 			it('loads package schema from schemaFiles config', async () => {
@@ -153,11 +155,10 @@ describe('schema registry', () => {
 				expect(await getSchema()).toStrictEqual(cachedSchema);
 			});
 
-			it('does not load package schema from invalid schemaFiles config', () => {
+			it('does not load package schema from invalid schemaFiles config', () =>
 				expect(() =>
 					init({ loadCachedSchemas: false, schemaFiles: ['not-existing'] })
-				).rejects.toThrow(/Failed to load Pulumi package schema file/);
-			});
+				).rejects.toThrow(/Failed to load Pulumi package schema file/));
 
 			it('schemaFiles config overrides cached schema', async () => {
 				await init({ schemaFiles: [pkgSchemaFile] });
@@ -231,6 +232,60 @@ describe('schema registry', () => {
 						{}
 					);
 					expect(pulumi).toHaveBeenCalledTimes(1);
+				}
+			);
+
+			it('does not download schemas if resource schema is registered', async () => {
+				const pulumi = initPulumiMock();
+				await init({}, new Map([[schemaPkgJsonFile, null]]));
+				expect(await getSchema()).toStrictEqual(cachedSchema);
+				expect(pulumi).toHaveBeenCalledTimes(0);
+			});
+
+			it('does not download schemas if downloading disabled', async () => {
+				const pulumi = initPulumiMock();
+				await init(
+					{ loadCachedSchemas: false, downloadSchemas: false },
+					new Map([[schemaPkgJsonFile, null]])
+				);
+				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+				expect(pulumi).toHaveBeenCalledTimes(0);
+			});
+
+			it('does not find resource schema after Pulumi failed downloading package schema', async () => {
+				const pulumi = initPulumiMock();
+				await init({ loadCachedSchemas: false }, new Map([['INVALID/package.json', null]]));
+				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+				expect(pulumi).toHaveBeenCalledTimes(0);
+			});
+
+			it('does not download schemas if not existing package.json', async () => {
+				const pulumi = initPulumiMock();
+				await init({ loadCachedSchemas: false }, new Map([[schemaPkgJsonFile, null]]));
+				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+				expect(pulumi).toHaveBeenCalledTimes(1);
+			});
+
+			it.each([
+				'',
+				'INVALID JSON',
+				JSON.stringify({}),
+				JSON.stringify({
+					scripts: {
+						install: `node scripts/install-pulumi-plugin.js resorce ${schemaPkgName} v${schemaPkgVersion}`,
+					},
+				}),
+			])(
+				'does not download schemas if wrong package.json content: %s',
+				async (packageJson) => {
+					const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'baz'));
+					const file = path.join(dir, 'package.json');
+					await fs.writeFile(file, packageJson);
+					const pulumi = initPulumiMock();
+					await init({ loadCachedSchemas: false }, new Map([[file, null]]));
+					await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+					expect(pulumi).toHaveBeenCalledTimes(0);
+					await fs.rm(dir, { recursive: true });
 				}
 			);
 		});
