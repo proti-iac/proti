@@ -132,7 +132,8 @@ describe('schema registry', () => {
 				true
 			);
 		};
-		const getSchema = () => SchemaRegistry.getInstance().getSchema(schemaType);
+		const getSchema = (type: ResourceType = schemaType) =>
+			SchemaRegistry.getInstance().getSchema(type);
 
 		describe('initialization', () => {
 			it('loads package schema from cache', async () => {
@@ -296,6 +297,38 @@ describe('schema registry', () => {
 			);
 
 			it.each([
+				['does not download for loaded package', true, true, true, false],
+				['downloads for other package version', true, true, false, true],
+				['downloads for not loaded package', true, false, true, true],
+				['does not download for loaded package (no version)', false, true, true, false],
+				['does not download for other version (no version)', false, true, false, false],
+				['downloads for not loaded package (no version)', false, false, true, true],
+			])(
+				'%s found in package.json',
+				async (_, withVersion, sameName, sameVersion, download) => {
+					const pulumi = initPulumiMock();
+					const tmpFile = path.join(cacheDir, conf.cacheSubdir, 'tmp.json');
+					await fs.writeFile(
+						tmpFile,
+						JSON.stringify({
+							name: sameName ? schemaPkgName : 'balla',
+							version: sameVersion ? schemaPkgVersion : '4.5.6',
+							resources: {},
+						} as PkgSchema)
+					);
+
+					await init(
+						{},
+						new Map([[withVersion ? schemaPkgJsonFile : schemaPkgJsonNoVFile, null]])
+					);
+					await expect(() => getSchema('b')).rejects.toThrow(getSchemaErrMsg);
+					expect(pulumi).toHaveBeenCalledTimes(download ? 1 : 0);
+
+					await fs.rm(tmpFile); // Cleanup
+				}
+			);
+
+			it.each([
 				['adds', true, 1],
 				['does not add', false, 2],
 			])('%s downloaded schemas to cache', async (_, cacheDownloadedSchemas, pulumiCalls) => {
@@ -308,9 +341,9 @@ describe('schema registry', () => {
 				await expect(fs.access(cacheFile)).rejects.toThrow(); // Precondition: cache file does not exist yet
 				const modules = new Map([[schemaPkgJsonFile, null]]);
 				await init({ cacheDownloadedSchemas }, modules);
-				expect(await SchemaRegistry.getInstance().getSchema('b')).toStrictEqual(schema);
+				expect(await getSchema('b')).toStrictEqual(schema);
 				await init({ cacheDownloadedSchemas }, modules);
-				expect(await SchemaRegistry.getInstance().getSchema('b')).toStrictEqual(schema);
+				expect(await getSchema('b')).toStrictEqual(schema);
 				expect(pulumi).toHaveBeenCalledTimes(pulumiCalls);
 				if (cacheDownloadedSchemas) {
 					await expect(fs.access(cacheFile)).resolves.toBe(undefined);

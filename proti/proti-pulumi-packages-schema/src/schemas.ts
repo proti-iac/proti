@@ -178,7 +178,15 @@ export class SchemaRegistry {
 		);
 		newPkgJSONs.forEach((pkgJson) => this.processedPkgJSONs.add(pkgJson));
 		const foundPkgs = await Promise.all(newPkgJSONs.map((j) => this.findPulumiPkgInPkgJSON(j)));
-		return foundPkgs.flatMap((pkg) => (pkg === undefined ? [] : [pkg]));
+		return foundPkgs
+			.flatMap((pkg) => (pkg === undefined ? [] : [pkg]))
+			.filter(
+				// Ignore already loaded packages (if version is specified, only ignore if same version is loaded)
+				([pkgName, pkgVersion]) =>
+					!this.loadedPkgSchemas.has(pkgName) ||
+					(pkgVersion !== undefined &&
+						!this.loadedPkgSchemas.get(pkgName)?.has(pkgVersion))
+			);
 	}
 
 	private async findPulumiPkgInPkgJSON(
