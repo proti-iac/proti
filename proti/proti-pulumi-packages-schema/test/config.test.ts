@@ -18,7 +18,7 @@ describe('config', () => {
 
 	it.each([
 		{ schemas: { a: 5 } },
-		{ schemas: { a: 5 }, schemaFiles: ['a', 'b'], cacheSchemas: false },
+		{ schemas: { a: 5 }, schemaFiles: ['a', 'b'], cacheDownloadedSchemas: false },
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
 			isObj(partialConf)

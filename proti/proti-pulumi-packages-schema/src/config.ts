@@ -15,8 +15,9 @@ export const defaultConfig = () => ({
 	// using `pulumi package get-schema` when a resource schema is requested
 	// that is missing in the schema registry.
 	downloadSchemas: true,
-	// If true, cache loaded schemas in the Jest project cache directory for subsequent executions.
-	cacheSchemas: true,
+	// If true, add downloaded schemas to the Jest project cache directory
+	// for subsequent executions.
+	cacheDownloadedSchemas: true,
 	verbose: false,
 });
 export type Config = ReturnType<typeof defaultConfig>;

@@ -61,7 +61,7 @@ describe('schema registry', () => {
 			)
 		);
 		pkgSchemaFile = path.join(cacheDir, `${schemaPkg}.json`);
-		cachedPkgSchemaFile = path.join(cacheDir, conf.cacheSubdir, 'bar-1.2.3.json');
+		cachedPkgSchemaFile = path.join(cacheDir, conf.cacheSubdir, 'bar@1.2.3.json');
 		schemaPkgJsonFile = path.join(schemaPkgJsonFile, 'package.json');
 		schemaPkgJsonNoVFile = path.join(schemaPkgJsonNoVFile, 'package.json');
 		await Promise.all([
@@ -224,7 +224,10 @@ describe('schema registry', () => {
 				'downloads schemas from %smodules on missing resource schema',
 				async (_, modules, hasVersion) => {
 					const pulumi = initPulumiMock(pkgSchema);
-					await init({ loadCachedSchemas: false }, ...modules());
+					await init(
+						{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
+						...modules()
+					);
 					expect(await getSchema()).toStrictEqual(schema);
 					expect(pulumi).toHaveBeenCalledWith(
 						['package', 'get-schema', hasVersion ? schemaPkg : schemaPkgName],
@@ -252,16 +255,19 @@ describe('schema registry', () => {
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
-			it('does not find resource schema after Pulumi failed downloading package schema', async () => {
+			it('does not download schemas if package.json not existing', async () => {
 				const pulumi = initPulumiMock();
 				await init({ loadCachedSchemas: false }, new Map([['INVALID/package.json', null]]));
 				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
-			it('does not download schemas if not existing package.json', async () => {
+			it('does not find resource schema after Pulumi failed downloading package schema', async () => {
 				const pulumi = initPulumiMock();
-				await init({ loadCachedSchemas: false }, new Map([[schemaPkgJsonFile, null]]));
+				await init(
+					{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
+					new Map([[schemaPkgJsonFile, null]])
+				);
 				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
 				expect(pulumi).toHaveBeenCalledTimes(1);
 			});
@@ -288,6 +294,31 @@ describe('schema registry', () => {
 					await fs.rm(dir, { recursive: true });
 				}
 			);
+
+			it.each([
+				['adds', true, 1],
+				['does not add', false, 2],
+			])('%s downloaded schemas to cache', async (_, cacheDownloadedSchemas, pulumiCalls) => {
+				const pulumi = initPulumiMock({
+					name: 'barz',
+					version: '4.5.6',
+					resources: { b: schema },
+				});
+				const cacheFile = path.join(cacheDir, conf.cacheSubdir, 'barz@4.5.6.json');
+				await expect(fs.access(cacheFile)).rejects.toThrow(); // Precondition: cache file does not exist yet
+				const modules = new Map([[schemaPkgJsonFile, null]]);
+				await init({ cacheDownloadedSchemas }, modules);
+				expect(await SchemaRegistry.getInstance().getSchema('b')).toStrictEqual(schema);
+				await init({ cacheDownloadedSchemas }, modules);
+				expect(await SchemaRegistry.getInstance().getSchema('b')).toStrictEqual(schema);
+				expect(pulumi).toHaveBeenCalledTimes(pulumiCalls);
+				if (cacheDownloadedSchemas) {
+					await expect(fs.access(cacheFile)).resolves.toBe(undefined);
+					await fs.rm(cacheFile); // Cleanup after test
+				} else {
+					await expect(fs.access(cacheFile)).rejects.toThrow();
+				}
+			});
 		});
 	});
 });

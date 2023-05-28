@@ -155,6 +155,7 @@ export class SchemaRegistry {
 			this.downloadPackageSchema(pkgName, version).then(async (schema): Promise<void> => {
 				if (schema !== undefined) {
 					this.loadPkgSchema(schema);
+					if (this.config.cacheDownloadedSchemas) await this.cachePkgSchema(schema);
 				}
 			})
 		);
@@ -212,5 +213,12 @@ export class SchemaRegistry {
 			this.log(`Failed to download schema for Pulumi package ${pkg}. Cause: ${e}`);
 			return undefined;
 		}
+	}
+
+	private async cachePkgSchema(schema: PkgSchema): Promise<void> {
+		await fs.writeFile(
+			path.join(this.cacheDir, `${schema.name}@${schema.version}.json`),
+			JSON.stringify(schema)
+		);
 	}
 }
