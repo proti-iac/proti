@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { assertEquals, is, TypeGuardError } from 'typia';
 import type { Config } from './config';
+import { runPulumi } from './pulumi';
 
 export type ResourceType = string;
 export type ResourceSchema = any;
@@ -24,6 +25,11 @@ export class SchemaRegistry {
 
 	private readonly loadedPkgSchemaFiles: Set<string> = new Set();
 
+	/**
+	 * package.json files that are already analyzed and can be skipped when searching new resource modules.
+	 */
+	private readonly processedPkgJSONs: Set<string> = new Set();
+
 	private readonly resourceSchemas = new Map<ResourceType, ResourceSchema>();
 
 	public readonly inited: Promise<void>;
@@ -31,6 +37,7 @@ export class SchemaRegistry {
 	private constructor(
 		private readonly moduleLoader: ModuleLoader,
 		private readonly config: Config,
+		private readonly projectDir: string,
 		private readonly cacheDir: string,
 		private readonly log: (msg: string) => void
 	) {
@@ -62,6 +69,7 @@ export class SchemaRegistry {
 	public static async initInstance(
 		moduleLoader: ModuleLoader,
 		config: Config,
+		projectDir: string,
 		cacheDir: string,
 		forceInit = false
 	): Promise<void> {
@@ -69,6 +77,7 @@ export class SchemaRegistry {
 			SchemaRegistry.instance = new SchemaRegistry(
 				moduleLoader,
 				config,
+				projectDir,
 				path.resolve(cacheDir, config.cacheSubdir),
 				config.verbose ? console.log : () => {}
 			);
@@ -115,7 +124,7 @@ export class SchemaRegistry {
 	}
 
 	private loadPkgSchema(schema: PkgSchema, file?: string): void {
-		this.log(`Loading resource schemas of  package ${schema.name} version ${schema.version}`);
+		this.log(`Loading resource schemas of Pulumi package ${schema.name}@${schema.version}`);
 		Object.entries(schema.resources).forEach(([type, resourceSchema]) =>
 			this.registerSchema(type, resourceSchema)
 		);
@@ -132,8 +141,76 @@ export class SchemaRegistry {
 	}
 
 	public async getSchema(type: ResourceType): Promise<ResourceSchema> {
+		if (this.config.downloadSchemas && this.resourceSchemas.has(type) === false)
+			await this.downloadPkgSchemas();
 		if (this.resourceSchemas.has(type) === false)
 			throw new Error(`Schema for resource type ${type} not in schema registry`);
 		return this.resourceSchemas.get(type);
+	}
+
+	private async downloadPkgSchemas(): Promise<void> {
+		this.log('Trying to download schemas of new Pulumi packages');
+		const newPkgs = await this.findNewPulumiPkgs();
+		const downloads = newPkgs.map(([pkgName, version]) =>
+			this.downloadPackageSchema(pkgName, version).then(async (schema): Promise<void> => {
+				if (schema !== undefined) {
+					this.loadPkgSchema(schema);
+				}
+			})
+		);
+		await Promise.all(downloads);
+	}
+
+	/**
+	 * @returns List of new modules as tuple of name and optional version in semver format
+	 */
+	private async findNewPulumiPkgs(): Promise<
+		ReadonlyArray<readonly [string, string | undefined]>
+	> {
+		const modules = [
+			...this.moduleLoader.modules().keys(),
+			...this.moduleLoader.isolatedModules().keys(),
+			...this.moduleLoader.mockedModules().keys(),
+		];
+		const newPkgJSONs = Array.from(new Set(modules)).filter(
+			(module) => module.endsWith('/package.json') && !this.processedPkgJSONs.has(module)
+		);
+		newPkgJSONs.forEach((pkgJson) => this.processedPkgJSONs.add(pkgJson));
+		const foundPkgs = await Promise.all(newPkgJSONs.map((j) => this.findPulumiPkgInPkgJSON(j)));
+		return foundPkgs.flatMap((pkg) => (pkg === undefined ? [] : [pkg]));
+	}
+
+	private async findPulumiPkgInPkgJSON(
+		file: string
+	): Promise<readonly [string, string | undefined] | undefined> {
+		this.log(`Searching for Pulumi package in ${file}`);
+		try {
+			const content: any = JSON.parse((await fs.readFile(file)).toString());
+			if (typeof content?.scripts?.install !== 'string') return undefined;
+			const match = content.scripts.install.match(/\s+resource\s+([^\s]+)(\s+v([^\s]+))?/);
+			if (match !== null) {
+				this.log(`Found Pulumi package ${match[1]} (version: ${match[3]}) in ${file}`);
+				return [match[1], match[3]];
+			}
+		} catch (e) {
+			this.log(`Failed to find Pulumi package in ${file}. Cause: ${e}`);
+		}
+		return undefined;
+	}
+
+	private async downloadPackageSchema(
+		pkgName: string,
+		pkgVersion?: string
+	): Promise<PkgSchema | undefined> {
+		const pkg = pkgName + (pkgVersion === undefined ? '' : `@${pkgVersion}`);
+		try {
+			const result = await runPulumi(['package', 'get-schema', pkg], this.projectDir, {});
+			const schema = assertEquals<PkgSchema>(JSON.parse(result.stdout));
+			this.log(`Downloaded schema for Pulumi package ${pkg}`);
+			return schema;
+		} catch (e) {
+			this.log(`Failed to download schema for Pulumi package ${pkg}. Cause: ${e}`);
+			return undefined;
+		}
 	}
 }

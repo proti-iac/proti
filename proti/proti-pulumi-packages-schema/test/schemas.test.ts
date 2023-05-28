@@ -1,8 +1,10 @@
 import type { ModuleLoader } from '@proti/core';
 import { promises as fs } from 'fs';
+import type { CommandResult } from '@pulumi/pulumi/automation';
 import os from 'os';
 import path from 'path';
 import { Config, config } from '../src/config';
+import { runPulumi } from '../src/pulumi';
 import {
 	ResourceType,
 	ResourceSchema,
@@ -11,9 +13,11 @@ import {
 	PkgSchema,
 } from '../src/schemas';
 
+jest.mock('../src/pulumi', () => ({ runPulumi: jest.fn() }));
+
 describe('schema registry', () => {
-	const moduleLoader = new (jest.fn<ModuleLoader, []>())();
 	const conf = config();
+	let projectDir: string;
 	let cacheDir: string;
 
 	const schema: ResourceSchema = {};
@@ -21,36 +25,68 @@ describe('schema registry', () => {
 	const schemaPkgName: string = 'foo';
 	const schemaPkgVersion: string = '1.2.3';
 	const schemaPkg: string = `${schemaPkgName}@${schemaPkgVersion}`;
-	let schemaFileName: string;
-	const schemaFile: PkgSchema = {
+	let pkgSchemaFile: string;
+	const pkgSchema: PkgSchema = {
 		name: schemaPkgName,
 		version: schemaPkgVersion,
 		resources: { a: schema },
 	};
+	const schemaPkgJson = {
+		scripts: {
+			install: `node scripts/install-pulumi-plugin.js resource ${schemaPkgName} v${schemaPkgVersion}`,
+		},
+	};
+	let schemaPkgJsonFile: string;
+	const schemaPkgJsonNoV = {
+		scripts: {
+			install: `node scripts/install-pulumi-plugin.js resource ${schemaPkgName}`,
+		},
+	};
+	let schemaPkgJsonNoVFile: string;
+
 	const cachedSchema: ResourceSchema = { a: 2 };
-	let cachedSchemaFileName: string;
-	const cachedSchemaFile: PkgSchema = {
+	let cachedPkgSchemaFile: string;
+	const cachedPkgSchema: PkgSchema = {
 		name: 'bar',
 		version: '1.2.3',
 		resources: { a: cachedSchema },
 	};
 
 	beforeAll(async () => {
-		cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'foo-'));
-		schemaFileName = path.join(cacheDir, `${schemaPkg}.json`);
-		cachedSchemaFileName = path.join(cacheDir, conf.cacheSubdir, `bar-1.2.3.json`);
+		[cacheDir, projectDir, schemaPkgJsonFile, schemaPkgJsonNoVFile] = await Promise.all(
+			['foo-', 'project-', 'pkg-', 'pkg-nov-'].map((name) =>
+				fs.mkdtemp(path.join(os.tmpdir(), name))
+			)
+		);
+		pkgSchemaFile = path.join(cacheDir, `${schemaPkg}.json`);
+		cachedPkgSchemaFile = path.join(cacheDir, conf.cacheSubdir, 'bar-1.2.3.json');
+		schemaPkgJsonFile = path.join(schemaPkgJsonFile, 'package.json');
+		schemaPkgJsonNoVFile = path.join(schemaPkgJsonNoVFile, 'package.json');
 		await Promise.all([
-			fs.writeFile(schemaFileName, JSON.stringify(schemaFile)),
-			fs.writeFile(cachedSchemaFileName, JSON.stringify(cachedSchemaFile)),
+			fs.writeFile(pkgSchemaFile, JSON.stringify(pkgSchema)),
+			fs.writeFile(cachedPkgSchemaFile, JSON.stringify(cachedPkgSchema)),
+			fs.writeFile(schemaPkgJsonFile, JSON.stringify(schemaPkgJson)),
+			fs.writeFile(schemaPkgJsonNoVFile, JSON.stringify(schemaPkgJsonNoV)),
 			fs.mkdir(path.join(cacheDir, conf.cacheSubdir)),
 		]);
 	});
 
-	afterAll(async () => fs.rm(cacheDir, { recursive: true }));
+	afterAll(() =>
+		Promise.all(
+			[
+				projectDir,
+				cacheDir,
+				path.dirname(schemaPkgJsonFile),
+				path.dirname(schemaPkgJsonNoVFile),
+			].map((dir) => fs.rm(dir, { recursive: true }))
+		)
+	);
 
 	describe('initialization', () => {
-		const init = (reInit: boolean = false) =>
-			SchemaRegistry.initInstance(moduleLoader, conf, cacheDir, reInit);
+		const init = async (reInit: boolean = false) => {
+			const moduleLoader = new (jest.fn<ModuleLoader, []>())();
+			await SchemaRegistry.initInstance(moduleLoader, conf, projectDir, cacheDir, reInit);
+		};
 
 		it('should fail without initialization', () => {
 			expect(() => SchemaRegistry.getInstance()).toThrow(/registry not initialized/);
@@ -72,11 +108,31 @@ describe('schema registry', () => {
 	});
 
 	describe('schema loading', () => {
-		const init = (c: Partial<Config>) =>
-			SchemaRegistry.initInstance(moduleLoader, { ...conf, ...c }, cacheDir, true);
+		const init = async (
+			c: Partial<Config>,
+			modules: ReadonlyMap<string, any> = new Map(),
+			isolatedModules: ReadonlyMap<string, any> = new Map(),
+			mockedModules: ReadonlyMap<string, any> = new Map()
+		) => {
+			const moduleLoader = new (jest.fn<ModuleLoader, []>(
+				() =>
+					({
+						modules: () => modules,
+						isolatedModules: () => isolatedModules,
+						mockedModules: () => mockedModules,
+					} as unknown as ModuleLoader)
+			))();
+			await SchemaRegistry.initInstance(
+				moduleLoader,
+				{ ...conf, ...c },
+				projectDir,
+				cacheDir,
+				true
+			);
+		};
 		const getSchema = () => SchemaRegistry.getInstance().getSchema(schemaType);
 
-		describe('initial', () => {
+		describe('initialization', () => {
 			it('loads package schema from cache', async () => {
 				await init({});
 				expect(await getSchema()).toStrictEqual(cachedSchema);
@@ -93,7 +149,7 @@ describe('schema registry', () => {
 			});
 
 			it('loads package schema from schemaFiles config', async () => {
-				await init({ loadCachedSchemas: false, schemaFiles: [cachedSchemaFileName] });
+				await init({ loadCachedSchemas: false, schemaFiles: [cachedPkgSchemaFile] });
 				expect(await getSchema()).toStrictEqual(cachedSchema);
 			});
 
@@ -104,7 +160,7 @@ describe('schema registry', () => {
 			});
 
 			it('schemaFiles config overrides cached schema', async () => {
-				await init({ schemaFiles: [schemaFileName] });
+				await init({ schemaFiles: [pkgSchemaFile] });
 				expect(await getSchema()).toStrictEqual(schema);
 			});
 
@@ -118,27 +174,65 @@ describe('schema registry', () => {
 			it('schemas config overrides schemaFiles config schemas', async () => {
 				const schemas: MutableResourceSchemas = {};
 				schemas[schemaType] = schema;
-				await init({ schemaFiles: [cachedSchemaFileName], schemas });
+				await init({ schemaFiles: [cachedPkgSchemaFile], schemas });
 				expect(await getSchema()).toStrictEqual(schema);
 			});
 		});
 
-		describe('manually load packge schema file', () => {
+		describe('manually file loading', () => {
 			it('should load schema from file', async () => {
 				await init({});
 				expect(await getSchema()).toStrictEqual(cachedSchema);
-				await SchemaRegistry.getInstance().loadPkgSchemaFile(schemaFileName);
+				await SchemaRegistry.getInstance().loadPkgSchemaFile(pkgSchemaFile);
 				expect(await getSchema()).toStrictEqual(schema);
 			});
 
 			it('should not load file twice', async () => {
 				await init({});
-				await fs.copyFile(schemaFileName, `${schemaFileName}2`);
-				await SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
-				await fs.rm(`${schemaFileName}2`);
+				await fs.copyFile(pkgSchemaFile, `${pkgSchemaFile}2`);
+				await SchemaRegistry.getInstance().loadPkgSchemaFile(`${pkgSchemaFile}2`);
+				await fs.rm(`${pkgSchemaFile}2`);
 				// Next line does not fail because fail was already loaded and is not loaded again
-				await SchemaRegistry.getInstance().loadPkgSchemaFile(`${schemaFileName}2`);
+				await SchemaRegistry.getInstance().loadPkgSchemaFile(`${pkgSchemaFile}2`);
 			});
+		});
+
+		describe('automated downloading', () => {
+			const initPulumiMock = (downloadedSchema?: PkgSchema) => {
+				const result: CommandResult = {
+					code: 0,
+					stdout: JSON.stringify(downloadedSchema),
+					stderr: '',
+				};
+				return (runPulumi as jest.MockedFunction<typeof runPulumi>)
+					.mockReset()
+					.mockImplementation(() =>
+						schema ? Promise.resolve(result) : Promise.reject()
+					);
+			};
+
+			const e: ReadonlyMap<string, any> = new Map<string, any>();
+			it.each([
+				['', () => [new Map([[schemaPkgJsonFile, null]]), e, e], true],
+				['isolated ', () => [e, new Map([[schemaPkgJsonFile, null]]), e], true],
+				['mocked ', () => [e, e, new Map([[schemaPkgJsonFile, null]])], true],
+				['no-ver. ', () => [new Map([[schemaPkgJsonNoVFile, null]]), e, e], false],
+				['no-ver. isolated ', () => [e, new Map([[schemaPkgJsonNoVFile, null]]), e], false],
+				['no-ver. mocked ', () => [e, e, new Map([[schemaPkgJsonNoVFile, null]])], false],
+			] as ReadonlyArray<readonly [string, () => readonly [ReadonlyMap<string, any>, ReadonlyMap<string, any>, ReadonlyMap<string, any>], boolean]>)(
+				'downloads schemas from %smodules on missing resource schema',
+				async (_, modules, hasVersion) => {
+					const pulumi = initPulumiMock(pkgSchema);
+					await init({ loadCachedSchemas: false }, ...modules());
+					expect(await getSchema()).toStrictEqual(schema);
+					expect(pulumi).toHaveBeenCalledWith(
+						['package', 'get-schema', hasVersion ? schemaPkg : schemaPkgName],
+						projectDir,
+						{}
+					);
+					expect(pulumi).toHaveBeenCalledTimes(1);
+				}
+			);
 		});
 	});
 });

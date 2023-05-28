@@ -11,8 +11,10 @@ export const defaultConfig = () => ({
 	schemaFiles: [] as string[],
 	// Resource schemas to load into the registry. Overrides cached schemas and schema files.
 	schemas: {} as Record<ResourceType, ResourceSchema>,
-	// If true, try to load schemas that are missing in the registry using `pulumi package get-schema`.
-	loadSchemas: true,
+	// If true, try to download all schemas of loaded Pulumi resource packages
+	// using `pulumi package get-schema` when a resource schema is requested
+	// that is missing in the schema registry.
+	downloadSchemas: true,
 	// If true, cache loaded schemas in the Jest project cache directory for subsequent executions.
 	cacheSchemas: true,
 	verbose: false,
