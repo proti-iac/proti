@@ -6,7 +6,6 @@ This project contains the following packages:
 
 * [@proti/cli](./proti-cli/): The ProTI CLI providing a convenient interface to run ProTI. *Defunct and deprecated, use Jest instead.*
 * [@proti/core](./proti-core/): Implements the ProTI.
-* [@proti/demo](./proti-demo/): Used to test some libraries; not part of the ProTI distribution.
 * [@proti/pulumi-packages-schema](./proti-pulumi-packages-schema/): ProTI generator arbitrary and oracle based on Pulumi packages schema.
 * [@proti/reporter](./proti-reporter/): Jest reporter exporting detailed run information in CSV format that is provided by ProTI test runner.
 * [@proti/runner](./proti-runner/): Jest runner of ProTI, providing additional context to the ProTI test runner.
