@@ -5,7 +5,7 @@ import type { Config } from '@jest/types';
 import type pulumi from '@pulumi/pulumi';
 import type { Output } from '@pulumi/pulumi';
 import type pulumiOutput from '@pulumi/pulumi/output';
-import type { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
+import { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
 import * as fc from 'fast-check';
 import type { IHasteFS } from 'jest-haste-map';
 import type Runtime from 'jest-runtime';
@@ -154,8 +154,7 @@ const runProti = async (
 			outputsWaiter.reset();
 			await moduleLoader.mockModules(preloads);
 
-			let monitor: MockMonitor;
-			programPulumi.runtime.setMocks({
+			const monitor: MockMonitor = new MockMonitor({
 				newResource(args: pulumi.runtime.MockResourceArgs) {
 					const resource = {
 						urn: (monitor as any).newUrn(undefined, args.type, args.name),
@@ -169,7 +168,8 @@ const runProti = async (
 					throw new Error(msg);
 				},
 			});
-			monitor = programPulumi.runtime.getMonitor() as MockMonitor;
+			// Load MockMonitor from ProTI's Pulumi instance into the PUT's Pulumi instance
+			programPulumi.runtime.setMockOptions(monitor);
 
 			const runStart = now();
 			await Promise.race([
