@@ -1278,7 +1278,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pulumi/pulumi@npm:^3.68.0":
+"@pulumi/pulumi@npm:3.68.0":
   version: 3.68.0
   resolution: "@pulumi/pulumi@npm:3.68.0"
   dependencies:
@@ -1306,6 +1306,37 @@ __metadata:
     typescript: ~3.8.3
     upath: ^1.1.0
   checksum: cdcc51f1607375fede0dce6147bb4712e6fe1ad7586759e328bba1c979f8e2e7cdff9492112ce4c5ddbbf43850dc9e62a974e6c2df212cec5be76cbbea728bf2
+  languageName: node
+  linkType: hard
+
+"@pulumi/pulumi@patch:@pulumi/pulumi@npm%3A3.68.0#./.yarn/patches/@pulumi-pulumi-npm-3.68.0-b6a553ebb4.patch::locator=proti-monorepo%40workspace%3A.":
+  version: 3.68.0
+  resolution: "@pulumi/pulumi@patch:@pulumi/pulumi@npm%3A3.68.0#./.yarn/patches/@pulumi-pulumi-npm-3.68.0-b6a553ebb4.patch::version=3.68.0&hash=f83a58&locator=proti-monorepo%40workspace%3A."
+  dependencies:
+    "@grpc/grpc-js": ^1.3.8
+    "@logdna/tail-file": ^2.0.6
+    "@opentelemetry/api": ^1.2.0
+    "@opentelemetry/exporter-zipkin": ^1.6.0
+    "@opentelemetry/instrumentation-grpc": ^0.32.0
+    "@opentelemetry/resources": ^1.6.0
+    "@opentelemetry/sdk-trace-base": ^1.6.0
+    "@opentelemetry/sdk-trace-node": ^1.6.0
+    "@opentelemetry/semantic-conventions": ^1.6.0
+    "@pulumi/query": ^0.3.0
+    execa: ^5.1.0
+    google-protobuf: ^3.5.0
+    ini: ^2.0.0
+    js-yaml: ^3.14.0
+    minimist: ^1.2.6
+    normalize-package-data: ^2.4.0
+    read-package-tree: ^5.3.1
+    require-from-string: ^2.0.1
+    semver: ^6.1.0
+    source-map-support: ^0.5.6
+    ts-node: ^7.0.1
+    typescript: ~3.8.3
+    upath: ^1.1.0
+  checksum: 101dc6862a155c80c3eb8b25b358fdabf952ae202b67d528af0fcb2d5964d0676c13aae6b32aa766baa297fd4227d10c045ed7d2afdca625a356f2dcb34e9216
   languageName: node
   linkType: hard
 
@@ -1470,23 +1501,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:29.5.0":
-  version: 29.5.0
-  resolution: "@types/jest@npm:29.5.0"
+"@types/jest@npm:^29.5.0":
+  version: 29.5.1
+  resolution: "@types/jest@npm:29.5.1"
   dependencies:
     expect: ^29.0.0
     pretty-format: ^29.0.0
-  checksum: cd877e5c56d299cceb8bfdcbb1a77723c706750dd3c3bc47403bc3599b8faff590a3b009c68bb5b11bf7a8c77d1fb01de5e124329b4a08e65f1cdda28b0ecdb8
-  languageName: node
-  linkType: hard
-
-"@types/jest@patch:@types/jest@npm%3A29.5.0#./.yarn/patches/@types-jest-npm-29.5.0-18eef6c3cc.patch::locator=proti-monorepo%40workspace%3A.":
-  version: 29.5.0
-  resolution: "@types/jest@patch:@types/jest@npm%3A29.5.0#./.yarn/patches/@types-jest-npm-29.5.0-18eef6c3cc.patch::version=29.5.0&hash=cbb431&locator=proti-monorepo%40workspace%3A."
-  dependencies:
-    expect: ^29.0.0
-    pretty-format: ^29.0.0
-  checksum: 8bdb96b6cb2dd13a98aeb08e10faa714f30927b6393375b66f0d50c46308f2c808166b444b9d3797293450b5b6f9a5b6d8bb4f014411dbea1c9af02422388c8a
+  checksum: 0a22491dec86333c0e92b897be2c809c922a7b2b0aa5604ac369810d6b2360908b4a3f2c6892e8a237a54fa1f10ecefe0e823ec5fcb7915195af4dfe88d2197e
   languageName: node
   linkType: hard
 
@@ -4141,7 +4162,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-cli@npm:29.5.0":
+"jest-cli@npm:^29.5.0":
   version: 29.5.0
   resolution: "jest-cli@npm:29.5.0"
   dependencies:
@@ -4165,33 +4186,6 @@ __metadata:
   bin:
     jest: bin/jest.js
   checksum: 39897bbbc0f0d8a6b975ab12fd13887eaa28d92e3dee9e0173a5cb913ae8cc2ae46e090d38c6d723e84d9d6724429cd08685b4e505fa447d31ca615630c7dbba
-  languageName: node
-  linkType: hard
-
-"jest-cli@patch:jest-cli@npm%3A29.5.0#./.yarn/patches/jest-cli-npm-29.5.0-3746aee7e9.patch::locator=proti-monorepo%40workspace%3A.":
-  version: 29.5.0
-  resolution: "jest-cli@patch:jest-cli@npm%3A29.5.0#./.yarn/patches/jest-cli-npm-29.5.0-3746aee7e9.patch::version=29.5.0&hash=6e3fb7&locator=proti-monorepo%40workspace%3A."
-  dependencies:
-    "@jest/core": ^29.5.0
-    "@jest/test-result": ^29.5.0
-    "@jest/types": ^29.5.0
-    chalk: ^4.0.0
-    exit: ^0.1.2
-    graceful-fs: ^4.2.9
-    import-local: ^3.0.2
-    jest-config: ^29.5.0
-    jest-util: ^29.5.0
-    jest-validate: ^29.5.0
-    prompts: ^2.0.1
-    yargs: ^17.3.1
-  peerDependencies:
-    node-notifier: ^8.0.1 || ^9.0.0 || ^10.0.0
-  peerDependenciesMeta:
-    node-notifier:
-      optional: true
-  bin:
-    jest: bin/jest.js
-  checksum: 1ab64344d49caf7c798f72da5dd2369bb19b6d22a38d4aad9797453254f1155bbb2f9ceb1ba4e76d1f0d409d066d9d99fd3be0e68f39f2349f383f4eaaf9ba4f
   languageName: node
   linkType: hard
 
@@ -4484,7 +4478,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-runtime@npm:29.5.0":
+"jest-runtime@npm:^29.5.0":
   version: 29.5.0
   resolution: "jest-runtime@npm:29.5.0"
   dependencies:
@@ -4511,36 +4505,6 @@ __metadata:
     slash: ^3.0.0
     strip-bom: ^4.0.0
   checksum: 7af27bd9d54cf1c5735404cf8d76c6509d5610b1ec0106a21baa815c1aff15d774ce534ac2834bc440dccfe6348bae1885fd9a806f23a94ddafdc0f5bae4b09d
-  languageName: node
-  linkType: hard
-
-"jest-runtime@patch:jest-runtime@npm%3A29.5.0#./.yarn/patches/jest-runtime-npm-29.5.0-e692162e2b.patch::locator=proti-monorepo%40workspace%3A.":
-  version: 29.5.0
-  resolution: "jest-runtime@patch:jest-runtime@npm%3A29.5.0#./.yarn/patches/jest-runtime-npm-29.5.0-e692162e2b.patch::version=29.5.0&hash=d5cb4e&locator=proti-monorepo%40workspace%3A."
-  dependencies:
-    "@jest/environment": ^29.5.0
-    "@jest/fake-timers": ^29.5.0
-    "@jest/globals": ^29.5.0
-    "@jest/source-map": ^29.4.3
-    "@jest/test-result": ^29.5.0
-    "@jest/transform": ^29.5.0
-    "@jest/types": ^29.5.0
-    "@types/node": "*"
-    chalk: ^4.0.0
-    cjs-module-lexer: ^1.0.0
-    collect-v8-coverage: ^1.0.0
-    glob: ^7.1.3
-    graceful-fs: ^4.2.9
-    jest-haste-map: ^29.5.0
-    jest-message-util: ^29.5.0
-    jest-mock: ^29.5.0
-    jest-regex-util: ^29.4.3
-    jest-resolve: ^29.5.0
-    jest-snapshot: ^29.5.0
-    jest-util: ^29.5.0
-    slash: ^3.0.0
-    strip-bom: ^4.0.0
-  checksum: 5e787526019239b4dea968e1a7398658fc858dd7ad1b8586df574abd9d25139b289f11bd534352c4fd94f11bb7cacf8327130e070a033a3fbfd8c015f7c2a05f
   languageName: node
   linkType: hard
 
