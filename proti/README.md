@@ -4,7 +4,6 @@ ProTI automates unit testing of Pulumi TypeScript programs leveraging fuzzing an
 
 This project contains the following packages:
 
-* [@proti/cli](./proti-cli/): The ProTI CLI providing a convenient interface to run ProTI. *Defunct and deprecated, use Jest instead.*
 * [@proti/core](./proti-core/): Implements the ProTI.
 * [@proti/demo](./proti-demo/): Used to test some libraries; not part of the ProTI distribution.
 * [@proti/pulumi-packages-schema](./proti-pulumi-packages-schema/): ProTI generator arbitrary and oracle based on Pulumi packages schema.

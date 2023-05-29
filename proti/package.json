@@ -3,7 +3,6 @@
   "private": true,
   "packageManager": "yarn@3.3.1",
   "workspaces": [
-    "proti-cli",
     "proti-core",
     "proti-demo",
     "proti-pulumi-packages-schema",
