@@ -148,19 +148,44 @@ export class SchemaRegistry {
 		return this.resourceSchemas.get(type);
 	}
 
-	private async downloadPkgSchemas(): Promise<void> {
-		this.log('Trying to download schemas of new Pulumi packages');
-		const newPkgs = await this.findNewPulumiPkgs();
-		const downloads = newPkgs.map(([pkgName, version]) =>
-			this.downloadPackageSchema(pkgName, version).then(async (schema): Promise<void> => {
-				if (schema !== undefined) {
-					this.loadPkgSchema(schema);
-					if (this.config.cacheDownloadedSchemas) await this.cachePkgSchema(schema);
-				}
-			})
-		);
-		await Promise.all(downloads);
-	}
+	/**
+	 * Searches for package.json modules that have been loaded and tries to
+	 * extract the Pulumi package name and version, if it installs a Pulumi
+	 * resource plugin. If it finds packages that are not loaded yet, it tries
+	 * to download their package schemas and loads them.
+	 *
+	 * To avoid duplicated work and inconsistencies, this method is synchronized.
+	 * If the critical section is executing, all new calls are bundled into a single
+	 * execution that starts after the previous execution left the critical section.
+	 */
+	private readonly downloadPkgSchemas: () => Promise<void> = (() => {
+		let previousRun: Promise<void> = Promise.resolve();
+		let nextRun: Promise<void> | null = null;
+
+		const criticalSection = async () => {
+			this.log('Trying to download schemas of new Pulumi packages');
+			const newPkgs = await this.findNewPulumiPkgs();
+			const downloads = newPkgs.map(([pkgName, version]) =>
+				this.downloadPackageSchema(pkgName, version).then(async (schema): Promise<void> => {
+					if (schema !== undefined) {
+						this.loadPkgSchema(schema);
+						if (this.config.cacheDownloadedSchemas) await this.cachePkgSchema(schema);
+					}
+				})
+			);
+			await Promise.all(downloads);
+		};
+
+		return () => {
+			if (nextRun === null)
+				nextRun = previousRun.then(() => {
+					previousRun = criticalSection();
+					nextRun = null;
+					return previousRun;
+				});
+			return nextRun;
+		};
+	})();
 
 	/**
 	 * @returns List of new modules as tuple of name and optional version in semver format
@@ -201,6 +226,7 @@ export class SchemaRegistry {
 				this.log(`Found Pulumi package ${match[1]} (version: ${match[3]}) in ${file}`);
 				return [match[1], match[3]];
 			}
+			this.log(`Did not find Pulumi package in ${file}`);
 		} catch (e) {
 			this.log(`Failed to find Pulumi package in ${file}. Cause: ${e}`);
 		}
