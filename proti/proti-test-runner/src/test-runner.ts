@@ -155,7 +155,8 @@ const runProti = async (
 			await moduleLoader.mockModules(preloads);
 
 			const monitor: MockMonitor = new MockMonitor({
-				newResource(args: pulumi.runtime.MockResourceArgs) {
+				newResourceAsync: true,
+				async newResource(args: pulumi.runtime.MockResourceArgs) {
 					const resource = {
 						urn: (monitor as any).newUrn(undefined, args.type, args.name),
 						...args,

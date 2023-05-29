@@ -3,7 +3,7 @@ import { Generator, ResourceOutput } from '../../src/generator';
 import { ResourceOracleArgs } from '../../src/oracle';
 
 export default fc.constant<Generator>({
-	generateResourceOutput(resource: ResourceOracleArgs): ResourceOutput {
+	async generateResourceOutput(resource: ResourceOracleArgs): Promise<ResourceOutput> {
 		return {
 			id: resource.urn,
 			state: {},

@@ -4,7 +4,7 @@ import type { ResourceOracleArgs } from '../../src/oracle';
 import type { TestModuleConfig, TestModuleInitFn } from '../../src/test-coordinator';
 
 export default fc.constant<Generator>({
-	generateResourceOutput(resource: ResourceOracleArgs): ResourceOutput {
+	async generateResourceOutput(resource: ResourceOracleArgs): Promise<ResourceOutput> {
 		return {
 			id: resource.urn,
 			state: {},

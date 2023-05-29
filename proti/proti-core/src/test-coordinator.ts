@@ -155,7 +155,7 @@ export class TestRunCoordinator {
 		Promise.all(this.pendingTests).then(() => this.complete());
 	}
 
-	public generateResourceOutput(resource: ResourceOracleArgs): ResourceOutput {
+	public generateResourceOutput(resource: ResourceOracleArgs): Promise<ResourceOutput> {
 		return this.generator.generateResourceOutput(resource);
 	}
 }
