@@ -1,0 +1,241 @@
+diff --git a/runtime/mocks.d.ts b/runtime/mocks.d.ts
+index 8d1d0ffa28307e3079dba9a05378ed49bb8fb13b..558137faf0068eb7de672b76cdada3d4cc1dc472 100644
+--- a/runtime/mocks.d.ts
++++ b/runtime/mocks.d.ts
+@@ -27,6 +27,10 @@ export interface MockResourceArgs {
+      */
+     id?: string;
+ }
++export declare type MockResourceResult = {
++    id: string | undefined;
++    state: Record<string, any>;
++};
+ /**
+  * MockResourceArgs is used to construct call Mock
+  */
+@@ -44,37 +48,61 @@ export interface MockCallArgs {
+      */
+     provider?: string;
+ }
+-/**
+- * Mocks is an abstract class that allows subclasses to replace operations normally implemented by the Pulumi engine with
+- * their own implementations. This can be used during testing to ensure that calls to provider functions and resource constructors
+- * return predictable values.
+- */
+-export interface Mocks {
++export declare type MockCallResult = Record<string, any>;
++export interface MockCall {
++    callAsync?: false;
+     /**
+      * Mocks provider-implemented function calls (e.g. aws.get_availability_zones).
+-     *
+      * @param args: MockCallArgs
+      */
+-    call(args: MockCallArgs): Record<string, any>;
++    call(args: MockCallArgs): MockCallResult;
++}
++export interface MockCallAsync {
++    callAsync: true;
++    /**
++     * Mocks provider-implemented function calls (e.g. aws.get_availability_zones) asynchronously.
++     * @param args: MockCallArgs
++     */
++    call(args: MockCallArgs): Promise<MockCallResult>;
++}
++export interface MockResource {
++    newResourceAsync?: false;
+     /**
+      * Mocks resource construction calls. This function should return the physical identifier and the output properties
+      * for the resource being constructed.
+-
+      * @param args: MockResourceArgs
+      */
+-    newResource(args: MockResourceArgs): {
+-        id: string | undefined;
+-        state: Record<string, any>;
+-    };
++    newResource(args: MockResourceArgs): MockResourceResult;
++}
++export interface MockResourceAsync {
++    newResourceAsync: true;
++    /**
++     * Mocks resource construction calls asynchronously. This function should return the physical identifier and the output properties
++     * for the resource being constructed.
++     * @param args: MockResourceArgs
++     */
++    newResource(args: MockResourceArgs): Promise<MockResourceResult>;
+ }
++/**
++ * Mocks is an abstract class that allows subclasses to replace operations normally implemented by the Pulumi engine with
++ * their own implementations. This can be used during testing to ensure that calls to provider functions and resource constructors
++ * return predictable values.
++ */
++export declare type Mocks = MockCall & MockResource;
++/**
++ * Mocks is an abstract class that allows subclasses to replace operations normally implemented by the Pulumi engine with
++ * their own implementations. This can be used during testing to ensure that calls to provider functions and resource constructors
++ * return predictable values.
++ */
++export declare type MockImplementations = (MockCall | MockCallAsync) & (MockResource | MockResourceAsync);
+ export declare class MockMonitor {
+-    readonly mocks: Mocks;
++    readonly mocks: MockImplementations;
+     readonly resources: Map<string, {
+         urn: string;
+         id: string | undefined;
+         state: any;
+     }>;
+-    constructor(mocks: Mocks);
++    constructor(mocks: MockImplementations);
+     private newUrn;
+     invoke(req: any, callback: (err: any, innerResponse: any) => void): Promise<void>;
+     readResource(req: any, callback: (err: any, innterResponse: any) => void): Promise<void>;
+@@ -91,4 +119,4 @@ export declare class MockMonitor {
+  * @param preview: If provided, indicates whether or not the program is running a preview. Defaults to false.
+  * @param organization: If provided, the name of the Pulumi organization. Defaults to nothing.
+  */
+-export declare function setMocks(mocks: Mocks, project?: string, stack?: string, preview?: boolean, organization?: string): void;
++export declare function setMocks(mocks: MockImplementations, project?: string, stack?: string, preview?: boolean, organization?: string): void;
+diff --git a/runtime/mocks.js b/runtime/mocks.js
+index 08defb18c7fdeb5db502b19101b20bcdc48234c8..b7e3194ee7b26df14635b5cc4a10103c457df3e8 100644
+--- a/runtime/mocks.js
++++ b/runtime/mocks.js
+@@ -27,6 +27,12 @@ const settings_1 = require("./settings");
+ const provproto = require("../proto/provider_pb.js");
+ const resproto = require("../proto/resource_pb.js");
+ const structproto = require("google-protobuf/google/protobuf/struct_pb.js");
++function isMockCallAsync(mocks) {
++    return mocks.callAsync === true;
++}
++function isMockResourceAsync(mocks) {
++    return mocks.newResourceAsync === true;
++}
+ class MockMonitor {
+     constructor(mocks) {
+         this.mocks = mocks;
+@@ -55,11 +61,12 @@ class MockMonitor {
+                     callback(null, resp);
+                     return;
+                 }
+-                const result = this.mocks.call({
++                const callArgs = {
+                     token: tok,
+                     inputs: inputs,
+                     provider: req.getProvider(),
+-                });
++                };
++                const result = isMockCallAsync(this.mocks) ? yield this.mocks.call(callArgs) : this.mocks.call(callArgs);
+                 const response = new provproto.InvokeResponse();
+                 response.setReturn(structproto.Struct.fromJavaScript(yield rpc_1.serializeProperties("", result)));
+                 callback(null, response);
+@@ -76,14 +83,17 @@ class MockMonitor {
+                 if (typeof req.getCustom === "function") {
+                     custom = req.getCustom();
+                 }
+-                const result = this.mocks.newResource({
++                const resourceArgs = {
+                     type: req.getType(),
+                     name: req.getName(),
+                     inputs: rpc_1.deserializeProperties(req.getProperties()),
+                     provider: req.getProvider(),
+                     custom: custom,
+                     id: req.getId(),
+-                });
++                };
++                const result = isMockResourceAsync(this.mocks)
++                    ? yield this.mocks.newResource(resourceArgs)
++                    : this.mocks.newResource(resourceArgs);
+                 const urn = this.newUrn(req.getParent(), req.getType(), req.getName());
+                 const serializedState = yield rpc_1.serializeProperties("", result.state);
+                 this.resources.set(urn, { urn, id: result.id, state: serializedState });
+@@ -100,14 +110,17 @@ class MockMonitor {
+     registerResource(req, callback) {
+         return __awaiter(this, void 0, void 0, function* () {
+             try {
+-                const result = this.mocks.newResource({
++                const resourceArgs = {
+                     type: req.getType(),
+                     name: req.getName(),
+                     inputs: rpc_1.deserializeProperties(req.getObject()),
+                     provider: req.getProvider(),
+                     custom: req.getCustom(),
+                     id: req.getImportid(),
+-                });
++                };
++                const result = isMockResourceAsync(this.mocks)
++                    ? yield this.mocks.newResource(resourceArgs)
++                    : this.mocks.newResource(resourceArgs);
+                 const urn = this.newUrn(req.getParent(), req.getType(), req.getName());
+                 const serializedState = yield rpc_1.serializeProperties("", result.state);
+                 this.resources.set(urn, { urn, id: result.id, state: serializedState });
+diff --git a/runtime/mocks.js.map b/runtime/mocks.js.map
+index 9e2865d9dfc61fcaa5c87a70ac39f588cef0993b..a12317628d7f7a17909c8af47671cfa656d4742e 100644
+--- a/runtime/mocks.js.map
++++ b/runtime/mocks.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"mocks.js","sourceRoot":"","sources":["../../runtime/mocks.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"mocks.js","sourceRoot":"","sources":["../../runtime/mocks.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/.NETCoreApp,Version=v6.0.AssemblyAttributes.cs b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/.NETCoreApp,Version=v6.0.AssemblyAttributes.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..0e18c2b3ecb94b8678148344ce03e9ef95795428
+--- /dev/null
++++ b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/.NETCoreApp,Version=v6.0.AssemblyAttributes.cs
+@@ -0,0 +1,4 @@
++// <autogenerated />
++using System;
++using System.Reflection;
++[assembly: global::System.Runtime.Versioning.TargetFrameworkAttribute(".NETCoreApp,Version=v6.0", FrameworkDisplayName = ".NET 6.0")]
+diff --git a/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.AssemblyInfo.cs b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.AssemblyInfo.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..dab1ed1008aaf9a4bb14358b83fbf76ae04c389b
+--- /dev/null
++++ b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.AssemblyInfo.cs
+@@ -0,0 +1,22 @@
++//------------------------------------------------------------------------------
++// <auto-generated>
++//     This code was generated by a tool.
++//
++//     Changes to this file may cause incorrect behavior and will be lost if
++//     the code is regenerated.
++// </auto-generated>
++//------------------------------------------------------------------------------
++
++using System;
++using System.Reflection;
++
++[assembly: System.Reflection.AssemblyCompanyAttribute("TestProj")]
++[assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
++[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
++[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
++[assembly: System.Reflection.AssemblyProductAttribute("TestProj")]
++[assembly: System.Reflection.AssemblyTitleAttribute("TestProj")]
++[assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
++
++// Generated by the MSBuild WriteCodeFragment class.
++
+diff --git a/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.AssemblyInfoInputs.cache b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.AssemblyInfoInputs.cache
+new file mode 100644
+index 0000000000000000000000000000000000000000..5eef5b12cc383409da11785e4fd91c8554541cac
+--- /dev/null
++++ b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.AssemblyInfoInputs.cache
+@@ -0,0 +1 @@
++27c668e386ec5d30b0668568b405a044dbff8977
+diff --git a/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.GeneratedMSBuildEditorConfig.editorconfig b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.GeneratedMSBuildEditorConfig.editorconfig
+new file mode 100644
+index 0000000000000000000000000000000000000000..69609ede2ef5907cf6391749928a953b8b4b12a7
+--- /dev/null
++++ b/tests/automation/data/testproj_dotnet/obj/Debug/net6.0/TestProj.GeneratedMSBuildEditorConfig.editorconfig
+@@ -0,0 +1,11 @@
++is_global = true
++build_property.TargetFramework = net6.0
++build_property.TargetPlatformMinVersion = 
++build_property.UsingMicrosoftNETSdkWeb = 
++build_property.ProjectTypeGuids = 
++build_property.InvariantGlobalization = 
++build_property.PlatformNeutralAssembly = 
++build_property.EnforceExtendedAnalyzerRules = 
++build_property._SupportedPlatformList = Linux,macOS,Windows
++build_property.RootNamespace = TestProj
++build_property.ProjectDir = tests/automation/data/testproj_dotnet/

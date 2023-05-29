@@ -51,6 +51,7 @@
   "resolutions": {
     "@types/jest@^29.5.0": "patch:@types/jest@npm%3A29.5.0#./.yarn/patches/@types-jest-npm-29.5.0-18eef6c3cc.patch",
     "jest-cli@^29.5.0": "patch:jest-cli@npm%3A29.5.0#./.yarn/patches/jest-cli-npm-29.5.0-3746aee7e9.patch",
-    "jest-runtime@^29.5.0": "patch:jest-runtime@npm%3A29.5.0#./.yarn/patches/jest-runtime-npm-29.5.0-e692162e2b.patch"
+    "jest-runtime@^29.5.0": "patch:jest-runtime@npm%3A29.5.0#./.yarn/patches/jest-runtime-npm-29.5.0-e692162e2b.patch",
+    "@pulumi/pulumi@^3.68.0": "patch:@pulumi/pulumi@npm%3A3.68.0#./.yarn/patches/@pulumi-pulumi-npm-3.68.0-b6a553ebb4.patch"
   }
 }

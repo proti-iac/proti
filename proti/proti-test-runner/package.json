@@ -32,7 +32,7 @@
     "@jest/test-result": "^29.5.0",
     "@jest/types": "^29.5.0",
     "@proti/runner": "workspace:^",
-    "@pulumi/pulumi": "^3.61.0",
+    "@pulumi/pulumi": "^3.68.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
     "jest-haste-map": "^29.5.0",

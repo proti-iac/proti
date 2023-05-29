@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@jest/types": "^29.5.0",
-    "@pulumi/pulumi": "^3.61.0",
+    "@pulumi/pulumi": "^3.68.0",
     "@types/jest": "^29.5.0",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "^18.15.11",
