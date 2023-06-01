@@ -1311,7 +1311,7 @@ __metadata:
 
 "@pulumi/pulumi@patch:@pulumi/pulumi@npm%3A3.68.0#./.yarn/patches/@pulumi-pulumi-npm-3.68.0-b6a553ebb4.patch::locator=proti-monorepo%40workspace%3A.":
   version: 3.68.0
-  resolution: "@pulumi/pulumi@patch:@pulumi/pulumi@npm%3A3.68.0#./.yarn/patches/@pulumi-pulumi-npm-3.68.0-b6a553ebb4.patch::version=3.68.0&hash=f83a58&locator=proti-monorepo%40workspace%3A."
+  resolution: "@pulumi/pulumi@patch:@pulumi/pulumi@npm%3A3.68.0#./.yarn/patches/@pulumi-pulumi-npm-3.68.0-b6a553ebb4.patch::version=3.68.0&hash=ee73a1&locator=proti-monorepo%40workspace%3A."
   dependencies:
     "@grpc/grpc-js": ^1.3.8
     "@logdna/tail-file": ^2.0.6
@@ -1336,7 +1336,7 @@ __metadata:
     ts-node: ^7.0.1
     typescript: ~3.8.3
     upath: ^1.1.0
-  checksum: 101dc6862a155c80c3eb8b25b358fdabf952ae202b67d528af0fcb2d5964d0676c13aae6b32aa766baa297fd4227d10c045ed7d2afdca625a356f2dcb34e9216
+  checksum: ef4f68608815eae1eef7a507e936df4f207425ac779a4e325bc9cdfa216909a0f00880f0fcea801b231eb0f9ccb45a3ea4dc659f72231e908d05b5f05a148a08
   languageName: node
   linkType: hard
 
