@@ -330,29 +330,54 @@ describe('schema registry', () => {
 				}
 			);
 
-			it.each([
-				['adds', true, 1],
-				['does not add', false, 2],
-			])('%s downloaded schemas to cache', async (_, cacheDownloadedSchemas, pulumiCalls) => {
-				const pulumi = initPulumiMock({
-					name: 'barz',
-					version: '4.5.6',
-					resources: { b: schema },
+			describe('caching', () => {
+				it.each([
+					['adds', true, 1],
+					['does not add', false, 2],
+				])(
+					'%s downloaded schemas to cache',
+					async (_, cacheDownloadedSchemas, pulumiCalls) => {
+						const pulumi = initPulumiMock({
+							name: 'barz',
+							version: '4.5.6',
+							resources: { b: schema },
+						});
+						const cacheFile = path.join(cacheDir, conf.cacheSubdir, 'barz@4.5.6.json');
+						await expect(fs.access(cacheFile)).rejects.toThrow(); // Precondition: cache file does not exist yet
+						const modules = new Map([[schemaPkgJsonFile, null]]);
+
+						await init({ cacheDownloadedSchemas }, modules);
+						expect(await getSchema('b')).toStrictEqual(schema);
+						await init({ cacheDownloadedSchemas }, modules);
+						expect(await getSchema('b')).toStrictEqual(schema);
+
+						expect(pulumi).toHaveBeenCalledTimes(pulumiCalls);
+						if (cacheDownloadedSchemas) {
+							await expect(fs.access(cacheFile)).resolves.toBe(undefined);
+							await fs.rm(cacheFile); // Cleanup after test
+						} else {
+							await expect(fs.access(cacheFile)).rejects.toThrow();
+						}
+					}
+				);
+
+				it('creates cache dir if missing', async () => {
+					initPulumiMock({
+						name: 'barz',
+						version: '4.5.6',
+						resources: { b: schema },
+					});
+					const cacheSubdir = 'anotherTmp';
+					const fullCacheDir = path.join(cacheDir, cacheSubdir);
+					await expect(fs.access(fullCacheDir)).rejects.toThrow(); // Precondition: cache dir does not exist yet
+
+					const modules = new Map([[schemaPkgJsonFile, null]]);
+					await init({ cacheSubdir }, modules);
+					expect(await getSchema('b')).toStrictEqual(schema);
+
+					await expect(fs.access(fullCacheDir)).resolves.toBe(undefined);
+					await fs.rm(fullCacheDir, { recursive: true });
 				});
-				const cacheFile = path.join(cacheDir, conf.cacheSubdir, 'barz@4.5.6.json');
-				await expect(fs.access(cacheFile)).rejects.toThrow(); // Precondition: cache file does not exist yet
-				const modules = new Map([[schemaPkgJsonFile, null]]);
-				await init({ cacheDownloadedSchemas }, modules);
-				expect(await getSchema('b')).toStrictEqual(schema);
-				await init({ cacheDownloadedSchemas }, modules);
-				expect(await getSchema('b')).toStrictEqual(schema);
-				expect(pulumi).toHaveBeenCalledTimes(pulumiCalls);
-				if (cacheDownloadedSchemas) {
-					await expect(fs.access(cacheFile)).resolves.toBe(undefined);
-					await fs.rm(cacheFile); // Cleanup after test
-				} else {
-					await expect(fs.access(cacheFile)).rejects.toThrow();
-				}
 			});
 		});
 	});

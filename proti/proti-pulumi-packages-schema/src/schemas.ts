@@ -255,9 +255,8 @@ export class SchemaRegistry {
 	}
 
 	private async cachePkgSchema(schema: PkgSchema): Promise<void> {
-		await fs.writeFile(
-			path.join(this.cacheDir, `${schema.name}@${schema.version}.json`),
-			stringify(schema)
-		);
+		await fs.mkdir(this.cacheDir, { recursive: true });
+		const fileName = `${schema.name}@${schema.version}.json`;
+		await fs.writeFile(path.join(this.cacheDir, fileName), stringify(schema));
 	}
 }
