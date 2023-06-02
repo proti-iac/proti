@@ -1,6 +1,6 @@
 import { DeepPartial, isObj, Obj } from '@proti/core';
 import { config, Config, defaultConfig, resetCachedConfig } from '../src/config';
-import { ResourceSchema } from '../src/schemas';
+import type { ResourceSchema } from '../src/pulumi';
 
 describe('config', () => {
 	beforeEach(() => resetCachedConfig());

@@ -1,6 +1,6 @@
 import { assertEquals, equals } from 'typia';
 import { deepMerge } from '@proti/core';
-import type { ResourceType, ResourceSchema, ResourceSchemas } from './schemas';
+import type { ResourceType, ResourceSchema, ResourceSchemas } from './pulumi';
 
 export const defaultConfig = () => ({
 	// Sub-directory in Jest project cache directory to use for Pulumi package schemas cache.

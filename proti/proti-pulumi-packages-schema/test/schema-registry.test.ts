@@ -5,14 +5,14 @@ import os from 'os';
 import path from 'path';
 import { stringify } from 'typia';
 import { Config, config } from '../src/config';
-import { runPulumi } from '../src/pulumi';
 import {
-	ResourceType,
-	ResourceSchema,
-	SchemaRegistry,
 	MutableResourceSchemas,
 	PkgSchema,
-} from '../src/schemas';
+	ResourceType,
+	ResourceSchema,
+	runPulumi,
+} from '../src/pulumi';
+import { SchemaRegistry } from '../src/schema-registry';
 
 jest.mock('../src/pulumi', () => ({ runPulumi: jest.fn() }));
 

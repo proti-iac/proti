@@ -1,7 +1,7 @@
 import type { TestModuleConfig, TestModuleInitFn } from '@proti/core';
 import path from 'path';
 import { config } from './config';
-import { SchemaRegistry } from './schemas';
+import { SchemaRegistry } from './schema-registry';
 
 const pluginName = 'pulumi-packages-schema';
 export const initModule: TestModuleInitFn = async ({

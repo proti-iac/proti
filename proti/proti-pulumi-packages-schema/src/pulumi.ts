@@ -22,3 +22,17 @@ declare module '@pulumi/pulumi/automation' {
 	) => Promise<CommandResult>;
 }
 export const runPulumi = runPulumiCmd;
+
+export type ResourceType = string;
+export type ResourceSchema = Readonly<{
+	[unknown: string]: unknown;
+}>;
+export type MutableResourceSchemas = Record<ResourceType, ResourceSchema>;
+export type ResourceSchemas = Readonly<MutableResourceSchemas>;
+
+export type PkgSchema = Readonly<{
+	name: string;
+	version: string;
+	resources: ResourceSchemas;
+	[unknown: string]: unknown;
+}>;

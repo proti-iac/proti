@@ -3,20 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { assertParse, is, stringify, TypeGuardError } from 'typia';
 import type { Config } from './config';
-import { runPulumi } from './pulumi';
-
-export type ResourceType = string;
-export type ResourceSchema = Readonly<{
-	[unknown: string]: unknown;
-}>;
-export type MutableResourceSchemas = Record<ResourceType, ResourceSchema>;
-export type ResourceSchemas = Readonly<MutableResourceSchemas>;
-export type PkgSchema = Readonly<{
-	name: string;
-	version: string;
-	resources: ResourceSchemas;
-	[unknown: string]: unknown;
-}>;
+import { PkgSchema, ResourceSchema, ResourceType, runPulumi } from './pulumi';
 
 export class SchemaRegistry {
 	private static instance: SchemaRegistry;
