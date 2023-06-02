@@ -9,6 +9,21 @@ export type DeepPartial<T> = {
 		: T[P];
 };
 
+/**
+ * Like Readonly<T> but recursive and also making Arrays, Maps, and Sets readonly.
+ */
+export type DeepReadonly<T> = T extends Function
+	? T
+	: T extends Map<infer K, infer V>
+	? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
+	: T extends Set<infer U>
+	? ReadonlySet<DeepReadonly<U>>
+	: T extends Array<infer U>
+	? ReadonlyArray<DeepReadonly<U>>
+	: T extends object
+	? { readonly [P in keyof T]: DeepReadonly<T[P]> }
+	: T;
+
 const wrappedTypeof = (x: any) => typeof x;
 /**
  * JS types extended by 'null' and 'array'.

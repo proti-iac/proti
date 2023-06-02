@@ -1,6 +1,14 @@
 import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
-import { DeepPartial, deepMerge, errMsg, isObj, Obj, interceptConstructor } from '../src/utils';
+import {
+	DeepPartial,
+	deepMerge,
+	errMsg,
+	isObj,
+	Obj,
+	interceptConstructor,
+	DeepReadonly,
+} from '../src/utils';
 
 describe('util', () => {
 	describe('deep partial', () => {
@@ -34,6 +42,82 @@ describe('util', () => {
 		it('should alert invalid nested property value type', () => {
 			// @ts-expect-error
 			t = { d: { f: { g: '1' } } };
+		});
+	});
+
+	describe('deep readonly', () => {
+		const o = {
+			a: {
+				b: 'a',
+				c: new Set<{ d: 'e' }>(),
+				f: new Map<{ f: 'g' }, { h: 'i' }>(),
+				j: new Array<{ k: 'l' }>(),
+				m: { n: 'o' },
+			},
+		};
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		let t: DeepReadonly<typeof o>;
+
+		it('should type check', () => {
+			t = o;
+			t = o as Readonly<typeof o>;
+		});
+
+		it('should alert mutating property', () => {
+			// @ts-expect-error
+			t.a = o.a;
+		});
+
+		it('should alert mutating nested property', () => {
+			// @ts-expect-error
+			t.a.b = o.a.b;
+		});
+
+		it('should alert mutating set', () => {
+			// @ts-expect-error
+			t.a.c.add({ d: 'e' });
+		});
+
+		it('should alert mutating set element', () => {
+			Array.from(t.a.c.values()).forEach((v) => {
+				// @ts-expect-error
+				// eslint-disable-next-line no-param-reassign
+				v.d = 'e';
+			});
+		});
+
+		it('should alert mutating map', () => {
+			// @ts-expect-error
+			t.a.f.set({ f: 'g' }, { h: 'i' });
+		});
+
+		it('should alert mutating map key', () => {
+			Array.from(t.a.f.keys()).forEach((v) => {
+				// @ts-expect-error
+				// eslint-disable-next-line no-param-reassign
+				v.f = 'g';
+			});
+		});
+
+		it('should alert mutating map value', () => {
+			Array.from(t.a.f.values()).forEach((v) => {
+				// @ts-expect-error
+				// eslint-disable-next-line no-param-reassign
+				v.h = 'i';
+			});
+		});
+
+		it('should alert mutating array', () => {
+			// @ts-expect-error
+			t.a.j.push({ k: 'l' });
+		});
+
+		it('should alert mutating array value', () => {
+			Array.from(t.a.j.values()).forEach((v) => {
+				// @ts-expect-error
+				// eslint-disable-next-line no-param-reassign
+				v.k = 'l';
+			});
 		});
 	});
 
