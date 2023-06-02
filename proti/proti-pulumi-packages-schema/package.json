@@ -17,7 +17,8 @@
     "build": "yarn g:build:ttsc",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
-    "prepack": "yarn g:prepack"
+    "prepack": "yarn g:prepack",
+    "update-schema": "curl https://raw.githubusercontent.com/pulumi/pulumi/master/pkg/codegen/schema/pulumi.json | yarn json2ts > src/pulumi-generated.d.ts"
   },
   "dependencies": {
     "@proti/core": "workspace:^",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
+    "json-schema-to-typescript": "^13.0.1",
     "ttypescript": "^1.5.15",
     "typescript": "^4.9.5"
   }
