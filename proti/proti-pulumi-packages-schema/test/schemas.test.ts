@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import type { CommandResult } from '@pulumi/pulumi/automation';
 import os from 'os';
 import path from 'path';
+import { stringify } from 'typia';
 import { Config, config } from '../src/config';
 import { runPulumi } from '../src/pulumi';
 import {
@@ -65,10 +66,10 @@ describe('schema registry', () => {
 		schemaPkgJsonFile = path.join(schemaPkgJsonFile, 'package.json');
 		schemaPkgJsonNoVFile = path.join(schemaPkgJsonNoVFile, 'package.json');
 		await Promise.all([
-			fs.writeFile(pkgSchemaFile, JSON.stringify(pkgSchema)),
-			fs.writeFile(cachedPkgSchemaFile, JSON.stringify(cachedPkgSchema)),
-			fs.writeFile(schemaPkgJsonFile, JSON.stringify(schemaPkgJson)),
-			fs.writeFile(schemaPkgJsonNoVFile, JSON.stringify(schemaPkgJsonNoV)),
+			fs.writeFile(pkgSchemaFile, stringify(pkgSchema)),
+			fs.writeFile(cachedPkgSchemaFile, stringify(cachedPkgSchema)),
+			fs.writeFile(schemaPkgJsonFile, stringify(schemaPkgJson)),
+			fs.writeFile(schemaPkgJsonNoVFile, stringify(schemaPkgJsonNoV)),
 			fs.mkdir(path.join(cacheDir, conf.cacheSubdir)),
 		]);
 	});
@@ -203,7 +204,7 @@ describe('schema registry', () => {
 			const initPulumiMock = (downloadedSchema?: PkgSchema) => {
 				const result: CommandResult = {
 					code: 0,
-					stdout: JSON.stringify(downloadedSchema),
+					stdout: stringify(downloadedSchema),
 					stderr: '',
 				};
 				return (runPulumi as jest.MockedFunction<typeof runPulumi>)
@@ -276,8 +277,8 @@ describe('schema registry', () => {
 			it.each([
 				'',
 				'INVALID JSON',
-				JSON.stringify({}),
-				JSON.stringify({
+				stringify({}),
+				stringify({
 					scripts: {
 						install: `node scripts/install-pulumi-plugin.js resorce ${schemaPkgName} v${schemaPkgVersion}`,
 					},
@@ -310,11 +311,12 @@ describe('schema registry', () => {
 					const tmpFile = path.join(cacheDir, conf.cacheSubdir, 'tmp.json');
 					await fs.writeFile(
 						tmpFile,
-						JSON.stringify({
+						stringify<PkgSchema>({
 							name: sameName ? schemaPkgName : 'balla',
 							version: sameVersion ? schemaPkgVersion : '4.5.6',
-							resources: {},
-						} as PkgSchema)
+							resources: { resource: { nonSchemaField: true } },
+							nonSchemaField: true,
+						})
 					);
 
 					await init(

@@ -1,18 +1,21 @@
 import type { ModuleLoader } from '@proti/core';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { assertEquals, is, TypeGuardError } from 'typia';
+import { assertParse, is, stringify, TypeGuardError } from 'typia';
 import type { Config } from './config';
 import { runPulumi } from './pulumi';
 
 export type ResourceType = string;
-export type ResourceSchema = any;
+export type ResourceSchema = Readonly<{
+	[unknown: string]: unknown;
+}>;
 export type MutableResourceSchemas = Record<ResourceType, ResourceSchema>;
 export type ResourceSchemas = Readonly<MutableResourceSchemas>;
 export type PkgSchema = Readonly<{
 	name: string;
 	version: string;
 	resources: ResourceSchemas;
+	[unknown: string]: unknown;
 }>;
 
 export class SchemaRegistry {
@@ -113,8 +116,8 @@ export class SchemaRegistry {
 			return this.log(`Skip loading already loaded Pulumi package schema from ${file}`);
 		this.log(`Loading Pulumi package schema from ${file}`);
 		try {
-			const json = JSON.parse((await fs.readFile(file)).toString());
-			const schema = assertEquals<PkgSchema>(json);
+			const fileContent = await fs.readFile(file);
+			const schema = assertParse<PkgSchema>(fileContent.toString());
 			return this.loadPkgSchema(schema, file);
 		} catch (e: unknown) {
 			const err = 'Failed to load Pulumi package schema file';
@@ -143,9 +146,10 @@ export class SchemaRegistry {
 	public async getSchema(type: ResourceType): Promise<ResourceSchema> {
 		if (this.config.downloadSchemas && this.resourceSchemas.has(type) === false)
 			await this.downloadPkgSchemas();
-		if (this.resourceSchemas.has(type) === false)
+		const schema = this.resourceSchemas.get(type);
+		if (schema === undefined)
 			throw new Error(`Schema for resource type ${type} not in schema registry`);
-		return this.resourceSchemas.get(type);
+		return schema;
 	}
 
 	/**
@@ -219,8 +223,9 @@ export class SchemaRegistry {
 	): Promise<readonly [string, string | undefined] | undefined> {
 		this.log(`Searching for Pulumi package in ${file}`);
 		try {
-			const content: any = JSON.parse((await fs.readFile(file)).toString());
-			if (typeof content?.scripts?.install !== 'string') return undefined;
+			const content = assertParse<Readonly<{ scripts: Readonly<{ install: string }> }>>(
+				(await fs.readFile(file)).toString()
+			);
 			const match = content.scripts.install.match(/\s+resource\s+([^\s]+)(\s+v([^\s]+))?/);
 			if (match !== null) {
 				this.log(`Found Pulumi package ${match[1]} (version: ${match[3]}) in ${file}`);
@@ -240,7 +245,7 @@ export class SchemaRegistry {
 		const pkg = pkgName + (pkgVersion === undefined ? '' : `@${pkgVersion}`);
 		try {
 			const result = await runPulumi(['package', 'get-schema', pkg], this.projectDir, {});
-			const schema = assertEquals<PkgSchema>(JSON.parse(result.stdout));
+			const schema = assertParse<PkgSchema>(result.stdout);
 			this.log(`Downloaded schema for Pulumi package ${pkg}`);
 			return schema;
 		} catch (e) {
@@ -252,7 +257,7 @@ export class SchemaRegistry {
 	private async cachePkgSchema(schema: PkgSchema): Promise<void> {
 		await fs.writeFile(
 			path.join(this.cacheDir, `${schema.name}@${schema.version}.json`),
-			JSON.stringify(schema)
+			stringify(schema)
 		);
 	}
 }

@@ -1,5 +1,6 @@
 import { DeepPartial, isObj, Obj } from '@proti/core';
 import { config, Config, defaultConfig, resetCachedConfig } from '../src/config';
+import { ResourceSchema } from '../src/schemas';
 
 describe('config', () => {
 	beforeEach(() => resetCachedConfig());
@@ -16,9 +17,10 @@ describe('config', () => {
 		expect(config(undefined, true)).toStrictEqual(defaultConfig());
 	});
 
+	const resource: ResourceSchema = { b: 5 };
 	it.each([
-		{ schemas: { a: 5 } },
-		{ schemas: { a: 5 }, schemaFiles: ['a', 'b'], cacheDownloadedSchemas: false },
+		{ schemas: { a: resource } },
+		{ schemas: { a: resource }, schemaFiles: ['a', 'b'], cacheDownloadedSchemas: false },
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
 			isObj(partialConf)
