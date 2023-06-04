@@ -115,14 +115,18 @@ export class SchemaRegistry {
 
 	private loadPkgSchema(schema: PkgSchema, file?: string): void {
 		this.log(`Loading resource schemas of Pulumi package ${schema.name}@${schema.version}`);
-		Object.entries(schema.resources).forEach(([type, resourceSchema]) =>
-			this.registerSchema(type, resourceSchema)
-		);
+		if (schema.resources !== undefined)
+			Object.entries(schema.resources).forEach(([type, resourceSchema]) =>
+				this.registerSchema(type, resourceSchema)
+			);
 		if (file !== undefined) this.loadedPkgSchemaFiles.add(file);
 		const pkgSchemaVersionsLoaded = this.loadedPkgSchemas.get(schema.name);
 		if (pkgSchemaVersionsLoaded === undefined)
-			this.loadedPkgSchemas.set(schema.name, new Set([schema.version]));
-		else pkgSchemaVersionsLoaded.add(schema.version);
+			this.loadedPkgSchemas.set(
+				schema.name,
+				new Set(schema.version === undefined ? [] : [schema.version])
+			);
+		else if (schema.version !== undefined) pkgSchemaVersionsLoaded.add(schema.version);
 	}
 
 	private registerSchema(type: ResourceType, schema: ResourceSchema): void {

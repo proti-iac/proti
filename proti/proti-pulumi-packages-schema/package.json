@@ -5,8 +5,10 @@
   "author": "Daniel Sokolowski <github@d.sokolowski.org>",
   "license": "Apache-2.0",
   "exports": {
+    ".": "./bin/index.js",
     "./arbitrary": "./bin/arbitrary.js",
-    "./oracle": "./bin/oracle.js"
+    "./oracle": "./bin/oracle.js",
+    "./pulumi-package-schema": "./bin/pulumi-package-metaschema.js"
   },
   "types": "./bin/index.d.ts",
   "files": [
@@ -29,7 +31,6 @@
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
-    "json-schema-to-typescript": "^13.0.1",
     "ttypescript": "^1.5.15",
     "typescript": "^4.9.5"
   }

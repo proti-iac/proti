@@ -1,4 +1,11 @@
+import { DeepReadonly } from '@proti/core';
 import { runPulumiCmd } from '@pulumi/pulumi/automation';
+import {
+	FunctionDefinition,
+	PropertyDefinition,
+	PulumiPackageMetaschema,
+	ResourceDefinition,
+} from './pulumi-package-metaschema';
 
 // Pulumi hides the runPulumiCmd export using @internal. To use it here, we provide the type declaration manually.
 declare module '@pulumi/pulumi/automation' {
@@ -24,15 +31,9 @@ declare module '@pulumi/pulumi/automation' {
 export const runPulumi = runPulumiCmd;
 
 export type ResourceType = string;
-export type ResourceSchema = Readonly<{
-	[unknown: string]: unknown;
-}>;
+export type ResourceSchema = DeepReadonly<ResourceDefinition>;
 export type MutableResourceSchemas = Record<ResourceType, ResourceSchema>;
 export type ResourceSchemas = Readonly<MutableResourceSchemas>;
-
-export type PkgSchema = Readonly<{
-	name: string;
-	version: string;
-	resources: ResourceSchemas;
-	[unknown: string]: unknown;
-}>;
+export type FunctionSchema = DeepReadonly<FunctionDefinition>;
+export type PropertySchema = DeepReadonly<PropertyDefinition>;
+export type PkgSchema = DeepReadonly<PulumiPackageMetaschema>;
