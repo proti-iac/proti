@@ -1117,7 +1117,7 @@ __metadata:
     js-yaml: ^4.1.0
     ttypescript: ^1.5.15
     typescript: ^4.9.5
-    typia: ^3.7.0
+    typia: ^4.0.0
   languageName: unknown
   linkType: soft
 
@@ -1132,7 +1132,7 @@ __metadata:
     fast-check: ^3.8.0
     ttypescript: ^1.5.15
     typescript: ^4.9.5
-    typia: ^3.7.0
+    typia: ^4.0.0
   languageName: unknown
   linkType: soft
 
@@ -1149,7 +1149,7 @@ __metadata:
     ts-jest: ^29.1.0
     ttypescript: ^1.5.15
     typescript: ^4.9.5
-    typia: ^3.8.3
+    typia: ^4.0.0
   languageName: unknown
   linkType: soft
 
@@ -5581,7 +5581,7 @@ __metadata:
     tst-reflect-transformer: alpha
     ttypescript: ^1.5.15
     typescript: ^4.9.5
-    typia: ^3.7.0
+    typia: ^4.0.0
   languageName: unknown
   linkType: soft
 
@@ -6549,22 +6549,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typia@npm:^3.7.0":
-  version: 3.7.0
-  resolution: "typia@npm:3.7.0"
-  dependencies:
-    randexp: ^0.5.3
-  peerDependencies:
-    typescript: "*"
-  bin:
-    typia: lib/executable/typia.js
-  checksum: 0c50fd7d1f31733b516ca4de5d57c439dc5d8d993affdae52c29c1fb1b57282de2f4e70240a6d80970f5283a71b5c6cab03cc1eadd67db1cc49a01518e3b518a
-  languageName: node
-  linkType: hard
-
-"typia@npm:^3.8.3":
-  version: 3.8.3
-  resolution: "typia@npm:3.8.3"
+"typia@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "typia@npm:4.0.0"
   dependencies:
     commander: ^10.0.0
     comment-json: ^4.2.3
@@ -6574,7 +6561,7 @@ __metadata:
     typescript: ">= 4.5.2"
   bin:
     typia: lib/executable/typia.js
-  checksum: c1217de528e7dc8738a27c6a0f5f3c7c5e1f6a26578f094cdfd4392afa9e56a5695a401f7d3288683fbd3cf2d66484aa6f6418caf920b8dabc8a2df47475a3e1
+  checksum: 3426652730517f89dd0df4380a334e621a7bc4a104a8d0d42497b51e2406aa7abdb16885daf78bc5e8131f08d10f35dc7463dcaa6bd67f7c0dc8c8b6c550dfe1
   languageName: node
   linkType: hard
 

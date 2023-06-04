@@ -20,7 +20,7 @@
     "@jest/reporters": "^29.5.0",
     "@jest/test-result": "^29.5.0",
     "csv-stringify": "^6.3.2",
-    "typia": "^3.8.3"
+    "typia": "^4.0.0"
   },
   "devDependencies": {
     "@proti/test-runner": "workspace:^",
