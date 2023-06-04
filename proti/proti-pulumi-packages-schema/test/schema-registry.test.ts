@@ -315,7 +315,6 @@ describe('schema registry', () => {
 							name: sameName ? schemaPkgName : 'balla',
 							version: sameVersion ? schemaPkgVersion : '4.5.6',
 							resources: { resource: { nonSchemaField: true } },
-							nonSchemaField: true,
 						})
 					);
 
