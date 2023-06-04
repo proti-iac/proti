@@ -2,22 +2,29 @@ import { assertEquals, equals } from 'typia';
 import { deepMerge } from '@proti/core';
 import type { ResourceType, ResourceSchema, ResourceSchemas } from './pulumi';
 
-export const defaultConfig = () => ({
-	// Sub-directory in Jest project cache directory to use for Pulumi package schemas cache.
+export const defaultSchemaRegistryConfig = () => ({
+	/** Sub-directory in Jest project cache directory to use for Pulumi package
+	 * schemas cache. */
 	cacheSubdir: 'pulumi-packages-schemas',
-	// Load package schema files cached in Jest project cache directory.
+	/** Load package schema files cached in Jest project cache directory. */
 	loadCachedSchemas: true,
-	// Packge schema files to load into the registry. Overrides cached schemas.
+	/** Package schema files to load into the registry. Overrides cached schemas. */
 	schemaFiles: [] as string[],
-	// Resource schemas to load into the registry. Overrides cached schemas and schema files.
+	/** Resource schemas to load into the registry. Overrides cached schemas and
+	 * schema files. */
 	schemas: {} as Record<ResourceType, ResourceSchema>,
-	// If true, try to download all schemas of loaded Pulumi resource packages
-	// using `pulumi package get-schema` when a resource schema is requested
-	// that is missing in the schema registry.
+	/** If true, try to download all schemas of loaded Pulumi resource packages
+	 * using `pulumi package get-schema` when a resource schema is requested
+	 * that is missing in the schema registry. */
 	downloadSchemas: true,
-	// If true, add downloaded schemas to the Jest project cache directory
-	// for subsequent executions.
+	/** If true, add downloaded schemas to the Jest project cache directory for
+	 * subsequent executions. */
 	cacheDownloadedSchemas: true,
+});
+export type SchemaRegistryConfig = ReturnType<typeof defaultSchemaRegistryConfig>;
+
+export const defaultConfig = () => ({
+	registry: defaultSchemaRegistryConfig(),
 	verbose: false,
 });
 export type Config = ReturnType<typeof defaultConfig>;
@@ -33,11 +40,13 @@ export const config = (partialConfig: any = {}, ignoreCache: boolean = false): C
 		const configCandidate = deepMerge(
 			defaultConfig(),
 			partialConfig,
-			['.plugins.pulumi-packages-schema.schemas'],
+			['.plugins.pulumi-packages-schema.registry.schemas'],
 			'.plugins.pulumi-packages-schema'
 		);
-		if ('schemas' in partialConfig)
-			configCandidate.schemas = assertEquals<ResourceSchemas>(partialConfig.schemas);
+		if (partialConfig?.registry?.schemas !== undefined)
+			configCandidate.registry.schemas = assertEquals<ResourceSchemas>(
+				partialConfig.registry.schemas
+			);
 		cachedConfig = assertEquals<Config>(configCandidate);
 	}
 	return cachedConfig;

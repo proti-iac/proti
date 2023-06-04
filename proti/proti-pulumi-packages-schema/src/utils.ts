@@ -12,10 +12,12 @@ export const initModule: TestModuleInitFn = async ({
 }: TestModuleConfig) => {
 	const pluginConfig: unknown =
 		pluginName in pluginsConfig ? pluginsConfig[pluginName] : undefined;
+	const conf = config(pluginConfig);
 	await SchemaRegistry.initInstance(
 		moduleLoader,
-		config(pluginConfig),
+		conf.registry,
 		path.dirname(testPath),
-		cacheDir
+		cacheDir,
+		conf.verbose ? console.log : () => {}
 	);
 };

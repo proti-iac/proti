@@ -2,7 +2,7 @@ import type { ModuleLoader } from '@proti/core';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { assertParse, is, stringify, TypeGuardError } from 'typia';
-import type { Config } from './config';
+import type { SchemaRegistryConfig } from './config';
 import { PkgSchema, ResourceSchema, ResourceType, runPulumi } from './pulumi';
 
 export class SchemaRegistry {
@@ -26,7 +26,7 @@ export class SchemaRegistry {
 
 	private constructor(
 		private readonly moduleLoader: ModuleLoader,
-		private readonly config: Config,
+		private readonly config: SchemaRegistryConfig,
 		private readonly projectDir: string,
 		private readonly cacheDir: string,
 		private readonly log: (msg: string) => void
@@ -58,9 +58,10 @@ export class SchemaRegistry {
 	 */
 	public static async initInstance(
 		moduleLoader: ModuleLoader,
-		config: Config,
+		config: SchemaRegistryConfig,
 		projectDir: string,
 		cacheDir: string,
+		logger: (l: string) => void,
 		forceInit = false
 	): Promise<void> {
 		if (!SchemaRegistry.instance || forceInit)
@@ -69,7 +70,7 @@ export class SchemaRegistry {
 				config,
 				projectDir,
 				path.resolve(cacheDir, config.cacheSubdir),
-				config.verbose ? console.log : () => {}
+				logger
 			);
 		else SchemaRegistry.instance.log('Skipping Pulumi packages schema registry initalization');
 		await SchemaRegistry.instance.inited;

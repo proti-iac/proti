@@ -19,8 +19,14 @@ describe('config', () => {
 
 	const resource: ResourceSchema = { b: 5 };
 	it.each([
-		{ schemas: { a: resource } },
-		{ schemas: { a: resource }, schemaFiles: ['a', 'b'], cacheDownloadedSchemas: false },
+		{ registry: { schemas: { a: resource } } },
+		{
+			registry: {
+				schemas: { a: resource },
+				schemaFiles: ['a', 'b'],
+				cacheDownloadedSchemas: false,
+			},
+		},
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
 			isObj(partialConf)
@@ -31,10 +37,13 @@ describe('config', () => {
 		check(config(partialConfig, true), partialConfig);
 	});
 
-	it.each([false, null, { a: false }, { schemas: 5 }, { schemas: { a: 5 }, loadSchemas: 5 }])(
-		'should throw on invalid config %s',
-		(partialConfig) => {
-			expect(() => config(partialConfig, true)).toThrow();
-		}
-	);
+	it.each([
+		false,
+		null,
+		{ a: false },
+		{ registry: { schemas: 5 } },
+		{ registry: { schemas: { a: 5 } }, loadSchemas: 5 },
+	])('should throw on invalid config %s', (partialConfig) => {
+		expect(() => config(partialConfig, true)).toThrow();
+	});
 });

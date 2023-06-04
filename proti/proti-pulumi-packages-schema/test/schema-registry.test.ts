@@ -4,7 +4,7 @@ import type { CommandResult } from '@pulumi/pulumi/automation';
 import os from 'os';
 import path from 'path';
 import { stringify } from 'typia';
-import { Config, config } from '../src/config';
+import { config, SchemaRegistryConfig } from '../src/config';
 import {
 	MutableResourceSchemas,
 	PkgSchema,
@@ -17,8 +17,9 @@ import { SchemaRegistry } from '../src/schema-registry';
 jest.mock('../src/pulumi', () => ({ runPulumi: jest.fn() }));
 
 describe('schema registry', () => {
-	const conf = config();
-	let projectDir: string;
+	const conf = config().registry;
+	const log = () => {};
+	let projDir: string;
 	let cacheDir: string;
 
 	const schema: ResourceSchema = {};
@@ -56,7 +57,7 @@ describe('schema registry', () => {
 	const getSchemaErrMsg = /not in schema registry/;
 
 	beforeAll(async () => {
-		[cacheDir, projectDir, schemaPkgJsonFile, schemaPkgJsonNoVFile] = await Promise.all(
+		[cacheDir, projDir, schemaPkgJsonFile, schemaPkgJsonNoVFile] = await Promise.all(
 			['foo-', 'project-', 'pkg-', 'pkg-nov-'].map((name) =>
 				fs.mkdtemp(path.join(os.tmpdir(), name))
 			)
@@ -77,7 +78,7 @@ describe('schema registry', () => {
 	afterAll(() =>
 		Promise.all(
 			[
-				projectDir,
+				projDir,
 				cacheDir,
 				path.dirname(schemaPkgJsonFile),
 				path.dirname(schemaPkgJsonNoVFile),
@@ -88,7 +89,7 @@ describe('schema registry', () => {
 	describe('initialization', () => {
 		const init = async (reInit: boolean = false) => {
 			const moduleLoader = new (jest.fn<ModuleLoader, []>())();
-			await SchemaRegistry.initInstance(moduleLoader, conf, projectDir, cacheDir, reInit);
+			await SchemaRegistry.initInstance(moduleLoader, conf, projDir, cacheDir, log, reInit);
 		};
 
 		it('should fail without initialization', () => {
@@ -112,7 +113,7 @@ describe('schema registry', () => {
 
 	describe('schema loading', () => {
 		const init = async (
-			c: Partial<Config>,
+			c: Partial<SchemaRegistryConfig>,
 			modules: ReadonlyMap<string, any> = new Map(),
 			isolatedModules: ReadonlyMap<string, any> = new Map(),
 			mockedModules: ReadonlyMap<string, any> = new Map()
@@ -128,8 +129,9 @@ describe('schema registry', () => {
 			await SchemaRegistry.initInstance(
 				moduleLoader,
 				{ ...conf, ...c },
-				projectDir,
+				projDir,
 				cacheDir,
+				log,
 				true
 			);
 		};
@@ -233,7 +235,7 @@ describe('schema registry', () => {
 					expect(await getSchema()).toStrictEqual(schema);
 					expect(pulumi).toHaveBeenCalledWith(
 						['package', 'get-schema', hasVersion ? schemaPkg : schemaPkgName],
-						projectDir,
+						projDir,
 						{}
 					);
 					expect(pulumi).toHaveBeenCalledTimes(1);
