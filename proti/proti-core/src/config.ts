@@ -1,7 +1,7 @@
 import * as fc from 'fast-check';
 import { assertEquals, equals } from 'typia';
 import { Generator } from './generator';
-import { deepMerge, isObj } from './utils';
+import { deepMerge, DeepPartial, isObj } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
 	/** Test generator arbitrary to use */
@@ -11,10 +11,7 @@ export const defaultTestCoordinatorConfig = () => ({
 });
 export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
 
-export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> => ({
-	/** Number of test iterations */
-	numRuns: 100,
-});
+export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> => ({});
 export type TestRunnerConfig = ReturnType<typeof defaultTestRunnerConfig>;
 
 export const defaultModuleLoadingConfig = () => ({
@@ -53,8 +50,14 @@ export const defaultConfig = () => ({
 export type Config = ReturnType<typeof defaultConfig>;
 
 export const config = (partialConfig: any = {}): Config => {
-	// Deep merge only handles structure present in the default config. Hence, plugins config has to be treated manually.
-	const configCandidate = deepMerge(defaultConfig(), partialConfig, ['.plugins']);
+	// Deep merge only handles structure present in the default config. Hence,
+	// plugins and runner config has to be treated manually.
+	const configCandidate = deepMerge(defaultConfig(), partialConfig, ['.testRunner', '.plugins']);
+	if (partialConfig.testRunner)
+		configCandidate.testRunner = {
+			...configCandidate.testRunner,
+			...assertEquals<DeepPartial<TestRunnerConfig>>(partialConfig.testRunner),
+		};
 	if (partialConfig.plugins) {
 		if (!isObj(partialConfig.plugins))
 			throw new Error(`Plugins config is not an object but ${typeof partialConfig.plugins}`);

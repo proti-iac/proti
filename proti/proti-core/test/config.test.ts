@@ -61,7 +61,7 @@ describe('config', () => {
 		false,
 		null,
 		{ a: false },
-		{ testRunner: { a: false } },
+		{ testRunner: { numRuns: 100, a: false } },
 		{ testRunner: { waitTick: 'false' } },
 		{ plugins: 'test' },
 	])('should throw on invalid config %s', (partialConfig) => {
