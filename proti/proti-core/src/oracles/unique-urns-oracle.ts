@@ -1,4 +1,4 @@
-import { ResourceOracle, ResourceOracleArgs, TestResult } from '../oracle';
+import type { ResourceOracle, ResourceArgs, TestResult } from '../oracle';
 
 export class UniqueUrnsOracle implements ResourceOracle {
 	name = 'Unique URNs';
@@ -7,7 +7,7 @@ export class UniqueUrnsOracle implements ResourceOracle {
 
 	private urns: Set<string> = new Set();
 
-	validateResource = (resource: ResourceOracleArgs): TestResult => {
+	validateResource = (resource: ResourceArgs): TestResult => {
 		if (this.urns.has(resource.urn))
 			return new Error(`Duplicated definition of resource ${resource.urn}`);
 		this.urns.add(resource.urn);

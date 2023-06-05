@@ -1,10 +1,11 @@
 import { is } from 'typia';
-import { ResourceOracleArgs } from './oracle';
+import type { ResourceArgs } from './oracle';
+import type { DeepReadonly } from './utils';
 
-export type ResourceOutput = { id: string; state: Record<string, any> };
+export type ResourceOutput = DeepReadonly<{ id: string; state: Record<string, any> }>;
 
 export interface Generator {
-	generateResourceOutput(resource: ResourceOracleArgs): Promise<ResourceOutput>;
+	generateResourceOutput(resource: ResourceArgs): Promise<ResourceOutput>;
 }
 
 export const isGenerator = (generator: any): generator is Generator =>

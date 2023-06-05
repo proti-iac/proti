@@ -1,9 +1,9 @@
 import * as fc from 'fast-check';
-import { Arbitrary } from 'fast-check';
+import type { Arbitrary } from 'fast-check';
 import { assertEquals, is } from 'typia';
-import { PluginsConfig, TestCoordinatorConfig } from './config';
-import { Generator, ResourceOutput } from './generator';
-import { ModuleLoader } from './module-loader';
+import type { PluginsConfig, TestCoordinatorConfig } from './config';
+import type { Generator, ResourceOutput } from './generator';
+import type { ModuleLoader } from './module-loader';
 import {
 	AsyncDeploymentOracle,
 	AsyncResourceOracle,
@@ -14,28 +14,29 @@ import {
 	isDeploymentOracle,
 	isResourceOracle,
 	ResourceOracle,
-	ResourceOracleArgs,
+	ResourceArgs,
 	Oracle,
 	OracleMetadata,
 	TestResult,
 } from './oracle';
+import type { DeepReadonly } from './utils';
 
-type OracleClass = {
+type OracleClass = DeepReadonly<{
 	Ctor: { new (): Oracle };
 	isResourceOracle: boolean;
 	isAsyncResourceOracle: boolean;
 	isDeploymentOracle: boolean;
 	isAsyncDeploymentOracle: boolean;
 	delayedInstantiation: boolean;
-};
-type OracleClasses = OracleClass[];
+}>;
+type OracleClasses = ReadonlyArray<OracleClass>;
 
-type Fail = {
+type Fail = DeepReadonly<{
 	oracle: OracleMetadata;
 	deployment?: DeploymentOracleArgs;
-	resource?: ResourceOracleArgs;
+	resource?: ResourceArgs;
 	error: Error;
-};
+}>;
 
 export type TestModuleConfig = Readonly<{
 	readonly testPath: string;
@@ -46,19 +47,22 @@ export type TestModuleConfig = Readonly<{
 export type TestModuleInitFn = (config: TestModuleConfig) => Promise<void>;
 
 export class TestRunCoordinator {
-	private readonly resourceOracles: ResourceOracle[] = [];
+	private readonly oracles: DeepReadonly<{
+		resource: ResourceOracle[];
+		asyncResource: AsyncResourceOracle[];
+		deployment: DeploymentOracle[];
+		asyncDeployment: AsyncDeploymentOracle[];
+	}>;
 
-	private readonly asyncResourceOracles: AsyncResourceOracle[] = [];
+	private readonly delayedInstantiation: OracleClasses;
 
-	private readonly deploymentOracles: DeploymentOracle[] = [];
+	public readonly fails: ReadonlyArray<Fail>;
 
-	private readonly asyncDeploymentOracles: AsyncDeploymentOracle[] = [];
+	private readonly appendFail: (fail: Fail) => void;
 
-	private readonly delayedInstantiation: OracleClasses = [];
+	private readonly pendingTests: ReadonlyArray<Promise<TestResult>>;
 
-	public readonly fails: Fail[] = [];
-
-	private readonly pendingTests: Promise<TestResult>[] = [];
+	private readonly appendPendingTest: (pendingTest: Promise<TestResult>) => void;
 
 	// eslint-disable-next-line class-methods-use-this
 	private complete: () => void = () => {
@@ -70,11 +74,19 @@ export class TestRunCoordinator {
 	public readonly isDone: Promise<void>;
 
 	constructor(private readonly generator: Generator, oracleClasses: OracleClasses) {
+		const fails: Fail[] = [];
+		this.fails = fails;
+		this.appendFail = fails.push;
+		const pendingTests: Promise<TestResult>[] = [];
+		this.pendingTests = pendingTests;
+		this.appendPendingTest = pendingTests.push;
+		const delayedInstantiation: OracleClass[] = [];
 		const directInstantiation = oracleClasses.filter((oracleClass) => {
-			if (oracleClass.delayedInstantiation) this.delayedInstantiation.push(oracleClass);
+			if (oracleClass.delayedInstantiation) delayedInstantiation.push(oracleClass);
 			return !oracleClass.delayedInstantiation;
 		});
-		this.initTests(directInstantiation);
+		this.delayedInstantiation = delayedInstantiation;
+		this.oracles = this.initOracles(directInstantiation);
 		this.isDone = new Promise((resolve) => {
 			this.complete = () => {
 				this.done = true;
@@ -83,36 +95,43 @@ export class TestRunCoordinator {
 		});
 	}
 
-	private initTests(testClasses: OracleClasses): void {
+	private initOracles(testClasses: OracleClasses): typeof this.oracles {
+		const oracles = {
+			resource: [] as ResourceOracle[],
+			asyncResource: [] as AsyncResourceOracle[],
+			deployment: [] as DeploymentOracle[],
+			asyncDeployment: [] as AsyncDeploymentOracle[],
+		};
 		testClasses.forEach((oracle) => {
 			const test = new oracle.Ctor();
-			if (oracle.isResourceOracle) this.resourceOracles.push(test as ResourceOracle);
+			if (oracle.isResourceOracle) oracles.resource.push(test as ResourceOracle);
 			if (oracle.isAsyncResourceOracle)
-				this.asyncResourceOracles.push(test as AsyncResourceOracle);
-			if (oracle.isDeploymentOracle) this.deploymentOracles.push(test as DeploymentOracle);
+				oracles.asyncResource.push(test as AsyncResourceOracle);
+			if (oracle.isDeploymentOracle) oracles.deployment.push(test as DeploymentOracle);
 			if (oracle.isAsyncDeploymentOracle)
-				this.asyncDeploymentOracles.push(test as AsyncDeploymentOracle);
+				oracles.asyncDeployment.push(test as AsyncDeploymentOracle);
 		});
+		return oracles;
 	}
 
 	private handleAsyncResolut(
 		test: OracleMetadata,
 		asyncResult: Promise<TestResult>,
-		resource?: ResourceOracleArgs,
+		resource?: ResourceArgs,
 		deployment?: DeploymentOracleArgs
 	): void {
-		this.pendingTests.push(asyncResult);
+		this.appendPendingTest(asyncResult);
 		asyncResult.then((result) => this.handleResult(test, result, resource, deployment));
 	}
 
 	private handleResult(
 		test: OracleMetadata,
 		result: TestResult,
-		resource?: ResourceOracleArgs,
+		resource?: ResourceArgs,
 		deployment?: DeploymentOracleArgs
 	): void {
 		if (result !== undefined) {
-			this.fails.push({
+			this.appendFail({
 				oracle: test,
 				resource,
 				deployment,
@@ -122,13 +141,13 @@ export class TestRunCoordinator {
 		}
 	}
 
-	public validateResource(resource: ResourceOracleArgs): void {
+	public validateResource(resource: ResourceArgs): void {
 		if (this.done) return;
-		this.asyncResourceOracles.forEach((oracle) => {
+		this.oracles.asyncResource.forEach((oracle) => {
 			if (this.done) return;
 			this.handleAsyncResolut(oracle, oracle.asyncValidateResource(resource), resource);
 		});
-		this.resourceOracles.forEach((oracle) => {
+		this.oracles.resource.forEach((oracle) => {
 			if (this.done) return;
 			this.handleResult(oracle, oracle.validateResource(resource), resource);
 		});
@@ -136,9 +155,9 @@ export class TestRunCoordinator {
 
 	public validateDeployment(deployment: DeploymentOracleArgs): void {
 		if (this.done) return;
-		this.initTests(this.delayedInstantiation);
+		this.initOracles(this.delayedInstantiation);
 
-		this.asyncDeploymentOracles.forEach((oracle) => {
+		this.oracles.asyncDeployment.forEach((oracle) => {
 			if (this.done) return;
 			this.handleAsyncResolut(
 				oracle,
@@ -147,7 +166,7 @@ export class TestRunCoordinator {
 				deployment
 			);
 		});
-		this.deploymentOracles.forEach((oracle) => {
+		this.oracles.deployment.forEach((oracle) => {
 			if (this.done) return;
 			this.handleResult(oracle, oracle.validateDeployment(deployment), undefined, deployment);
 		});
@@ -155,7 +174,7 @@ export class TestRunCoordinator {
 		Promise.all(this.pendingTests).then(() => this.complete());
 	}
 
-	public generateResourceOutput(resource: ResourceOracleArgs): Promise<ResourceOutput> {
+	public generateResourceOutput(resource: ResourceArgs): Promise<ResourceOutput> {
 		return this.generator.generateResourceOutput(resource);
 	}
 }

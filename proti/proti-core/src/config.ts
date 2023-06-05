@@ -1,7 +1,7 @@
 import * as fc from 'fast-check';
 import { assertEquals, equals } from 'typia';
-import { Generator } from './generator';
-import { deepMerge, DeepPartial, isObj } from './utils';
+import type { Generator } from './generator';
+import { deepMerge, DeepPartial, DeepReadonly, isObj } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
 	/** Test generator arbitrary to use */
@@ -9,10 +9,10 @@ export const defaultTestCoordinatorConfig = () => ({
 	/** Test oracles to run */
 	oracles: ['@proti/core/unique-urns-oracle'],
 });
-export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
+export type TestCoordinatorConfig = DeepReadonly<ReturnType<typeof defaultTestCoordinatorConfig>>;
 
 export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> => ({});
-export type TestRunnerConfig = ReturnType<typeof defaultTestRunnerConfig>;
+export type TestRunnerConfig = DeepReadonly<ReturnType<typeof defaultTestRunnerConfig>>;
 
 export const defaultModuleLoadingConfig = () => ({
 	/** resolved in project and preloaded before tests */
@@ -36,10 +36,10 @@ export const defaultModuleLoadingConfig = () => ({
 	/** Log all shared/mocked modules of a test run (requires `verbose`) */
 	showShared: false,
 });
-export type ModuleLoadingConfig = ReturnType<typeof defaultModuleLoadingConfig>;
+export type ModuleLoadingConfig = DeepReadonly<ReturnType<typeof defaultModuleLoadingConfig>>;
 
-export type PluginsConfig = Record<string, any>;
 export const defaultPluginsConfig = (): PluginsConfig => ({});
+export type PluginsConfig = DeepReadonly<Record<string, any>>;
 
 export const defaultConfig = () => ({
 	testCoordinator: defaultTestCoordinatorConfig(),
@@ -47,22 +47,29 @@ export const defaultConfig = () => ({
 	moduleLoading: defaultModuleLoadingConfig(),
 	plugins: defaultPluginsConfig(),
 });
-export type Config = ReturnType<typeof defaultConfig>;
+export type Config = DeepReadonly<ReturnType<typeof defaultConfig>>;
 
 export const config = (partialConfig: any = {}): Config => {
 	// Deep merge only handles structure present in the default config. Hence,
 	// plugins and runner config has to be treated manually.
-	const configCandidate = deepMerge(defaultConfig(), partialConfig, ['.testRunner', '.plugins']);
-	if (partialConfig.testRunner)
-		configCandidate.testRunner = {
+	const configCandidate = deepMerge<Config>(defaultConfig(), partialConfig, [
+		'.testRunner',
+		'.plugins',
+	]);
+	if (partialConfig.plugins && !isObj(partialConfig.plugins))
+		throw new Error(`Plugins config is not an object but ${typeof partialConfig.plugins}`);
+	return assertEquals<Config>({
+		...configCandidate,
+		testRunner: {
 			...configCandidate.testRunner,
-			...assertEquals<DeepPartial<TestRunnerConfig>>(partialConfig.testRunner),
-		};
-	if (partialConfig.plugins) {
-		if (!isObj(partialConfig.plugins))
-			throw new Error(`Plugins config is not an object but ${typeof partialConfig.plugins}`);
-		configCandidate.plugins = partialConfig.plugins;
-	}
-	return assertEquals<Config>(configCandidate);
+			...(partialConfig.testRunner
+				? assertEquals<DeepPartial<TestRunnerConfig>>(partialConfig.testRunner)
+				: {}),
+		},
+		plugins: {
+			...configCandidate.plugins,
+			...(partialConfig.plugins ? partialConfig.plugins : {}),
+		},
+	});
 };
 export const isConfig = (conf: any): conf is Config => equals<Config>(conf);

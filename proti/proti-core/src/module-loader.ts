@@ -8,17 +8,16 @@ import type { Config } from '@jest/types';
 import type { ModuleLoadingConfig } from './config';
 import { errMsg } from './utils';
 
-// eslint-disable-next-line import/prefer-default-export
 export class ModuleLoader {
-	private log: (msg: string) => void;
+	private readonly log: (msg: string) => void;
 
-	private dependencyResolver: Promise<DependencyResolver>;
+	private readonly dependencyResolver: Promise<DependencyResolver>;
 
-	private program: Promise<string>;
+	private readonly program: Promise<string>;
 
-	private programDependencies: Promise<string[]>;
+	private readonly programDependencies: Promise<ReadonlyArray<string>>;
 
-	private preloads: Promise<string[]>;
+	private readonly preloads: Promise<ReadonlyArray<string>>;
 
 	public readonly modules: () => ReadonlyMap<string, unknown>;
 
@@ -27,10 +26,10 @@ export class ModuleLoader {
 	public readonly isolatedModules: () => ReadonlyMap<string, unknown>;
 
 	constructor(
-		private projectConfig: Config.ProjectConfig,
-		private config: ModuleLoadingConfig,
-		private runtime: Runtime,
-		private resolver: Resolver,
+		projectConfig: Config.ProjectConfig,
+		private readonly config: ModuleLoadingConfig,
+		private readonly runtime: Runtime,
+		private readonly resolver: Resolver,
 		hasteFS: IHasteFS,
 		programPath: string
 	) {
@@ -46,17 +45,17 @@ export class ModuleLoader {
 			new DependencyResolver(
 				resolver,
 				hasteFS,
-				await buildSnapshotResolver(this.projectConfig)
+				await buildSnapshotResolver(projectConfig)
 			))();
 		this.programDependencies = this.findProgramDependencies();
 		this.preloads = this.findPreloads();
 	}
 
-	public preload = async (): Promise<Map<string, unknown>> => {
+	public preload = async (): Promise<ReadonlyMap<string, unknown>> => {
 		const program = await this.program;
 		// eslint-disable-next-line no-underscore-dangle
 		const modulesBefore = this.modules().size;
-		const preloads: Map<string, unknown> = new Map(
+		const preloads: ReadonlyMap<string, unknown> = new Map(
 			(await this.preloads).map((preload) => {
 				this.log(`Preloading ${preload} in ${program}`);
 				return [preload, this.runtime.requireActual(program, preload)];
@@ -99,7 +98,7 @@ export class ModuleLoader {
 		return module;
 	};
 
-	public mockModules = async (modules: Map<string, unknown>) => {
+	public mockModules = async (modules: ReadonlyMap<string, unknown>) => {
 		const program = await this.program;
 		modules.forEach((module, name) => this.runtime.setMock(program, name, () => module));
 	};
@@ -118,12 +117,14 @@ export class ModuleLoader {
 			`Failed to resolve  program from path ${programPath}`
 		);
 
-	private resolveDependenciesRecursively = async (module: string): Promise<string[]> => {
+	private resolveDependenciesRecursively = async (
+		module: string
+	): Promise<ReadonlyArray<string>> => {
 		const dependencyResolver = await this.dependencyResolver;
-		const recResolve = (m: string): string[] => [
+		const recResolve = (m: string): ReadonlyArray<string> => [
 			...dependencyResolver
 				.resolve(m)
-				.reduce(
+				.reduce<ReadonlySet<string>>(
 					(deps, dep) => new Set([...deps, dep, ...recResolve(dep)]),
 					new Set<string>()
 				),
@@ -134,7 +135,7 @@ export class ModuleLoader {
 	private findProgramDependencies = async () =>
 		this.resolveDependenciesRecursively(await this.program);
 
-	private findPreloads = async () => [
+	private findPreloads = async (): Promise<ReadonlyArray<string>> => [
 		...this.config.preload,
 		...(await this.programDependencies).filter((dependency) =>
 			this.config.preloadDependencies.some((pattern) => new RegExp(pattern).test(dependency))

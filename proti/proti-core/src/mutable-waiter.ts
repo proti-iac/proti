@@ -5,7 +5,7 @@
  */
 // eslint-disable-next-line import/prefer-default-export
 export class MutableWaiter {
-	private completed?: Promise<Error[]>;
+	private completed?: Promise<ReadonlyArray<Error>>;
 
 	private complete?: () => void;
 
@@ -42,7 +42,7 @@ export class MutableWaiter {
 	/**
 	 * @returns Promise that resolves with the list of occurred errors once all promises resolved.
 	 */
-	public isCompleted(): Promise<Error[]> {
+	public isCompleted(): Promise<ReadonlyArray<Error>> {
 		if (!this.completed) {
 			this.completed = new Promise((resolve) => {
 				this.complete = () => {

@@ -1,4 +1,4 @@
-import type { ResourceOracle, ResourceOracleArgs, TestModuleInitFn, TestResult } from '@proti/core';
+import type { ResourceOracle, ResourceArgs, TestModuleInitFn, TestResult } from '@proti/core';
 import { initModule } from './utils';
 
 class PulumiPackagesSchemaOracle implements ResourceOracle {
@@ -8,7 +8,7 @@ class PulumiPackagesSchemaOracle implements ResourceOracle {
 		'Checks that each resource configuration satisfies the type defined in the Pulumi package schema.';
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars, class-methods-use-this
-	validateResource = (resource: ResourceOracleArgs): TestResult => undefined; // @TODO implement
+	validateResource = (resource: ResourceArgs): TestResult => undefined; // @TODO implement
 }
 
 export default PulumiPackagesSchemaOracle;

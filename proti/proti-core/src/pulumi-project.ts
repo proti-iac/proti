@@ -2,12 +2,12 @@ import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import path from 'path';
 
-export type PulumiProject = {
+export type PulumiProject = Readonly<{
 	projectFile: string;
 	main: string;
 	name?: string;
 	description?: string;
-};
+}>;
 
 export const readPulumiProject = async (projectFile: string): Promise<PulumiProject> => {
 	const project: any = yaml.load(fs.readFileSync(projectFile, 'utf8'));

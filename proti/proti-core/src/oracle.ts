@@ -1,30 +1,31 @@
 import type { MockResourceArgs } from '@pulumi/pulumi/runtime';
 import type { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
 import { createIs } from 'typia';
+import type { DeepReadonly } from './utils';
 
-export type TestResult = Error | undefined;
+export type ResourceArgs = DeepReadonly<MockResourceArgs & { urn: string }>;
 
-export interface OracleMetadata {
-	readonly name: string;
-	readonly description?: string;
-}
+export type TestResult = Readonly<Error> | undefined;
+
+export type OracleMetadata = Readonly<{
+	name: string;
+	description?: string;
+}>;
 const isOracleMetadata: (val: unknown) => val is OracleMetadata = createIs<OracleMetadata>();
 
-export type ResourceOracleArgs = MockResourceArgs & { urn: string };
-
 export interface ResourceOracle extends OracleMetadata {
-	readonly validateResource: (resource: ResourceOracleArgs) => TestResult;
+	readonly validateResource: (resource: ResourceArgs) => TestResult;
 }
 export const isResourceOracle = (val: any): val is ResourceOracle =>
 	typeof val?.validateResource === 'function' && isOracleMetadata(val);
 
 export interface AsyncResourceOracle extends OracleMetadata {
-	readonly asyncValidateResource: (resource: ResourceOracleArgs) => Promise<TestResult>;
+	readonly asyncValidateResource: (resource: ResourceArgs) => Promise<TestResult>;
 }
 export const isAsyncResourceOracle = (val: any): val is AsyncResourceOracle =>
 	typeof val?.asyncValidateResource === 'function' && isOracleMetadata(val);
 
-export type DeploymentOracleArgs = MockMonitor['resources'];
+export type DeploymentOracleArgs = DeepReadonly<MockMonitor['resources']>;
 
 export interface DeploymentOracle extends OracleMetadata {
 	readonly validateDeployment: (resources: DeploymentOracleArgs) => TestResult;

@@ -1,11 +1,11 @@
 import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
-import { Generator, ResourceOutput } from '../generator';
-import { ResourceOracleArgs } from '../oracle';
+import type { Generator, ResourceOutput } from '../generator';
+import type { ResourceArgs } from '../oracle';
 
 export class EmptyStateGenerator implements Generator {
 	// eslint-disable-next-line class-methods-use-this
-	async generateResourceOutput(resource: ResourceOracleArgs): Promise<ResourceOutput> {
+	async generateResourceOutput(resource: ResourceArgs): Promise<ResourceOutput> {
 		return {
 			id: resource.urn,
 			state: {},
