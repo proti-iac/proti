@@ -15,6 +15,10 @@ This project contains the following packages:
 
 The module maintains a registry that maps Pulumi resource type strings to their resource schema in their package's schema definition. The registry is initialized with the schemas found in the Jest project cache directory (from previous runs) and the ones defined in the `schemas` or `schemaFiles` fields of the plugin's configuration. If the oracle or arbitrary is called with a resource type string that is not in the registry, all `package.json` files loaded in ProTI's module loader are inspected for using `install-pulumi-plugin.js resource {PACKAGE}[ {VERSION}]`. If new packages are found, their schemas are loaded using pulumi's `package get-schema` command. It provides the schema of the locally installed package, downloading and installing the package automatically if it is missing in the local Pulumi workspace. Retrieved schemas are cached in the Jest project cache directory and preloaded into the registry in subsequent executions.
 
+## Config Hints
+
+*Logging Test Procedure*: Configure verbosity level of test runner in `globals.proti.testRunner.verbose`. `0` only shows the final error result, `1` all failing tests, `2` the full tree of passing and failing tests.
+
 # Known Issues
 
 ## Mutable Type Definitions
