@@ -8,6 +8,7 @@ import {
 	Obj,
 	interceptConstructor,
 	DeepReadonly,
+	createReadonlyAppendArray,
 } from '../src/utils';
 
 describe('util', () => {
@@ -305,6 +306,19 @@ describe('util', () => {
 
 		it('should have dynamic property of original class', () => {
 			expect(b.getVW()).toBe(408);
+		});
+	});
+
+	describe('create readonly append array', () => {
+		it('should append values', () => {
+			fc.assert(
+				fc.property(fc.array(fc.anything()), (array) => {
+					const [a, push] = createReadonlyAppendArray();
+					expect(a).toStrictEqual([]);
+					array.forEach((v) => push(v));
+					expect(a).toStrictEqual(array);
+				})
+			);
 		});
 	});
 });

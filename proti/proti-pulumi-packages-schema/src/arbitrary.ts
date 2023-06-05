@@ -1,5 +1,6 @@
 import * as fc from 'fast-check';
-import type {
+import {
+	createReadonlyAppendArray,
 	DeepReadonly,
 	Generator,
 	ResourceArgs,
@@ -22,9 +23,7 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 		private readonly mrng: fc.Random,
 		private readonly biasFactor: number | undefined
 	) {
-		const trace: ResourceOutput[] = [];
-		this.trace = trace;
-		this.appendTrace = trace.push;
+		[this.trace, this.appendTrace] = createReadonlyAppendArray<ResourceOutput>();
 	}
 
 	private async generateResourceState(resourceType: string): Promise<ResourceOutput['state']> {

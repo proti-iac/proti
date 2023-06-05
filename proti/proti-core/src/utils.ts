@@ -123,3 +123,12 @@ export const interceptConstructor = <T, U extends { new (...v: any[]): T }>(
 		});
 	return C as unknown as U;
 };
+
+/**
+ * Create an array without mutable methods with a separate append function.
+ * @returns Bituple of readonly array and its append function.
+ */
+export const createReadonlyAppendArray = <T>(): readonly [ReadonlyArray<T>, (i: T) => void] => {
+	const array: T[] = [];
+	return [array, array.push.bind(array)];
+};

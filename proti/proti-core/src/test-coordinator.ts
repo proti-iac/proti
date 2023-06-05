@@ -19,7 +19,7 @@ import {
 	OracleMetadata,
 	TestResult,
 } from './oracle';
-import type { DeepReadonly } from './utils';
+import { createReadonlyAppendArray, DeepReadonly } from './utils';
 
 type OracleClass = DeepReadonly<{
 	Ctor: { new (): Oracle };
@@ -74,12 +74,9 @@ export class TestRunCoordinator {
 	public readonly isDone: Promise<void>;
 
 	constructor(private readonly generator: Generator, oracleClasses: OracleClasses) {
-		const fails: Fail[] = [];
-		this.fails = fails;
-		this.appendFail = fails.push;
-		const pendingTests: Promise<TestResult>[] = [];
-		this.pendingTests = pendingTests;
-		this.appendPendingTest = pendingTests.push;
+		[this.fails, this.appendFail] = createReadonlyAppendArray<Fail>();
+		[this.pendingTests, this.appendPendingTest] =
+			createReadonlyAppendArray<Promise<TestResult>>();
 		const delayedInstantiation: OracleClass[] = [];
 		const directInstantiation = oracleClasses.filter((oracleClass) => {
 			if (oracleClass.delayedInstantiation) delayedInstantiation.push(oracleClass);
