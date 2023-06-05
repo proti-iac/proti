@@ -1,6 +1,6 @@
 import { ResourceOracle, ResourceOracleArgs, TestResult } from '../oracle';
 
-class UniqueUrnsOracle implements ResourceOracle {
+export class UniqueUrnsOracle implements ResourceOracle {
 	name = 'Unique URNs';
 
 	description = 'Checks that the URNs of all resources are not duplicated';

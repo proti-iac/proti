@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 
-import UniqueUrnsOracle from '../../src/oracles/unique-urns-oracle';
+import { UniqueUrnsOracle } from '../../src/oracles/unique-urns-oracle';
 
 describe('unique URNs oracle', () => {
 	it('should not fail on unique strings', () => {

@@ -173,47 +173,41 @@ export class TestCoordinator {
 		this.arbitrary = this.loadArbitrary();
 	}
 
-	private async loadOracles(): Promise<OracleClasses> {
-		return Promise.all(
-			this.config.oracles.map((moduleName) =>
-				import(moduleName).then(async (oracleModule): Promise<OracleClass> => {
-					// If the module exports an `init` function, call it initilize it.
-					if (typeof oracleModule.init === 'function')
-						await assertEquals<TestModuleInitFn>(oracleModule.init)(
-							this.testModuleConfig
-						);
-					const OracleConstructor = oracleModule.default;
-					const oracle = new OracleConstructor();
-					const isOracle = {
-						isAsyncDeploymentOracle: isAsyncDeploymentOracle(oracle),
-						isAsyncResourceOracle: isAsyncResourceOracle(oracle),
-						isDeploymentOracle: isDeploymentOracle(oracle),
-						isResourceOracle: isResourceOracle(oracle),
-					};
-					if (Object.values(isOracle).every((b) => b === false))
-						throw new Error(`Configured oracle has invalid interface: ${moduleName}`);
-					return {
-						Ctor: OracleConstructor,
-						...isOracle,
-						delayedInstantiation:
-							!isOracle.isResourceOracle && !isOracle.isAsyncResourceOracle,
-					};
-				})
-			)
-		);
+	private async initTestModule(module: any): Promise<void> {
+		if (typeof module.init === 'function')
+			await assertEquals<TestModuleInitFn>(module.init)(this.testModuleConfig);
+	}
+
+	private loadOracles(): Promise<OracleClasses> {
+		const oracleClasses = this.config.oracles.map(async (moduleName) => {
+			const oracleModule = await import(moduleName);
+			this.initTestModule(oracleModule);
+			const OracleConstructor = oracleModule.default;
+			const oracle = new OracleConstructor();
+			const isOracle = {
+				isAsyncDeploymentOracle: isAsyncDeploymentOracle(oracle),
+				isAsyncResourceOracle: isAsyncResourceOracle(oracle),
+				isDeploymentOracle: isDeploymentOracle(oracle),
+				isResourceOracle: isResourceOracle(oracle),
+			};
+			if (Object.values(isOracle).every((b) => b === false))
+				throw new Error(`Configured oracle has invalid interface: ${moduleName}`);
+			return {
+				Ctor: OracleConstructor,
+				...isOracle,
+				delayedInstantiation: !isOracle.isResourceOracle && !isOracle.isAsyncResourceOracle,
+			};
+		});
+		return Promise.all(oracleClasses);
 	}
 
 	private async loadArbitrary(): Promise<Arbitrary<Generator>> {
-		return import(this.config.arbitrary).then(async (generatorArbitraryModule) => {
-			if (!is<fc.Arbitrary<Generator>>(this.arbitrary))
-				throw new Error(`Invalid test generator arbitrary ${this.config.arbitrary}`);
-			// If the module exports an `init` function, call it initilize it.
-			if (typeof generatorArbitraryModule.init === 'function')
-				await assertEquals<TestModuleInitFn>(generatorArbitraryModule.init)(
-					this.testModuleConfig
-				);
-			return generatorArbitraryModule.default;
-		});
+		const generatorArbitraryModule = await import(this.config.arbitrary);
+		if (!is<fc.Arbitrary<Generator>>(this.arbitrary))
+			throw new Error(`Invalid test generator arbitrary ${this.config.arbitrary}`);
+		this.initTestModule(generatorArbitraryModule);
+		const ArbitraryConstructor = generatorArbitraryModule.default;
+		return new ArbitraryConstructor();
 	}
 
 	public async newRunCoordinator(generator: Generator): Promise<TestRunCoordinator> {
