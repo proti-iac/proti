@@ -1,6 +1,17 @@
 import { assertEquals, equals } from 'typia';
-import { deepMerge } from '@proti/core';
+import { deepMerge, DeepReadonly } from '@proti/core';
 import type { ResourceType, ResourceSchema, ResourceSchemas } from './pulumi';
+
+export const defaultArbitraryConfig = () => ({
+	/**
+	 * Fail on generating state for resource type that is missing in schema
+	 * registry. If false, return `defaultState`.
+	 */
+	failOnMissingTypes: true,
+	/** Default state to generate for missing resource types */
+	defaultState: {},
+});
+export type ArbitraryConfig = DeepReadonly<ReturnType<typeof defaultArbitraryConfig>>;
 
 export const defaultSchemaRegistryConfig = () => ({
 	/**
@@ -29,13 +40,14 @@ export const defaultSchemaRegistryConfig = () => ({
 	 */
 	cacheDownloadedSchemas: true,
 });
-export type SchemaRegistryConfig = ReturnType<typeof defaultSchemaRegistryConfig>;
+export type SchemaRegistryConfig = DeepReadonly<ReturnType<typeof defaultSchemaRegistryConfig>>;
 
 export const defaultConfig = () => ({
+	arbitrary: defaultArbitraryConfig(),
 	registry: defaultSchemaRegistryConfig(),
 	verbose: false,
 });
-export type Config = ReturnType<typeof defaultConfig>;
+export type Config = DeepReadonly<ReturnType<typeof defaultConfig>>;
 
 let cachedConfig: Config | undefined;
 export const resetCachedConfig = () => {

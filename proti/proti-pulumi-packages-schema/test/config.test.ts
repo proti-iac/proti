@@ -1,6 +1,28 @@
 import { DeepPartial, isObj, Obj } from '@proti/core';
-import { config, Config, defaultConfig, resetCachedConfig } from '../src/config';
+import {
+	ArbitraryConfig,
+	config,
+	Config,
+	defaultArbitraryConfig,
+	defaultConfig,
+	defaultSchemaRegistryConfig,
+	resetCachedConfig,
+	SchemaRegistryConfig,
+} from '../src/config';
 import type { ResourceSchema } from '../src/pulumi';
+
+describe('config defaults', () => {
+	it.each([
+		['arbitrary config', defaultArbitraryConfig as () => ArbitraryConfig],
+		['schema registry config', defaultSchemaRegistryConfig as () => SchemaRegistryConfig],
+		['config', defaultConfig as () => Config],
+	])('%s should work', (_, defConfig) => expect(typeof defConfig()).toBe('object'));
+
+	it.each([
+		['arbitrary config', defaultConfig().arbitrary, defaultArbitraryConfig()],
+		['schema registry config', defaultConfig().registry, defaultSchemaRegistryConfig()],
+	])('%s should be in config', (_, conf, refConfig) => expect(conf).toStrictEqual(refConfig));
+});
 
 describe('config', () => {
 	beforeEach(() => resetCachedConfig());
