@@ -22,6 +22,7 @@ export class MutableWaiter {
 	/**
 	 * Adds a promise to be waited for.
 	 * @param promise Promise to wait for.
+	 * @throws If called after waiter completed.
 	 */
 	public wait(promise: Promise<any>): void {
 		this.waiting += 1;

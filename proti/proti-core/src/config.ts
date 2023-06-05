@@ -12,7 +12,7 @@ export const defaultTestCoordinatorConfig = () => ({
 export type TestCoordinatorConfig = ReturnType<typeof defaultTestCoordinatorConfig>;
 
 export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> => ({
-	/**  Number of test iterations */
+	/** Number of test iterations */
 	numRuns: 100,
 });
 export type TestRunnerConfig = ReturnType<typeof defaultTestRunnerConfig>;
@@ -20,13 +20,17 @@ export type TestRunnerConfig = ReturnType<typeof defaultTestRunnerConfig>;
 export const defaultModuleLoadingConfig = () => ({
 	/** resolved in project and preloaded before tests */
 	preload: ['@pulumi/pulumi', '@pulumi/pulumi/output', '@pulumi/pulumi/runtime/stack'],
-	/** preload dependencies found in the program that match any of these
-	 * regular expressions */
+	/**
+	 * preload dependencies found in the program that match any of these regular
+	 * expressions
+	 */
 	preloadDependencies: ['.*/node_modules/.*'],
 	/** Log detailed information */
 	verbose: false,
-	/** Log all modules which are explicitely transformed before preloading
-	 * (requires `verbose∑`) */
+	/**
+	 * Log all modules which are explicitely transformed before preloading
+	 * (requires `verbose`)
+	 */
 	showTransformed: false,
 	/** Log all isolated modules of a test run (requires `verbose`) */
 	showIsolated: false,

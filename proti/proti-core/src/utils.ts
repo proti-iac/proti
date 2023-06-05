@@ -48,6 +48,7 @@ export const isObj = (obj: unknown): obj is Obj => typeOf(obj) === 'object';
  * @param ignorePaths Ignores the properties of the update, which's paths are contained in this list.
  * @param propertyPath Current property path. Used for nicer error messages.
  * @returns Updated copy of `obj`.
+ * @throws If `update` has shape that is incompatible with `obj`.
  */
 export const deepMerge = <T extends Obj>(
 	obj: T,
@@ -101,6 +102,11 @@ export const interceptConstructor = <T, U extends { new (...v: any[]): T }>(
 	Clazz: U,
 	interceptFn: (t: T) => any
 ): U => {
+	/**
+	 * Patched class constructor
+	 * @param args Constructor arguments
+	 * @returns New monkey-patched object
+	 */
 	function C(this: T, ...args: any[]): T {
 		const o = new (Function.prototype.bind.call(Clazz, null, ...args))();
 		interceptFn(o);

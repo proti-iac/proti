@@ -253,7 +253,6 @@ export type UnionType = {
 	/**
 	 * If present, indicates that values of the type may be one of any of the
 	 * listed types
-	 * @minItems 2
 	 */
 	oneOf: TypeReference[];
 	/**

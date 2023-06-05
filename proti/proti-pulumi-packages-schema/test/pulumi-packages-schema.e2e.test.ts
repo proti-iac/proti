@@ -19,7 +19,7 @@ const jestCmd = (...projects: string[]): string =>
 
 describe('pulumi packags schema end-to-end', () => {
 	it.each([
-		'../../../examples/s3-website/flat' /*, '../../../examples/s3-website/cb-dependent'*/,
+		'../../../examples/s3-website/flat' /* , '../../../examples/s3-website/cb-dependent' */,
 	])('should run on %s', (project) =>
 		expect(() => cp.execSync(jestCmd(project)).toString()).not.toThrow()
 	);

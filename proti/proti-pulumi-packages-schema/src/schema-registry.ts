@@ -51,9 +51,11 @@ export class SchemaRegistry {
 
 	/**
 	 * (Re-)initializes registry instance. Must be called before `getInstance`.
-	 * @param moduleLoader
+	 * @param moduleLoader Program's module loader.
 	 * @param config Plugin config.
+	 * @param projectDir Jest project directorry.
 	 * @param cacheDir Jest project cache directory.
+	 * @param logger Logging function.
 	 * @param forceInit If false, re-initialization is ignored. If true, a new registry replaces previous one.
 	 */
 	public static async initInstance(
@@ -79,6 +81,7 @@ export class SchemaRegistry {
 	/**
 	 * Returns schema registry instance after it was initialized using `initInstance`.
 	 * @returns schema registry
+	 * @throws If schema registry is not initialized.
 	 */
 	public static getInstance(): SchemaRegistry {
 		if (!SchemaRegistry.instance)
@@ -98,6 +101,8 @@ export class SchemaRegistry {
 
 	/**
 	 * Load als resource schemas from a Pulumi package schema stored in a JSON file into the registry.
+	 * @param file File to load the schema from
+	 * @returns Promise that resolves once the schema is loaded
 	 */
 	public async loadPkgSchemaFile(file: string): Promise<void> {
 		if (this.loadedPkgSchemaFiles.has(file))

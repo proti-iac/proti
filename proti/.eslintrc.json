@@ -7,7 +7,8 @@
   "extends": [
     "airbnb-base",
     "airbnb-base-typescript",
-    "prettier"
+    "prettier",
+    "plugin:jsdoc/recommended-typescript-error"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -17,7 +18,8 @@
   },
   "plugins": [
     "@typescript-eslint",
-    "prettier"
+    "prettier",
+    "jsdoc"
   ],
   "rules": {
     "prettier/prettier": [
@@ -25,6 +27,15 @@
     ],
     "max-classes-per-file": "off",
     "no-console": "off",
-    "import/prefer-default-export": "off"
+    "import/prefer-default-export": "off",
+    // Additional js-doc rules
+    "jsdoc/check-indentation": "error",
+    "jsdoc/check-line-alignment": "error",
+    "jsdoc/check-syntax": "error",
+    "jsdoc/no-bad-blocks": "error",
+    "jsdoc/no-blank-blocks": "error",
+    "jsdoc/require-asterisk-prefix": "error",
+    "jsdoc/require-throws": "error",
+    "jsdoc/sort-tags": "error"
   }
 }
