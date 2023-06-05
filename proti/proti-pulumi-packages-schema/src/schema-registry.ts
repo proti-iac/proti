@@ -140,13 +140,18 @@ export class SchemaRegistry {
 		this.resourceSchemas.set(type, schema);
 	}
 
-	public async getSchema(type: ResourceType): Promise<ResourceSchema> {
+	/**
+	 * Retrieves the schema for a resource type from the egistry. If downloading
+	 * schemas is enabled, it transparently downloads new schemas found in
+	 * imported packages when it cannot find the resource type's schema.
+	 * @param type Resource type.
+	 * @returns Resource schema or `undefined` if resource schema could not be
+	 * found.
+	 */
+	public async getSchema(type: ResourceType): Promise<ResourceSchema | undefined> {
 		if (this.config.downloadSchemas && this.resourceSchemas.has(type) === false)
 			await this.downloadPkgSchemas();
-		const schema = this.resourceSchemas.get(type);
-		if (schema === undefined)
-			throw new Error(`Schema for resource type ${type} not in schema registry`);
-		return schema;
+		return this.resourceSchemas.get(type);
 	}
 
 	/**

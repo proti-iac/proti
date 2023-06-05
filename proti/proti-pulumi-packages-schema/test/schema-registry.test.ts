@@ -54,8 +54,6 @@ describe('schema registry', () => {
 		resources: { a: cachedSchema },
 	};
 
-	const getSchemaErrMsg = /not in schema registry/;
-
 	beforeAll(async () => {
 		[cacheDir, projDir, schemaPkgJsonFile, schemaPkgJsonNoVFile] = await Promise.all(
 			['foo-', 'project-', 'pkg-', 'pkg-nov-'].map((name) =>
@@ -146,12 +144,12 @@ describe('schema registry', () => {
 
 			it('does not load package schema that is not in cache', async () => {
 				await init({ cacheSubdir: 'other' });
-				await expect(getSchema).rejects.toThrow(getSchemaErrMsg);
+				expect(await getSchema()).toBe(undefined);
 			});
 
 			it('does not load package schema that is in cache, if disabled', async () => {
 				await init({ loadCachedSchemas: false });
-				await expect(getSchema).rejects.toThrow(getSchemaErrMsg);
+				expect(await getSchema()).toBe(undefined);
 			});
 
 			it('loads package schema from schemaFiles config', async () => {
@@ -255,14 +253,14 @@ describe('schema registry', () => {
 					{ loadCachedSchemas: false, downloadSchemas: false },
 					new Map([[schemaPkgJsonFile, null]])
 				);
-				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+				expect(await getSchema()).toBe(undefined);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
 			it('does not download schemas if package.json not existing', async () => {
 				const pulumi = initPulumiMock();
 				await init({ loadCachedSchemas: false }, new Map([['INVALID/package.json', null]]));
-				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+				expect(await getSchema()).toBe(undefined);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
@@ -272,7 +270,7 @@ describe('schema registry', () => {
 					{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
 					new Map([[schemaPkgJsonFile, null]])
 				);
-				await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+				expect(await getSchema()).toBe(undefined);
 				expect(pulumi).toHaveBeenCalledTimes(1);
 			});
 
@@ -293,7 +291,7 @@ describe('schema registry', () => {
 					await fs.writeFile(file, packageJson);
 					const pulumi = initPulumiMock();
 					await init({ loadCachedSchemas: false }, new Map([[file, null]]));
-					await expect(getSchema()).rejects.toThrow(getSchemaErrMsg);
+					expect(await getSchema()).toBe(undefined);
 					expect(pulumi).toHaveBeenCalledTimes(0);
 					await fs.rm(dir, { recursive: true });
 				}
@@ -324,7 +322,7 @@ describe('schema registry', () => {
 						{},
 						new Map([[withVersion ? schemaPkgJsonFile : schemaPkgJsonNoVFile, null]])
 					);
-					await expect(() => getSchema('b')).rejects.toThrow(getSchemaErrMsg);
+					expect(await getSchema('b')).toBe(undefined);
 					expect(pulumi).toHaveBeenCalledTimes(download ? 1 : 0);
 
 					await fs.rm(tmpFile); // Cleanup
