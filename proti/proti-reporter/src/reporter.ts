@@ -7,7 +7,7 @@ import * as path from 'path';
 import { hrtime } from 'process';
 import { assert } from 'typia';
 
-import type { SerializableCheckResult, SerializableResult } from '@proti/test-runner';
+import type { SerializableCheckResult, SerializableRunResult } from '@proti/test-runner';
 
 const now: () => bigint = hrtime.bigint;
 const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
@@ -18,7 +18,7 @@ const executionProgramsFilename: string = 'programs.csv';
 // Tests: List of Jest tests (including summary of "check program")
 const programTestsPrefix: string = 'program-tests-';
 // Checks: List of fast-check check runs
-const programChecksPrefix: string = 'program-checks-';
+const programRunsPrefix: string = 'program-runs-';
 const toCsv = (data: any): string => stringify(data, { quoted_string: true });
 
 const generateHash = (s: string) => createHash('sha3-224').update(s, 'utf8').digest('base64url');
@@ -149,27 +149,24 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 				);
 			else {
 				// Write program execution checks report
-				const checksResult = assert<SerializableCheckResult>(
+				const checkResult = assert<SerializableCheckResult>(
 					checkProgramResults[0]?.failureDetails[0]
 				);
 				const checksReport: any[][] = [
 					['Title', 'Start', 'End', 'Duration', 'Failed', 'Errors'],
 				];
-				checksResult.runResults.forEach((checkResult: SerializableResult) =>
+				checkResult.runResults.forEach((runResult: SerializableRunResult) =>
 					checksReport.push([
-						checkResult.title,
-						checkResult.start,
-						checkResult.end,
-						checkResult.duration,
-						checkResult.errors.length > 0,
-						checkResult.errors,
+						runResult.title,
+						runResult.start,
+						runResult.end,
+						runResult.duration,
+						runResult.errors.length > 0,
+						runResult.errors,
 					])
 				);
 				fs.writeFileSync(
-					path.join(
-						executionReportDir,
-						`${programChecksPrefix + generateHash(file)}.csv`
-					),
+					path.join(executionReportDir, `${programRunsPrefix + generateHash(file)}.csv`),
 					toCsv(checksReport)
 				);
 			}

@@ -26,7 +26,7 @@ import {
 	TestCoordinator,
 } from '@proti/core';
 
-import { CheckResult, Result, toTestResult } from './test-result';
+import { CheckResult, Result, RunResult, toTestResult } from './test-result';
 
 const now: () => bigint = hrtime.bigint;
 const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
@@ -143,7 +143,7 @@ const runProti = async (
 		cacheDir: config.cacheDirectory,
 	});
 
-	const runStats: Result[] = [];
+	const runStats: RunResult[] = [];
 	let runIdCounter = 0;
 	const testPredicate = async (generator: Generator): Promise<boolean> => {
 		// eslint-disable-next-line no-plusplus

@@ -10,6 +10,9 @@ export type Result = {
 };
 export type SerializableResult = Omit<Result, 'errors'> & { errors: string[] };
 
+export type RunResult = Result;
+export type SerializableRunResult = Omit<RunResult, 'errors'> & { errors: string[] };
+
 export type CheckResult = Pick<
 	RunDetailsCommon<unknown>,
 	'failed' | 'interrupted' | 'numRuns' | 'numSkips' | 'numShrinks'
@@ -17,11 +20,11 @@ export type CheckResult = Pick<
 	start: number;
 	end: number;
 	duration: number;
-	runResults: Result[];
+	runResults: RunResult[];
 	report?: string;
 };
 export type SerializableCheckResult = Omit<CheckResult, 'runResults'> & {
-	runResults: SerializableResult[];
+	runResults: SerializableRunResult[];
 };
 
 type RunnerResult = {
