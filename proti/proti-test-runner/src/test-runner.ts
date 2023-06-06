@@ -200,6 +200,7 @@ const runProti = async (
 				start: nsToMs(runStart),
 				end: nsToMs(runEnd),
 				duration: nsToMs(runEnd - runStart),
+				generator: generator.toString(),
 				errors,
 			});
 		});

@@ -10,7 +10,9 @@ export type Result = {
 };
 export type SerializableResult = Omit<Result, 'errors'> & { errors: string[] };
 
-export type RunResult = Result;
+export type RunResult = Result & {
+	generator: string;
+};
 export type SerializableRunResult = Omit<RunResult, 'errors'> & { errors: string[] };
 
 export type CheckResult = Pick<

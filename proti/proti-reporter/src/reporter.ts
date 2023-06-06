@@ -153,7 +153,7 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 					checkProgramResults[0]?.failureDetails[0]
 				);
 				const checksReport: any[][] = [
-					['Title', 'Start', 'End', 'Duration', 'Failed', 'Errors'],
+					['Title', 'Start', 'End', 'Duration', 'Generator', 'Failed', 'Errors'],
 				];
 				checkResult.runResults.forEach((runResult: SerializableRunResult) =>
 					checksReport.push([
@@ -161,6 +161,7 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 						runResult.start,
 						runResult.end,
 						runResult.duration,
+						runResult.generator,
 						runResult.errors.length > 0,
 						runResult.errors,
 					])
