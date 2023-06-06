@@ -28,6 +28,7 @@
     "max-classes-per-file": "off",
     "no-console": "off",
     "import/prefer-default-export": "off",
+    "no-plusplus": "off",
     // Additional js-doc rules
     "jsdoc/check-indentation": "error",
     "jsdoc/check-line-alignment": "error",

@@ -7,12 +7,28 @@ import {
 	ResourceOutput,
 	TestModuleInitFn,
 } from '@proti/core';
-import { is } from 'typia';
+import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { ArbitraryConfig, config } from './config';
 
+export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
+	const numLength = trace.length.toString().length;
+	return trace
+		.flatMap(({ id, state }, i) => [
+			`${i.toString().padStart(numLength)}: ${id}`,
+			...Object.entries(state).map(
+				([k, v]: [string, unknown]) => `${' '.repeat(numLength + 2)}- ${k}: ${stringify(v)}`
+			),
+		])
+		.join('\n');
+};
+
 export class PulumiPackagesSchemaGenerator implements Generator {
+	private static generatorIdCounter: number = 0;
+
+	private readonly generatorId: number;
+
 	public readonly trace: DeepReadonly<ResourceOutput[]>;
 
 	private readonly appendTrace: (output: ResourceOutput) => void;
@@ -23,6 +39,7 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 		private readonly mrng: fc.Random,
 		private readonly biasFactor: number | undefined
 	) {
+		this.generatorId = PulumiPackagesSchemaGenerator.generatorIdCounter++;
 		[this.trace, this.appendTrace] = createReadonlyAppendArray<ResourceOutput>();
 	}
 
@@ -44,9 +61,14 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 		this.appendTrace(output);
 		return output;
 	}
+
+	public toString(): string {
+		const trace = resourceOutputTraceToString(this.trace);
+		return `Generator ${this.generatorId} resource output trace:\n${trace}`;
+	}
 }
 
-export type ArbitraryContext = {};
+export type PulumiPackagesSchemaArbitraryContext = {};
 
 export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<Generator> {
 	private readonly registry: SchemaRegistry = SchemaRegistry.getInstance();
@@ -62,7 +84,7 @@ export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<Generator> {
 			mrng,
 			biasFactor
 		);
-		const context: ArbitraryContext = {};
+		const context: PulumiPackagesSchemaArbitraryContext = {};
 		return new fc.Value(generator, context);
 	}
 

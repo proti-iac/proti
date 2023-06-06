@@ -31,6 +31,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
+    "pure-rand": "^6.0.2",
     "ttypescript": "^1.5.15",
     "typescript": "^4.9.5"
   }
