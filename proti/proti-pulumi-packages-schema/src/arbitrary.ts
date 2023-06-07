@@ -11,7 +11,7 @@ import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { ArbitraryConfig, config } from './config';
-import { TypeReference } from './pulumi-package-metaschema';
+import { PropertyDefinition, TypeReference } from './pulumi-package-metaschema';
 
 export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
 	const numLength = trace.length.toString().length;
@@ -58,6 +58,16 @@ export const typeReferenceToArbitrary = (
 		default:
 			throw new Error();
 	}
+};
+
+export const propertyDefinitionToArbitrary = (
+	propSchema: DeepReadonly<PropertyDefinition>
+): fc.Arbitrary<unknown> => {
+	if (propSchema.const !== undefined) return fc.constant(propSchema.const);
+	const propTypeArbitrary: fc.Arbitrary<unknown> = typeReferenceToArbitrary(propSchema);
+	if (propSchema.default !== undefined)
+		return fc.oneof(fc.constant(propSchema.default), propTypeArbitrary);
+	return propTypeArbitrary;
 };
 
 export class PulumiPackagesSchemaGenerator implements Generator {

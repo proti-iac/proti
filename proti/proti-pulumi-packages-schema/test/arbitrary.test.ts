@@ -1,19 +1,26 @@
 import * as fc from 'fast-check';
 import type { RandomGenerator } from 'pure-rand';
 import type { DeepReadonly, ResourceOutput } from '@proti/core';
+import { Arbitrary } from 'fast-check';
 import {
+	propertyDefinitionToArbitrary,
 	PulumiPackagesSchemaGenerator,
 	resourceOutputTraceToString,
 	typeReferenceToArbitrary,
 } from '../src/arbitrary';
 import { defaultArbitraryConfig } from '../src/config';
 import { SchemaRegistry } from '../src/schema-registry';
-import type { PrimitiveType, TypeReference } from '../src/pulumi-package-metaschema';
+import type {
+	PrimitiveType,
+	PropertyDefinition,
+	TypeReference,
+} from '../src/pulumi-package-metaschema';
 import {
 	arrayTypeArb,
 	mapTypeArb,
 	namedTypeArb,
 	primitiveTypeArb,
+	propertyDefinitionArb,
 	unionTypeArb,
 } from './pulumi-package-metaschema/arbitraries';
 
@@ -126,6 +133,39 @@ describe('type reference to arbitrary', () => {
 		};
 		testTypeReferenceArbValues(arb, valueCheck);
 	});
+});
+
+describe('property definition to arbitrary', () => {
+	it.each([
+		[
+			'should generate constant value if const is set',
+			(propDef) => propDef.const !== undefined,
+			(schemaArb) => (propSchema) => {
+				const check = (value: unknown) => expect(value).toStrictEqual(propSchema.const);
+				fc.assert(fc.property(schemaArb, check), { numRuns: 1 });
+			},
+		],
+		[
+			'should generate default value at least once if default is set',
+			(propDef) => propDef.const === undefined && propDef.default !== undefined,
+			(schemaArb) => (propSchema) => {
+				let defaultOccured: boolean = false;
+				const check = (value: unknown) => {
+					if (Object.is(value, propSchema.default)) defaultOccured = true;
+				};
+				fc.assert(fc.property(schemaArb, check), { numRuns: 20 });
+				expect(defaultOccured).toBe(true);
+			},
+		],
+	] as [string, (p: DeepReadonly<PropertyDefinition>) => boolean, (arb: Arbitrary<unknown>) => (p: DeepReadonly<PropertyDefinition>) => void][])(
+		'%s',
+		(_, propDefFilter, predicate) => {
+			const arb = propertyDefinitionArb().filter(propDefFilter);
+			const pred = (propSchema: DeepReadonly<PropertyDefinition>) =>
+				predicate(propertyDefinitionToArbitrary(propSchema))(propSchema);
+			fc.assert(fc.property(arb, pred));
+		}
+	);
 });
 
 describe('pulumi packages schema generator', () => {
