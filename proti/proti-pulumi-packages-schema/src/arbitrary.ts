@@ -26,26 +26,35 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 };
 
 export const typeReferenceToArbitrary = (
-	typeSchema: DeepReadonly<TypeReference>
+	typeSchema: DeepReadonly<TypeReference>,
+	errMsgContext: string = '*unspecified*'
 ): fc.Arbitrary<unknown> => {
 	// NamedType
 	if (typeSchema.$ref !== undefined)
 		throw new Error(
-			`Support for named types not implemented! Found reference to ${typeSchema.$ref}`
+			`Support for named types not implemented! Found reference to ${typeSchema.$ref} in ${errMsgContext}`
 		);
 	// UnionType
 	if (typeSchema.oneOf !== undefined)
-		return fc.oneof(...typeSchema.oneOf.map(typeReferenceToArbitrary));
+		return fc.oneof(
+			...typeSchema.oneOf.map((oneofSchema, i) =>
+				typeReferenceToArbitrary(oneofSchema, `${errMsgContext}$oneOf:${i}`)
+			)
+		);
 
-	switch (typeSchema.type) {
+	const { type } = typeSchema;
+	switch (type) {
 		case 'array': // ArrayType
-			return fc.array(typeReferenceToArbitrary(typeSchema.items));
+			return fc.array(typeReferenceToArbitrary(typeSchema.items, `${errMsgContext}$items`));
 		case 'object': // MapType
 			return fc.dictionary(
 				fc.string(),
 				typeSchema.additionalProperties === undefined
 					? fc.string()
-					: typeReferenceToArbitrary(typeSchema.additionalProperties)
+					: typeReferenceToArbitrary(
+							typeSchema.additionalProperties,
+							`${errMsgContext}$additionalProperties`
+					  )
 			);
 		case 'boolean': // PrimitiveType
 			return fc.boolean();
@@ -56,31 +65,39 @@ export const typeReferenceToArbitrary = (
 		case 'string': // PrimitiveType
 			return fc.string();
 		default:
-			throw new Error();
+			throw new Error(`Found not implemented schema type "${type}" in ${errMsgContext}`);
 	}
 };
 
 export const propertyDefinitionToArbitrary = (
-	propSchema: DeepReadonly<PropertyDefinition>
+	propSchema: DeepReadonly<PropertyDefinition>,
+	errMsgContext: string = '*unspecified*'
 ): fc.Arbitrary<unknown> => {
 	if (propSchema.const !== undefined) return fc.constant(propSchema.const);
-	const propTypeArbitrary: fc.Arbitrary<unknown> = typeReferenceToArbitrary(propSchema);
+	const propTypeArbitrary = typeReferenceToArbitrary(propSchema, errMsgContext);
 	if (propSchema.default !== undefined)
 		return fc.oneof(fc.constant(propSchema.default), propTypeArbitrary);
 	return propTypeArbitrary;
 };
 
 export const resourceDefinitionToArbitrary = (
-	schema: DeepReadonly<ResourceDefinition>
+	schema: DeepReadonly<ResourceDefinition>,
+	errMsgContext: string = '*unspecified*'
 ): fc.Arbitrary<Readonly<Record<string, unknown>>> => {
 	const props = Object.keys(schema.properties || {});
 	const propArbs: ReadonlyArray<[string, fc.Arbitrary<unknown>]> = props.map((prop) => {
 		const propSchema = schema.properties![prop];
-		return [prop, propertyDefinitionToArbitrary(propSchema)];
+		const propErrMsgContext = `${errMsgContext}$property:${prop}`;
+		return [prop, propertyDefinitionToArbitrary(propSchema, propErrMsgContext)];
 	});
-	return fc.record(Object.fromEntries(propArbs), {
-		requiredKeys: [...(schema.required || [])],
-	});
+	const requiredProps = [...(schema.required || [])];
+	requiredProps
+		.filter((requiredProp) => !props.includes(requiredProp))
+		.forEach((requiredProp) => {
+			const errMsg = `Property "${requiredProp}" required but not defined in ${errMsgContext}`;
+			throw new Error(errMsg);
+		});
+	return fc.record(Object.fromEntries(propArbs), { requiredKeys: requiredProps });
 };
 
 export class PulumiPackagesSchemaGenerator implements Generator {
@@ -104,9 +121,9 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 
 	private async generateResourceState(resourceType: string): Promise<ResourceOutput['state']> {
 		const schema = await this.registry.getSchema(resourceType);
+		const errMsgContext = `resourceDefinition:${resourceType}`;
 		if (schema === undefined)
-			if (this.conf.failOnMissingTypes)
-				throw new Error(`Failed to get schema for resource type ${resourceType}`);
+			if (this.conf.failOnMissingTypes) throw new Error(`Failed to find ${errMsgContext}`);
 			else return this.conf.defaultState;
 
 		return {};

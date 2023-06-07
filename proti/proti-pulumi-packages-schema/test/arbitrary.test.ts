@@ -123,7 +123,7 @@ describe('type reference to arbitrary', () => {
 		const predicate = (typeSchema: DeepReadonly<TypeReference>) => {
 			expect(() =>
 				fc.check(fc.property(typeReferenceToArbitrary(typeSchema), () => {}))
-			).toThrow(/Support for named types not implemented/);
+			).toThrow(/Support for named types not implemented.*Found reference to.*in/);
 		};
 		fc.assert(fc.property(namedTypeArb(), predicate));
 	});
@@ -232,7 +232,9 @@ describe('resource definition to arbitrary', () => {
 				required: [...(resDef.required || []), nonExistingProp],
 			}));
 		const predicate = (resSchema: DeepReadonly<ResourceDefinition>) =>
-			expect(() => resourceDefinitionToArbitrary(resSchema)).toThrow();
+			expect(() => resourceDefinitionToArbitrary(resSchema)).toThrow(
+				/Property ".*" required but not defined in /
+			);
 		fc.assert(fc.property(arb, predicate));
 	});
 });
