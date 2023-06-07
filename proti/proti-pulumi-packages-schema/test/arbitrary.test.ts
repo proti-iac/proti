@@ -5,6 +5,7 @@ import { Arbitrary } from 'fast-check';
 import {
 	propertyDefinitionToArbitrary,
 	PulumiPackagesSchemaGenerator,
+	resourceDefinitionToArbitrary,
 	resourceOutputTraceToString,
 	typeReferenceToArbitrary,
 } from '../src/arbitrary';
@@ -13,6 +14,7 @@ import { SchemaRegistry } from '../src/schema-registry';
 import type {
 	PrimitiveType,
 	PropertyDefinition,
+	ResourceDefinition,
 	TypeReference,
 } from '../src/pulumi-package-metaschema';
 import {
@@ -21,6 +23,7 @@ import {
 	namedTypeArb,
 	primitiveTypeArb,
 	propertyDefinitionArb,
+	resourceDefinitionArb,
 	unionTypeArb,
 } from './pulumi-package-metaschema/arbitraries';
 
@@ -166,6 +169,72 @@ describe('property definition to arbitrary', () => {
 			fc.assert(fc.property(arb, pred));
 		}
 	);
+});
+
+describe('resource definition to arbitrary', () => {
+	const testResourceDefinitionArbValues = (
+		arb: fc.Arbitrary<DeepReadonly<ResourceDefinition>>,
+		valueCheck: (value: unknown, resSchema: DeepReadonly<ResourceDefinition>) => void
+	) => {
+		const predicate = (resSchema: DeepReadonly<ResourceDefinition>) => {
+			const valuePredicate = (value: unknown) => valueCheck(value, resSchema);
+			fc.assert(fc.property(resourceDefinitionToArbitrary(resSchema), valuePredicate), {
+				numRuns: 1,
+			});
+		};
+		fc.assert(fc.property(arb, predicate));
+	};
+
+	it.each([
+		[undefined, undefined],
+		[undefined, []],
+		[{}, undefined],
+		[{}, []],
+	] as [Record<string, PropertyDefinition> | undefined, string[] | undefined][])(
+		'should generate empty dictionary if properties %s and required %s',
+		(properties, required) => {
+			const arb = resourceDefinitionArb().map((resourceSchema) => ({
+				...resourceSchema,
+				properties,
+				required,
+			}));
+			const predicate = (value: unknown) => expect(value).toStrictEqual({});
+			testResourceDefinitionArbValues(arb, predicate);
+		}
+	);
+
+	it('should only generate properties specified in schema', () => {
+		const predicate = (value: any, resSchema: DeepReadonly<ResourceDefinition>) => {
+			expect(typeof value).toBe('object');
+			Object.keys(value).forEach((prop) =>
+				expect(Object.keys(resSchema.properties || {}).includes(prop)).toBe(true)
+			);
+		};
+		testResourceDefinitionArbValues(resourceDefinitionArb(), predicate);
+	});
+
+	it('should always generate properties required in schema', () => {
+		const predicate = (value: any, resSchema: DeepReadonly<ResourceDefinition>) => {
+			expect(typeof value).toBe('object');
+			(resSchema.required || []).forEach(
+				(requiredProp) => expect(value[requiredProp]).toBeDefined
+			);
+		};
+		testResourceDefinitionArbValues(resourceDefinitionArb(), predicate);
+	});
+
+	it('should throw on non-defined but required property', () => {
+		const arb = fc
+			.tuple(fc.string(), resourceDefinitionArb())
+			.filter(([newProp, resDef]) => !Object.keys(resDef.properties || {}).includes(newProp))
+			.map(([nonExistingProp, resDef]) => ({
+				...resDef,
+				required: [...(resDef.required || []), nonExistingProp],
+			}));
+		const predicate = (resSchema: DeepReadonly<ResourceDefinition>) =>
+			expect(() => resourceDefinitionToArbitrary(resSchema)).toThrow();
+		fc.assert(fc.property(arb, predicate));
+	});
 });
 
 describe('pulumi packages schema generator', () => {
