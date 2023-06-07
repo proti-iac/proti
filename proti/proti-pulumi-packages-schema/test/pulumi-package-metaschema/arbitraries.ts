@@ -1,10 +1,13 @@
 import * as fc from 'fast-check';
 import {
+	AliasDefinition,
 	ArrayType,
 	MapType,
 	NamedType,
+	ObjectTypeDetails,
 	PrimitiveType,
 	PropertyDefinition,
+	ResourceDefinition,
 	TypeReference,
 	UnionType,
 } from '../../src/pulumi-package-metaschema';
@@ -102,4 +105,53 @@ export const propertyDefinitionArb = (): fc.Arbitrary<PropertyDefinition> => {
 		...typeReference,
 		...propertyDefinition,
 	}));
+};
+
+export const objectTypeDetailsArb = (): fc.Arbitrary<ObjectTypeDetails> => {
+	const maxProps = 100;
+	return fc
+		.tuple(
+			fc.record(
+				{ properties: fc.constant(true), required: fc.constant(true) },
+				{ requiredKeys: [] }
+			),
+			fc.dictionary(fc.string(), propertyDefinitionArb(), { maxKeys: maxProps }),
+			fc.uniqueArray(fc.nat(maxProps))
+		)
+		.map(([objectTypeDetailsFrame, properties, requiredPropertyIds]) => {
+			const objectTypeDetails: ObjectTypeDetails = {};
+			if (objectTypeDetailsFrame.properties !== undefined) {
+				objectTypeDetails.properties = properties;
+				if (objectTypeDetailsFrame.required !== undefined)
+					objectTypeDetails.required = Object.keys(properties).filter((_, i) =>
+						requiredPropertyIds.includes(i)
+					);
+			}
+			return objectTypeDetails;
+		});
+};
+
+export const aliasDefinitionArb = (): fc.Arbitrary<AliasDefinition> =>
+	fc.record({ name: fc.string(), project: fc.string(), type: fc.string() }, { requiredKeys: [] });
+
+export const resourceDefinitionArb = (): fc.Arbitrary<ResourceDefinition> => {
+	const resDefArb: fc.Arbitrary<ResourceDefinition> = fc.record(
+		{
+			description: fc.string(),
+			stateInputs: objectTypeDetailsArb(),
+			aliases: fc.array(aliasDefinitionArb()),
+			isComponent: fc.boolean(),
+			methods: fc.dictionary(fc.string(), fc.string()),
+			isOverlay: fc.boolean(),
+		},
+		{ requiredKeys: [] }
+	);
+	return fc
+		.tuple(objectTypeDetailsArb(), objectTypeDetailsArb(), resDefArb)
+		.map(([objectTypeDetails, inputProperties, resourceDefinition]) => ({
+			...resourceDefinition,
+			...objectTypeDetails,
+			inputProperties: inputProperties.properties,
+			requiredInputs: inputProperties.required,
+		}));
 };
