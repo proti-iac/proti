@@ -3,24 +3,26 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { assertParse, is, stringify, TypeGuardError } from 'typia';
 import type { SchemaRegistryConfig } from './config';
-import { PkgSchema, ResourceSchema, ResourceType, runPulumi } from './pulumi';
+import { PkgSchema, ResourceDefinition, ResourceType, runPulumi } from './pulumi';
 
 export class SchemaRegistry {
 	private static instance: SchemaRegistry;
 
 	/**
-	 * Package name (key) and package versions (value, format: \d+.\d+.\d+) of loaded package schemas.
+	 * Package name (key) and package versions (value, format: \d+.\d+.\d+) of
+	 * loaded package schemas.
 	 */
 	private readonly loadedPkgSchemas: Map<string, Set<string>> = new Map();
 
 	private readonly loadedPkgSchemaFiles: Set<string> = new Set();
 
 	/**
-	 * package.json files that are already analyzed and can be skipped when searching new resource modules.
+	 * package.json files that are already analyzed and can be skipped when
+	 * searching new resource modules.
 	 */
 	private readonly processedPkgJSONs: Set<string> = new Set();
 
-	private readonly resourceSchemas = new Map<ResourceType, ResourceSchema>();
+	private readonly resources = new Map<ResourceType, ResourceDefinition>();
 
 	public readonly inited: Promise<void>;
 
@@ -41,11 +43,11 @@ export class SchemaRegistry {
 			const cachedSchemaFiles = await this.findCachedPkgSchemaFiles();
 			await Promise.all(cachedSchemaFiles.map((file) => this.loadPkgSchemaFile(file)));
 		}
-		this.log('Loading configured package schema files');
+		this.log(`Loading ${this.config.schemaFiles.length} configured package schema files`);
 		await Promise.all(this.config.schemaFiles.map((file) => this.loadPkgSchemaFile(file)));
-		this.log('Add configured resource schemas');
+		this.log(`Add ${Object.keys(this.config.schemas).length} configured resource schemas`);
 		Object.entries(this.config.schemas).forEach(([type, resourceSchema]) =>
-			this.registerSchema(type, resourceSchema)
+			this.registerResource(type, resourceSchema)
 		);
 	}
 
@@ -100,9 +102,9 @@ export class SchemaRegistry {
 	}
 
 	/**
-	 * Load als resource schemas from a Pulumi package schema stored in a JSON file into the registry.
-	 * @param file File to load the schema from
-	 * @returns Promise that resolves once the schema is loaded
+	 * Load all definitions from a Pulumi package schema JSON file.
+	 * @param file Path of JSON file containing Pulumi package schema.
+	 * @returns Promise that resolves once all definitions are loaded from file.
 	 */
 	public async loadPkgSchemaFile(file: string): Promise<void> {
 		if (this.loadedPkgSchemaFiles.has(file))
@@ -120,10 +122,10 @@ export class SchemaRegistry {
 	}
 
 	private loadPkgSchema(schema: PkgSchema, file?: string): void {
-		this.log(`Loading resource schemas of Pulumi package ${schema.name}@${schema.version}`);
+		this.log(`Loading definitions of Pulumi package ${schema.name}@${schema.version}`);
 		if (schema.resources !== undefined)
-			Object.entries(schema.resources).forEach(([type, resourceSchema]) =>
-				this.registerSchema(type, resourceSchema)
+			Object.entries(schema.resources).forEach(([type, definition]) =>
+				this.registerResource(type, definition)
 			);
 		if (file !== undefined) this.loadedPkgSchemaFiles.add(file);
 		const pkgSchemaVersionsLoaded = this.loadedPkgSchemas.get(schema.name);
@@ -135,23 +137,26 @@ export class SchemaRegistry {
 		else if (schema.version !== undefined) pkgSchemaVersionsLoaded.add(schema.version);
 	}
 
-	private registerSchema(type: ResourceType, schema: ResourceSchema): void {
-		this.log(`Registering Pulumi packages schema for ${type}`);
-		this.resourceSchemas.set(type, schema);
+	private registerResource(type: ResourceType, definition: ResourceDefinition): void {
+		this.log(`Registering resource definition of ${type}`);
+		this.resources.set(type, definition);
 	}
 
 	/**
-	 * Retrieves the schema for a resource type from the egistry. If downloading
-	 * schemas is enabled, it transparently downloads new schemas found in
-	 * imported packages when it cannot find the resource type's schema.
+	 * Retrieves the definition for a resource type from the registry. If
+	 * resource type is not in registry and downloading schemas is enabled, it
+	 * transparently downloads new Pulumi package schemas found in imported
+	 * package.json modules.
 	 * @param type Resource type.
-	 * @returns Resource schema or `undefined` if resource schema could not be
-	 * found.
+	 * @returns Resource definition or `undefined` if definition not available.
 	 */
-	public async getSchema(type: ResourceType): Promise<ResourceSchema | undefined> {
-		if (this.config.downloadSchemas && this.resourceSchemas.has(type) === false)
+	public async getResource(type: ResourceType): Promise<ResourceDefinition | undefined> {
+		const resourceDef = this.resources.get(type);
+		if (resourceDef === undefined && this.config.downloadSchemas) {
 			await this.downloadPkgSchemas();
-		return this.resourceSchemas.get(type);
+			return this.resources.get(type);
+		}
+		return resourceDef;
 	}
 
 	/**
@@ -194,7 +199,8 @@ export class SchemaRegistry {
 	})();
 
 	/**
-	 * @returns List of new modules as tuple of name and optional version in semver format
+	 * @returns List of new Pulumi packages as tuple of name and optional
+	 * version in semver format.
 	 */
 	private async findNewPulumiPkgs(): Promise<
 		ReadonlyArray<readonly [string, string | undefined]>

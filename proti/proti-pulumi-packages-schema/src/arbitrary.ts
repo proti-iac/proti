@@ -120,7 +120,7 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 	}
 
 	private async generateResourceState(resourceType: string): Promise<ResourceOutput['state']> {
-		const schema = await this.registry.getSchema(resourceType);
+		const schema = await this.registry.getResource(resourceType);
 		const errMsgContext = `resourceDefinition:${resourceType}`;
 		if (schema === undefined)
 			if (this.conf.failOnMissingTypes) throw new Error(`Failed to find ${errMsgContext}`);

@@ -9,7 +9,7 @@ import {
 	resetCachedConfig,
 	SchemaRegistryConfig,
 } from '../src/config';
-import type { ResourceSchema } from '../src/pulumi';
+import type { ResourceDefinition } from '../src/pulumi';
 
 describe('config defaults', () => {
 	it.each([
@@ -39,7 +39,7 @@ describe('config', () => {
 		expect(config(undefined, true)).toStrictEqual(defaultConfig());
 	});
 
-	const resource: ResourceSchema = { b: 5 };
+	const resource: ResourceDefinition = { b: 5 };
 	it.each([
 		{ registry: { schemas: { a: resource } } },
 		{

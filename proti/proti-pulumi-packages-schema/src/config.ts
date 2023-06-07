@@ -1,6 +1,6 @@
 import { assertEquals, equals } from 'typia';
 import { deepMerge, DeepReadonly } from '@proti/core';
-import type { ResourceType, ResourceSchema, ResourceSchemas } from './pulumi';
+import type { ResourceType, ResourceDefinition } from './pulumi';
 
 export const defaultArbitraryConfig = () => ({
 	/**
@@ -27,7 +27,7 @@ export const defaultSchemaRegistryConfig = () => ({
 	 * Resource schemas to load into the registry. Overrides cached schemas and
 	 * schema files.
 	 */
-	schemas: {} as Record<ResourceType, ResourceSchema>,
+	schemas: {} as Record<ResourceType, ResourceDefinition>,
 	/**
 	 * If true, try to download all schemas of loaded Pulumi resource packages
 	 * using `pulumi package get-schema` when a resource schema is requested
@@ -64,9 +64,9 @@ export const config = (partialConfig: any = {}, ignoreCache: boolean = false): C
 			'.plugins.pulumi-packages-schema'
 		);
 		if (partialConfig?.registry?.schemas !== undefined)
-			configCandidate.registry.schemas = assertEquals<ResourceSchemas>(
-				partialConfig.registry.schemas
-			);
+			configCandidate.registry.schemas = assertEquals<
+				Readonly<Record<ResourceType, ResourceDefinition>>
+			>(partialConfig.registry.schemas);
 		cachedConfig = assertEquals<Config>(configCandidate);
 	}
 	return cachedConfig;
