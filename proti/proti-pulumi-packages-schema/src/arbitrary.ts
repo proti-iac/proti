@@ -11,6 +11,7 @@ import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { ArbitraryConfig, config } from './config';
+import { TypeReference } from './pulumi-package-metaschema';
 
 export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
 	const numLength = trace.length.toString().length;
@@ -22,6 +23,41 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 			),
 		])
 		.join('\n');
+};
+
+export const typeReferenceToArbitrary = (
+	typeSchema: DeepReadonly<TypeReference>
+): fc.Arbitrary<unknown> => {
+	// NamedType
+	if (typeSchema.$ref !== undefined)
+		throw new Error(
+			`Support for named types not implemented! Found reference to ${typeSchema.$ref}`
+		);
+	// UnionType
+	if (typeSchema.oneOf !== undefined)
+		return fc.oneof(...typeSchema.oneOf.map(typeReferenceToArbitrary));
+
+	switch (typeSchema.type) {
+		case 'array': // ArrayType
+			return fc.array(typeReferenceToArbitrary(typeSchema.items));
+		case 'object': // MapType
+			return fc.dictionary(
+				fc.string(),
+				typeSchema.additionalProperties === undefined
+					? fc.string()
+					: typeReferenceToArbitrary(typeSchema.additionalProperties)
+			);
+		case 'boolean': // PrimitiveType
+			return fc.boolean();
+		case 'integer': // PrimitiveType
+			return fc.integer();
+		case 'number': // PrimitiveType
+			return fc.oneof(fc.integer(), fc.float(), fc.double());
+		case 'string': // PrimitiveType
+			return fc.string();
+		default:
+			throw new Error();
+	}
 };
 
 export class PulumiPackagesSchemaGenerator implements Generator {

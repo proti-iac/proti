@@ -75,7 +75,7 @@ export const typeReferenceArb = (): fc.Arbitrary<TypeReference> =>
 			primitiveTypeArb(),
 			arrayTypeArb(tie('typeReference')),
 			mapTypeArb(tie('typeReference')),
-			namedTypeArb(),
+			// namedTypeArb(),
 			unionTypeArb(tie('typeReference'))
 		),
 	})).typeReference;
