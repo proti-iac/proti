@@ -85,6 +85,11 @@ describe('schema registry', () => {
 			expect(() => SchemaRegistry.getInstance()).toThrow(/registry not initialized/);
 		});
 
+		it('should fail without waiting for initialization', async () => {
+			init(); // do not await!
+			expect(() => SchemaRegistry.getInstance()).toThrow(/registry not initialized/);
+		});
+
 		it('should initialize once', async () => {
 			await init();
 			const firstRegistry = SchemaRegistry.getInstance();

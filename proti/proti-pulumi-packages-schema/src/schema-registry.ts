@@ -24,17 +24,15 @@ export class SchemaRegistry {
 
 	private readonly resources = new Map<ResourceType, ResourceDefinition>();
 
-	public readonly inited: Promise<void>;
-
 	private constructor(
 		private readonly moduleLoader: ModuleLoader,
 		private readonly config: SchemaRegistryConfig,
 		private readonly projectDir: string,
 		private readonly cacheDir: string,
 		private readonly log: (msg: string) => void
-	) {
-		this.inited = this.init();
-	}
+	) {}
+
+	private initialized: boolean = false;
 
 	private async init(): Promise<void> {
 		this.log('Initializing Pulumi packages schema registry');
@@ -49,16 +47,21 @@ export class SchemaRegistry {
 		Object.entries(this.config.schemas).forEach(([type, resourceSchema]) =>
 			this.registerResource(type, resourceSchema)
 		);
+		this.initialized = true;
 	}
 
+	private static initialized: Promise<void>;
+
 	/**
-	 * (Re-)initializes registry instance. Must be called before `getInstance`.
+	 * (Re-)initializes registry instance. Must be called and awaited once
+	 * before {@link getInstance}.
 	 * @param moduleLoader Program's module loader.
 	 * @param config Plugin config.
 	 * @param projectDir Jest project directorry.
 	 * @param cacheDir Jest project cache directory.
 	 * @param logger Logging function.
-	 * @param forceInit If false, re-initialization is ignored. If true, a new registry replaces previous one.
+	 * @param forceInit If false, re-initialization is ignored. If true, a new
+	 * registry replaces previous one.
 	 */
 	public static async initInstance(
 		moduleLoader: ModuleLoader,
@@ -68,7 +71,7 @@ export class SchemaRegistry {
 		logger: (l: string) => void,
 		forceInit = false
 	): Promise<void> {
-		if (!SchemaRegistry.instance || forceInit)
+		if (!SchemaRegistry.instance || forceInit) {
 			SchemaRegistry.instance = new SchemaRegistry(
 				moduleLoader,
 				config,
@@ -76,19 +79,23 @@ export class SchemaRegistry {
 				path.resolve(cacheDir, config.cacheSubdir),
 				logger
 			);
-		else SchemaRegistry.instance.log('Skipping Pulumi packages schema registry initalization');
-		await SchemaRegistry.instance.inited;
+			SchemaRegistry.initialized = SchemaRegistry.instance.init();
+		} else
+			SchemaRegistry.instance.log('Skipping Pulumi packages schema registry initalization');
+		await SchemaRegistry.initialized;
 	}
 
 	/**
-	 * Returns schema registry instance after it was initialized using `initInstance`.
+	 * Returns schema registry instance after it was initialized.
+	 * {@link initInstance} must be called and awaited before.
 	 * @returns schema registry
-	 * @throws If schema registry is not initialized.
+	 * @throws If {@link initInstance} was not called and awaited before.
 	 */
 	public static getInstance(): SchemaRegistry {
-		if (!SchemaRegistry.instance)
+		const { instance } = SchemaRegistry;
+		if (!instance || !instance.initialized)
 			throw new Error('Pulumi packages schema registry not initialized');
-		return SchemaRegistry.instance;
+		return instance;
 	}
 
 	private async findCachedPkgSchemaFiles(): Promise<string[]> {
