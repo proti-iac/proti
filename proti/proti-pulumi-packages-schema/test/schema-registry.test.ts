@@ -5,10 +5,19 @@ import os from 'os';
 import path from 'path';
 import { stringify } from 'typia';
 import { config, SchemaRegistryConfig } from '../src/config';
-import { PkgSchema, ResourceType, ResourceDefinition, runPulumi } from '../src/pulumi';
+import {
+	PkgSchema,
+	ResourceType,
+	ResourceDefinition,
+	runPulumi,
+	Type,
+	TypeDefinition,
+} from '../src/pulumi';
 import { SchemaRegistry } from '../src/schema-registry';
 
 jest.mock('../src/pulumi', () => ({ runPulumi: jest.fn() }));
+
+type Definitions = readonly [ResourceDefinition, TypeDefinition];
 
 describe('schema registry', () => {
 	const conf = config().registry;
@@ -16,8 +25,13 @@ describe('schema registry', () => {
 	let projDir: string;
 	let cacheDir: string;
 
-	const resourceDefinition: ResourceDefinition = {};
-	const resourceType: ResourceType = 'a';
+	const resourceDefinition: ResourceDefinition = { isComponent: true };
+	const resourceType: ResourceType = 'aR';
+	const typeDefinition: TypeDefinition = {
+		properties: { type: { type: 'boolean', const: true } },
+	};
+	const type: Type = 'aT';
+	const definitions: Definitions = [resourceDefinition, typeDefinition];
 	const pkgName: string = 'foo';
 	const pkgVersion: string = '1.2.3';
 	const pkg: string = `${pkgName}@${pkgVersion}`;
@@ -25,7 +39,8 @@ describe('schema registry', () => {
 	const pkgSchema: PkgSchema = {
 		name: pkgName,
 		version: pkgVersion,
-		resources: { a: resourceDefinition },
+		resources: { aR: resourceDefinition },
+		types: { aT: typeDefinition },
 	};
 	const pkgJson = {
 		scripts: {
@@ -41,11 +56,14 @@ describe('schema registry', () => {
 	let pkgJsonNoVFile: string;
 
 	const cachedResourceDefinition: ResourceDefinition = { a: 2 };
+	const cachedTypeDefinition: TypeDefinition = { cachedType: 'yay' };
+	const cachedDefinitions: Definitions = [cachedResourceDefinition, cachedTypeDefinition];
 	let cachedPkgSchemaFile: string;
 	const cachedPkgSchema: PkgSchema = {
 		name: 'bar',
 		version: '1.2.3',
-		resources: { a: cachedResourceDefinition },
+		resources: { aR: cachedResourceDefinition },
+		types: { aT: cachedTypeDefinition },
 	};
 
 	beforeAll(async () => {
@@ -129,28 +147,31 @@ describe('schema registry', () => {
 				true
 			);
 		};
-		const getResource = (type: ResourceType = resourceType) =>
-			SchemaRegistry.getInstance().getResource(type);
+		const getDefinitions = async (resType: ResourceType = resourceType, tType: Type = type) => [
+			await SchemaRegistry.getInstance().getResource(resType),
+			await SchemaRegistry.getInstance().getType(tType),
+		];
+		const noDefinitions = [undefined, undefined];
 
 		describe('initialization', () => {
 			it('loads package schema from cache', async () => {
 				await init({});
-				expect(await getResource()).toStrictEqual(cachedResourceDefinition);
+				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 			});
 
 			it('does not load package schema that is not in cache', async () => {
 				await init({ cacheSubdir: 'other' });
-				expect(await getResource()).toBe(undefined);
+				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 			});
 
 			it('does not load package schema that is in cache, if disabled', async () => {
 				await init({ loadCachedSchemas: false });
-				expect(await getResource()).toBe(undefined);
+				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 			});
 
 			it('loads package schema from schemaFiles config', async () => {
 				await init({ loadCachedSchemas: false, schemaFiles: [cachedPkgSchemaFile] });
-				expect(await getResource()).toStrictEqual(cachedResourceDefinition);
+				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 			});
 
 			it('does not load package schema from invalid schemaFiles config', () =>
@@ -160,30 +181,34 @@ describe('schema registry', () => {
 
 			it('schemaFiles config overrides cached schemas', async () => {
 				await init({ schemaFiles: [pkgSchemaFile] });
-				expect(await getResource()).toStrictEqual(resourceDefinition);
+				expect(await getDefinitions()).toStrictEqual(definitions);
 			});
 
-			it('loads resource definitions from resources config', async () => {
-				const resourceDefinitions: Record<ResourceType, ResourceDefinition> = {};
-				resourceDefinitions[resourceType] = cachedResourceDefinition;
-				await init({ loadCachedSchemas: false, resources: resourceDefinitions });
-				expect(await getResource()).toStrictEqual(cachedResourceDefinition);
+			it('loads definitions from config', async () => {
+				await init({
+					loadCachedSchemas: false,
+					resources: { [resourceType]: cachedResourceDefinition },
+					types: { [type]: cachedTypeDefinition },
+				});
+				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 			});
 
-			it('resources config overrides schemaFiles config definitions', async () => {
-				const resourceDefinitions: Record<ResourceType, ResourceDefinition> = {};
-				resourceDefinitions[resourceType] = resourceDefinition;
-				await init({ schemaFiles: [cachedPkgSchemaFile], resources: resourceDefinitions });
-				expect(await getResource()).toStrictEqual(resourceDefinition);
+			it('configured definitions override schemaFiles config definitions', async () => {
+				await init({
+					schemaFiles: [cachedPkgSchemaFile],
+					resources: { [resourceType]: resourceDefinition },
+					types: { [type]: typeDefinition },
+				});
+				expect(await getDefinitions()).toStrictEqual(definitions);
 			});
 		});
 
 		describe('manual file loading', () => {
 			it('should load schema from file', async () => {
 				await init({});
-				expect(await getResource()).toStrictEqual(cachedResourceDefinition);
+				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 				await SchemaRegistry.getInstance().loadPkgSchemaFile(pkgSchemaFile);
-				expect(await getResource()).toStrictEqual(resourceDefinition);
+				expect(await getDefinitions()).toStrictEqual(definitions);
 			});
 
 			it('should not load file twice', async () => {
@@ -226,7 +251,7 @@ describe('schema registry', () => {
 						{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
 						...modules()
 					);
-					expect(await getResource()).toStrictEqual(resourceDefinition);
+					expect(await getDefinitions()).toStrictEqual(definitions);
 					expect(pulumi).toHaveBeenCalledWith(
 						['package', 'get-schema', hasVersion ? pkg : pkgName],
 						projDir,
@@ -239,7 +264,7 @@ describe('schema registry', () => {
 			it('does not download schemas if resource is registered', async () => {
 				const pulumi = initPulumiMock();
 				await init({}, new Map([[pkgJsonFile, null]]));
-				expect(await getResource()).toStrictEqual(cachedResourceDefinition);
+				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
@@ -249,14 +274,14 @@ describe('schema registry', () => {
 					{ loadCachedSchemas: false, downloadSchemas: false },
 					new Map([[pkgJsonFile, null]])
 				);
-				expect(await getResource()).toBe(undefined);
+				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
 			it('does not download schemas if package.json not existing', async () => {
 				const pulumi = initPulumiMock();
 				await init({ loadCachedSchemas: false }, new Map([['INVALID/package.json', null]]));
-				expect(await getResource()).toBe(undefined);
+				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
@@ -266,7 +291,7 @@ describe('schema registry', () => {
 					{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
 					new Map([[pkgJsonFile, null]])
 				);
-				expect(await getResource()).toBe(undefined);
+				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 				expect(pulumi).toHaveBeenCalledTimes(1);
 			});
 
@@ -287,7 +312,7 @@ describe('schema registry', () => {
 					await fs.writeFile(file, packageJson);
 					const pulumi = initPulumiMock();
 					await init({ loadCachedSchemas: false }, new Map([[file, null]]));
-					expect(await getResource()).toBe(undefined);
+					expect(await getDefinitions()).toStrictEqual(noDefinitions);
 					expect(pulumi).toHaveBeenCalledTimes(0);
 					await fs.rm(dir, { recursive: true });
 				}
@@ -315,7 +340,14 @@ describe('schema registry', () => {
 					);
 
 					await init({}, new Map([[withVersion ? pkgJsonFile : pkgJsonNoVFile, null]]));
-					expect(await getResource('b')).toBe(undefined);
+					expect(await getDefinitions('b')).toStrictEqual([
+						undefined,
+						cachedTypeDefinition,
+					]);
+					expect(await getDefinitions(resourceType, 'b')).toStrictEqual([
+						cachedResourceDefinition,
+						undefined,
+					]);
 					expect(pulumi).toHaveBeenCalledTimes(download ? 1 : 0);
 
 					await fs.rm(tmpFile); // Cleanup
@@ -332,16 +364,17 @@ describe('schema registry', () => {
 						const pulumi = initPulumiMock({
 							name: 'barz',
 							version: '4.5.6',
-							resources: { b: resourceDefinition },
+							resources: { bR: resourceDefinition },
+							types: { bT: typeDefinition },
 						});
 						const cacheFile = path.join(cacheDir, conf.cacheSubdir, 'barz@4.5.6.json');
 						await expect(fs.access(cacheFile)).rejects.toThrow(); // Precondition: cache file does not exist yet
 						const modules = new Map([[pkgJsonFile, null]]);
 
 						await init({ cacheDownloadedSchemas }, modules);
-						expect(await getResource('b')).toStrictEqual(resourceDefinition);
+						expect(await getDefinitions('bR', 'bT')).toStrictEqual(definitions);
 						await init({ cacheDownloadedSchemas }, modules);
-						expect(await getResource('b')).toStrictEqual(resourceDefinition);
+						expect(await getDefinitions('bR', 'bT')).toStrictEqual(definitions);
 
 						expect(pulumi).toHaveBeenCalledTimes(pulumiCalls);
 						if (cacheDownloadedSchemas) {
@@ -357,7 +390,8 @@ describe('schema registry', () => {
 					initPulumiMock({
 						name: 'barz',
 						version: '4.5.6',
-						resources: { b: resourceDefinition },
+						resources: { bR: resourceDefinition },
+						types: { bT: typeDefinition },
 					});
 					const cacheSubdir = 'anotherTmp';
 					const fullCacheDir = path.join(cacheDir, cacheSubdir);
@@ -365,7 +399,11 @@ describe('schema registry', () => {
 
 					const modules = new Map([[pkgJsonFile, null]]);
 					await init({ cacheSubdir }, modules);
-					expect(await getResource('b')).toStrictEqual(resourceDefinition);
+					expect(await getDefinitions('bR')).toStrictEqual([
+						resourceDefinition,
+						undefined,
+					]);
+					expect(await getDefinitions('bR', 'bT')).toStrictEqual(definitions);
 
 					await expect(fs.access(fullCacheDir)).resolves.toBe(undefined);
 					await fs.rm(fullCacheDir, { recursive: true });

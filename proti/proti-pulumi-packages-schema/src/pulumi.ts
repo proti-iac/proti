@@ -4,6 +4,7 @@ import {
 	PulumiPackageMetaschema,
 	ResourceDefinition as PulumiResourceDefinition,
 	Token,
+	TypeDefinition as PulumiTypeDefinition,
 } from './pulumi-package-metaschema';
 
 // Pulumi hides the runPulumiCmd export using @internal. To use it here, we provide the type declaration manually.
@@ -31,4 +32,6 @@ export const runPulumi = runPulumiCmd;
 
 export type ResourceType = Token;
 export type ResourceDefinition = DeepReadonly<PulumiResourceDefinition>;
+export type Type = Token;
+export type TypeDefinition = DeepReadonly<PulumiTypeDefinition>;
 export type PkgSchema = DeepReadonly<PulumiPackageMetaschema>;

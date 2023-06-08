@@ -9,7 +9,7 @@ import {
 	resetCachedConfig,
 	SchemaRegistryConfig,
 } from '../src/config';
-import type { ResourceDefinition } from '../src/pulumi';
+import type { ResourceDefinition, TypeDefinition } from '../src/pulumi';
 
 describe('config defaults', () => {
 	it.each([
@@ -40,13 +40,16 @@ describe('config', () => {
 	});
 
 	const resource: ResourceDefinition = { b: 5 };
+	const type: TypeDefinition = { d: 6 };
 	it.each([
 		{},
 		{ registry: {} },
 		{ registry: { resources: { a: resource } } },
+		{ registry: { types: { c: type } } },
 		{
 			registry: {
 				resources: { a: resource },
+				types: { c: type },
 				schemaFiles: ['a', 'b'],
 				cacheDownloadedSchemas: false,
 			},
@@ -67,6 +70,8 @@ describe('config', () => {
 		{ a: false },
 		{ registry: { resources: 5 } },
 		{ registry: { resources: { a: 5 } }, loadSchemas: 5 },
+		{ registry: { types: 6 } },
+		{ registry: { types: { d: 6 } }, loadSchemas: 5 },
 	])('should throw on invalid config %s', (partialConfig) => {
 		expect(() => config(partialConfig, true)).toThrow();
 	});

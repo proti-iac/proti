@@ -3,7 +3,14 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { assertParse, is, stringify, TypeGuardError } from 'typia';
 import type { SchemaRegistryConfig } from './config';
-import { PkgSchema, ResourceDefinition, ResourceType, runPulumi } from './pulumi';
+import {
+	PkgSchema,
+	ResourceDefinition,
+	ResourceType,
+	runPulumi,
+	Type,
+	TypeDefinition,
+} from './pulumi';
 
 export class SchemaRegistry {
 	private static instance: SchemaRegistry;
@@ -24,6 +31,8 @@ export class SchemaRegistry {
 
 	private readonly resources = new Map<ResourceType, ResourceDefinition>();
 
+	private readonly types = new Map<Type, TypeDefinition>();
+
 	private constructor(
 		private readonly moduleLoader: ModuleLoader,
 		private readonly config: SchemaRegistryConfig,
@@ -41,13 +50,15 @@ export class SchemaRegistry {
 			const cachedSchemaFiles = await this.findCachedPkgSchemaFiles();
 			await Promise.all(cachedSchemaFiles.map((file) => this.loadPkgSchemaFile(file)));
 		}
+
 		this.log(`Loading ${this.config.schemaFiles.length} configured package schema files`);
 		await Promise.all(this.config.schemaFiles.map((file) => this.loadPkgSchemaFile(file)));
-		const resourceDefinitions = Object.entries(this.config.resources);
-		this.log(`Adding ${resourceDefinitions.length} configured resource definitions`);
-		resourceDefinitions.forEach(([type, resourceDefinition]) =>
-			this.registerResource(type, resourceDefinition)
-		);
+
+		const resourceCount = Object.keys(this.config.resources).length;
+		const typeCount = Object.keys(this.config.types).length;
+		this.log(`Adding configured definitions: ${resourceCount} resources, ${typeCount} types`);
+		this.registerDefinitions(this.config.resources, this.config.types);
+
 		this.initialized = true;
 	}
 
@@ -131,10 +142,7 @@ export class SchemaRegistry {
 
 	private loadPkgSchema(schema: PkgSchema, file?: string): void {
 		this.log(`Loading definitions of Pulumi package ${schema.name}@${schema.version}`);
-		if (schema.resources !== undefined)
-			Object.entries(schema.resources).forEach(([type, definition]) =>
-				this.registerResource(type, definition)
-			);
+		this.registerDefinitions(schema.resources, schema.types);
 		if (file !== undefined) this.loadedPkgSchemaFiles.add(file);
 		const pkgSchemaVersionsLoaded = this.loadedPkgSchemas.get(schema.name);
 		if (pkgSchemaVersionsLoaded === undefined)
@@ -143,6 +151,14 @@ export class SchemaRegistry {
 				new Set(schema.version === undefined ? [] : [schema.version])
 			);
 		else if (schema.version !== undefined) pkgSchemaVersionsLoaded.add(schema.version);
+	}
+
+	private registerDefinitions(
+		resources: Readonly<Record<ResourceType, ResourceDefinition>> = {},
+		types: Readonly<Record<Type, TypeDefinition>> = {}
+	): void {
+		Object.keys(resources).forEach((type) => this.registerResource(type, resources[type]));
+		Object.keys(types).forEach((type) => this.registerType(type, types[type]));
 	}
 
 	private registerResource(type: ResourceType, definition: ResourceDefinition): void {
@@ -159,12 +175,35 @@ export class SchemaRegistry {
 	 * @returns Resource definition or `undefined` if definition not available.
 	 */
 	public async getResource(type: ResourceType): Promise<ResourceDefinition | undefined> {
-		const resourceDef = this.resources.get(type);
-		if (resourceDef === undefined && this.config.downloadSchemas) {
+		return this.getDefinition(type, this.resources);
+	}
+
+	private registerType(type: Type, definition: TypeDefinition): void {
+		this.log(`Registering type definition of ${type}`);
+		this.types.set(type, definition);
+	}
+
+	/**
+	 * Retrieves the definition for a type from the registry. If type is not in
+	 * registry and downloading schemas is enabled, it transparently downloads
+	 * new Pulumi package schemas found in imported package.json modules.
+	 * @param type Type.
+	 * @returns Type definition or `undefined` if definition not available.
+	 */
+	public getType(type: Type): Promise<TypeDefinition | undefined> {
+		return this.getDefinition(type, this.types);
+	}
+
+	private async getDefinition<T, D>(
+		type: T,
+		register: ReadonlyMap<T, D>
+	): Promise<D | undefined> {
+		const definition = register.get(type);
+		if (definition === undefined && this.config.downloadSchemas) {
 			await this.downloadPkgSchemas();
-			return this.resources.get(type);
+			return register.get(type);
 		}
-		return resourceDef;
+		return definition;
 	}
 
 	/**
