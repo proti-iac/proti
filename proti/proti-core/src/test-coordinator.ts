@@ -197,7 +197,7 @@ export class TestCoordinator {
 	private loadOracles(): Promise<OracleClasses> {
 		const oracleClasses = this.config.oracles.map(async (moduleName) => {
 			const oracleModule = await import(moduleName);
-			this.initTestModule(oracleModule);
+			await this.initTestModule(oracleModule);
 			const OracleConstructor = oracleModule.default;
 			const oracle = new OracleConstructor();
 			const isOracle = {
@@ -221,7 +221,7 @@ export class TestCoordinator {
 		const generatorArbitraryModule = await import(this.config.arbitrary);
 		if (!is<fc.Arbitrary<Generator>>(this.arbitrary))
 			throw new Error(`Invalid test generator arbitrary ${this.config.arbitrary}`);
-		this.initTestModule(generatorArbitraryModule);
+		await this.initTestModule(generatorArbitraryModule);
 		const ArbitraryConstructor = generatorArbitraryModule.default;
 		return new ArbitraryConstructor();
 	}

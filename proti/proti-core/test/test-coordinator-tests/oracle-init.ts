@@ -14,6 +14,10 @@ export default Oracle;
 
 // eslint-disable-next-line import/no-mutable-exports
 export let config: TestModuleConfig;
-export const init: TestModuleInitFn = async (testModuleConfig) => {
-	config = testModuleConfig;
-};
+export const init: TestModuleInitFn = async (testModuleConfig) =>
+	new Promise((done) => {
+		process.nextTick(() => {
+			config = testModuleConfig;
+			done();
+		});
+	});
