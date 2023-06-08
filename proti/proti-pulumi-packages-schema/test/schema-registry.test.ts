@@ -158,22 +158,22 @@ describe('schema registry', () => {
 					init({ loadCachedSchemas: false, schemaFiles: ['not-existing'] })
 				).rejects.toThrow(/Failed to load Pulumi package schema file/));
 
-			it('schemaFiles config overrides cached schema', async () => {
+			it('schemaFiles config overrides cached schemas', async () => {
 				await init({ schemaFiles: [pkgSchemaFile] });
 				expect(await getResource()).toStrictEqual(resourceDefinition);
 			});
 
-			it('loads resource schemas from schemas config', async () => {
+			it('loads resource definitions from resources config', async () => {
 				const resourceDefinitions: Record<ResourceType, ResourceDefinition> = {};
 				resourceDefinitions[resourceType] = cachedResourceDefinition;
-				await init({ loadCachedSchemas: false, schemas: resourceDefinitions });
+				await init({ loadCachedSchemas: false, resources: resourceDefinitions });
 				expect(await getResource()).toStrictEqual(cachedResourceDefinition);
 			});
 
-			it('schemas config overrides schemaFiles config schemas', async () => {
+			it('resources config overrides schemaFiles config definitions', async () => {
 				const resourceDefinitions: Record<ResourceType, ResourceDefinition> = {};
 				resourceDefinitions[resourceType] = resourceDefinition;
-				await init({ schemaFiles: [cachedPkgSchemaFile], schemas: resourceDefinitions });
+				await init({ schemaFiles: [cachedPkgSchemaFile], resources: resourceDefinitions });
 				expect(await getResource()).toStrictEqual(resourceDefinition);
 			});
 		});

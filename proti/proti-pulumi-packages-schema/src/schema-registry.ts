@@ -43,9 +43,10 @@ export class SchemaRegistry {
 		}
 		this.log(`Loading ${this.config.schemaFiles.length} configured package schema files`);
 		await Promise.all(this.config.schemaFiles.map((file) => this.loadPkgSchemaFile(file)));
-		this.log(`Add ${Object.keys(this.config.schemas).length} configured resource schemas`);
-		Object.entries(this.config.schemas).forEach(([type, resourceSchema]) =>
-			this.registerResource(type, resourceSchema)
+		const resourceDefinitions = Object.entries(this.config.resources);
+		this.log(`Adding ${resourceDefinitions.length} configured resource definitions`);
+		resourceDefinitions.forEach(([type, resourceDefinition]) =>
+			this.registerResource(type, resourceDefinition)
 		);
 		this.initialized = true;
 	}

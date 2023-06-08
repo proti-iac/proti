@@ -41,10 +41,12 @@ describe('config', () => {
 
 	const resource: ResourceDefinition = { b: 5 };
 	it.each([
-		{ registry: { schemas: { a: resource } } },
+		{},
+		{ registry: {} },
+		{ registry: { resources: { a: resource } } },
 		{
 			registry: {
-				schemas: { a: resource },
+				resources: { a: resource },
 				schemaFiles: ['a', 'b'],
 				cacheDownloadedSchemas: false,
 			},
@@ -63,8 +65,8 @@ describe('config', () => {
 		false,
 		null,
 		{ a: false },
-		{ registry: { schemas: 5 } },
-		{ registry: { schemas: { a: 5 } }, loadSchemas: 5 },
+		{ registry: { resources: 5 } },
+		{ registry: { resources: { a: 5 } }, loadSchemas: 5 },
 	])('should throw on invalid config %s', (partialConfig) => {
 		expect(() => config(partialConfig, true)).toThrow();
 	});

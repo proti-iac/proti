@@ -22,15 +22,15 @@ export const defaultSchemaRegistryConfig = () => ({
 	/** Load package schema files cached in Jest project cache directory. */
 	loadCachedSchemas: true,
 	/** Package schema files to load into the registry. Overrides cached schemas. */
-	schemaFiles: [] as string[],
+	schemaFiles: [] as ReadonlyArray<string>,
 	/**
-	 * Resource schemas to load into the registry. Overrides cached schemas and
-	 * schema files.
+	 * Resource definitions to load into the registry. Overrides cached schemas
+	 * and schema files.
 	 */
-	schemas: {} as Record<ResourceType, ResourceDefinition>,
+	resources: {} as Readonly<Record<ResourceType, ResourceDefinition>>,
 	/**
 	 * If true, try to download all schemas of loaded Pulumi resource packages
-	 * using `pulumi package get-schema` when a resource schema is requested
+	 * using `pulumi package get-schema` when a resource definition is requested
 	 * that is missing in the schema registry.
 	 */
 	downloadSchemas: true,
@@ -56,17 +56,18 @@ export const resetCachedConfig = () => {
 export const config = (partialConfig: any = {}, ignoreCache: boolean = false): Config => {
 	if (ignoreCache) resetCachedConfig();
 	if (cachedConfig === undefined) {
-		// Deep merge only handles structure present in the default config. Hence, schemas have to be treated manually.
+		// Deep merge only handles structure present in the default config.
+		// Hence, resource definitions have to be treated manually.
 		const configCandidate = deepMerge(
 			defaultConfig(),
 			partialConfig,
-			['.plugins.pulumi-packages-schema.registry.schemas'],
+			['.plugins.pulumi-packages-schema.registry.resources'],
 			'.plugins.pulumi-packages-schema'
 		);
-		if (partialConfig?.registry?.schemas !== undefined)
-			configCandidate.registry.schemas = assertEquals<
+		if (partialConfig?.registry?.resources !== undefined)
+			configCandidate.registry.resources = assertEquals<
 				Readonly<Record<ResourceType, ResourceDefinition>>
-			>(partialConfig.registry.schemas);
+			>(partialConfig.registry.resources);
 		cachedConfig = assertEquals<Config>(configCandidate);
 	}
 	return cachedConfig;
