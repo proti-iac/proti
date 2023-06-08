@@ -10,6 +10,7 @@ import {
 	runPulumi,
 	Type,
 	TypeDefinition,
+	TypeRef,
 } from './pulumi';
 
 export class SchemaRegistry {
@@ -204,6 +205,29 @@ export class SchemaRegistry {
 			return register.get(type);
 		}
 		return definition;
+	}
+
+	/**
+	 * Tries to resolve a type reference for built-in, resource and type
+	 * definitions. Assumes references of the format `[origin]#[type]`. This
+	 * method ignores the value of [origin]. If [type] has the format
+	 * `/types/[token]`, it looks for a type definition [token] in the registry.
+	 * If [type] has the format `/resources/[token]`, it looks for a resource
+	 * definition [token] in the registry.
+	 * @param typeRef Type reference to resolve.
+	 * @returns Resource or type definition for type reference or `undefined` if
+	 * type reference cannot be resolved and no definition can be found.
+	 */
+	public async resolveTypeRef(
+		typeRef: TypeRef
+	): Promise<ResourceDefinition | TypeDefinition | undefined> {
+		if (typeRef.includes('#')) {
+			const type = typeRef.slice(typeRef.indexOf('#') + 1);
+			if (type.startsWith('/types/')) return this.getType(type.slice(7));
+			if (type.startsWith('/resources/')) return this.getResource(type.slice(11));
+		}
+		this.log(`Cannot resolve type reference ${typeRef}`);
+		return undefined;
 	}
 
 	/**

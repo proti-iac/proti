@@ -1,4 +1,5 @@
 import type { ModuleLoader } from '@proti/core';
+import * as fc from 'fast-check';
 import { promises as fs } from 'fs';
 import type { CommandResult } from '@pulumi/pulumi/automation';
 import os from 'os';
@@ -93,12 +94,16 @@ describe('schema registry', () => {
 		)
 	);
 
-	describe('initialization', () => {
-		const init = async (reInit: boolean = false) => {
-			const moduleLoader = new (jest.fn<ModuleLoader, []>())();
-			await SchemaRegistry.initInstance(moduleLoader, conf, projDir, cacheDir, log, reInit);
-		};
+	const init = async (
+		reInit: boolean = false,
+		c: Partial<SchemaRegistryConfig> = {},
+		moduleLoader: ModuleLoader = new (jest.fn<ModuleLoader, []>())()
+	) => {
+		const c2 = { ...conf, ...c };
+		await SchemaRegistry.initInstance(moduleLoader, c2, projDir, cacheDir, log, reInit);
+	};
 
+	describe('initialization', () => {
 		it('should fail without initialization', () => {
 			expect(() => SchemaRegistry.getInstance()).toThrow(/registry not initialized/);
 		});
@@ -123,8 +128,8 @@ describe('schema registry', () => {
 		});
 	});
 
-	describe('schema loading', () => {
-		const init = async (
+	describe('definition loading', () => {
+		const initLoading = async (
 			c: Partial<SchemaRegistryConfig>,
 			modules: ReadonlyMap<string, any> = new Map(),
 			isolatedModules: ReadonlyMap<string, any> = new Map(),
@@ -138,14 +143,7 @@ describe('schema registry', () => {
 						mockedModules: () => mockedModules,
 					} as unknown as ModuleLoader)
 			))();
-			await SchemaRegistry.initInstance(
-				moduleLoader,
-				{ ...conf, ...c },
-				projDir,
-				cacheDir,
-				log,
-				true
-			);
+			await init(true, c, moduleLoader);
 		};
 		const getDefinitions = async (resType: ResourceType = resourceType, tType: Type = type) => [
 			await SchemaRegistry.getInstance().getResource(resType),
@@ -155,37 +153,37 @@ describe('schema registry', () => {
 
 		describe('initialization', () => {
 			it('loads package schema from cache', async () => {
-				await init({});
+				await initLoading({});
 				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 			});
 
 			it('does not load package schema that is not in cache', async () => {
-				await init({ cacheSubdir: 'other' });
+				await initLoading({ cacheSubdir: 'other' });
 				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 			});
 
 			it('does not load package schema that is in cache, if disabled', async () => {
-				await init({ loadCachedSchemas: false });
+				await initLoading({ loadCachedSchemas: false });
 				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 			});
 
 			it('loads package schema from schemaFiles config', async () => {
-				await init({ loadCachedSchemas: false, schemaFiles: [cachedPkgSchemaFile] });
+				await initLoading({ loadCachedSchemas: false, schemaFiles: [cachedPkgSchemaFile] });
 				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 			});
 
 			it('does not load package schema from invalid schemaFiles config', () =>
 				expect(() =>
-					init({ loadCachedSchemas: false, schemaFiles: ['not-existing'] })
+					initLoading({ loadCachedSchemas: false, schemaFiles: ['not-existing'] })
 				).rejects.toThrow(/Failed to load Pulumi package schema file/));
 
 			it('schemaFiles config overrides cached schemas', async () => {
-				await init({ schemaFiles: [pkgSchemaFile] });
+				await initLoading({ schemaFiles: [pkgSchemaFile] });
 				expect(await getDefinitions()).toStrictEqual(definitions);
 			});
 
 			it('loads definitions from config', async () => {
-				await init({
+				await initLoading({
 					loadCachedSchemas: false,
 					resources: { [resourceType]: cachedResourceDefinition },
 					types: { [type]: cachedTypeDefinition },
@@ -194,7 +192,7 @@ describe('schema registry', () => {
 			});
 
 			it('configured definitions override schemaFiles config definitions', async () => {
-				await init({
+				await initLoading({
 					schemaFiles: [cachedPkgSchemaFile],
 					resources: { [resourceType]: resourceDefinition },
 					types: { [type]: typeDefinition },
@@ -205,14 +203,14 @@ describe('schema registry', () => {
 
 		describe('manual file loading', () => {
 			it('should load schema from file', async () => {
-				await init({});
+				await initLoading({});
 				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 				await SchemaRegistry.getInstance().loadPkgSchemaFile(pkgSchemaFile);
 				expect(await getDefinitions()).toStrictEqual(definitions);
 			});
 
 			it('should not load file twice', async () => {
-				await init({});
+				await initLoading({});
 				await fs.copyFile(pkgSchemaFile, `${pkgSchemaFile}2`);
 				await SchemaRegistry.getInstance().loadPkgSchemaFile(`${pkgSchemaFile}2`);
 				await fs.rm(`${pkgSchemaFile}2`);
@@ -247,7 +245,7 @@ describe('schema registry', () => {
 				'downloads schemas from %smodules on missing resource schema',
 				async (_, modules, hasVersion) => {
 					const pulumi = initPulumiMock(pkgSchema);
-					await init(
+					await initLoading(
 						{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
 						...modules()
 					);
@@ -263,14 +261,14 @@ describe('schema registry', () => {
 
 			it('does not download schemas if resource is registered', async () => {
 				const pulumi = initPulumiMock();
-				await init({}, new Map([[pkgJsonFile, null]]));
+				await initLoading({}, new Map([[pkgJsonFile, null]]));
 				expect(await getDefinitions()).toStrictEqual(cachedDefinitions);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
 			it('does not download schemas if downloading disabled', async () => {
 				const pulumi = initPulumiMock();
-				await init(
+				await initLoading(
 					{ loadCachedSchemas: false, downloadSchemas: false },
 					new Map([[pkgJsonFile, null]])
 				);
@@ -280,14 +278,17 @@ describe('schema registry', () => {
 
 			it('does not download schemas if package.json not existing', async () => {
 				const pulumi = initPulumiMock();
-				await init({ loadCachedSchemas: false }, new Map([['INVALID/package.json', null]]));
+				await initLoading(
+					{ loadCachedSchemas: false },
+					new Map([['INVALID/package.json', null]])
+				);
 				expect(await getDefinitions()).toStrictEqual(noDefinitions);
 				expect(pulumi).toHaveBeenCalledTimes(0);
 			});
 
 			it('does not find resource after Pulumi failed downloading package schema', async () => {
 				const pulumi = initPulumiMock();
-				await init(
+				await initLoading(
 					{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
 					new Map([[pkgJsonFile, null]])
 				);
@@ -311,7 +312,7 @@ describe('schema registry', () => {
 					const file = path.join(dir, 'package.json');
 					await fs.writeFile(file, packageJson);
 					const pulumi = initPulumiMock();
-					await init({ loadCachedSchemas: false }, new Map([[file, null]]));
+					await initLoading({ loadCachedSchemas: false }, new Map([[file, null]]));
 					expect(await getDefinitions()).toStrictEqual(noDefinitions);
 					expect(pulumi).toHaveBeenCalledTimes(0);
 					await fs.rm(dir, { recursive: true });
@@ -339,7 +340,10 @@ describe('schema registry', () => {
 						})
 					);
 
-					await init({}, new Map([[withVersion ? pkgJsonFile : pkgJsonNoVFile, null]]));
+					await initLoading(
+						{},
+						new Map([[withVersion ? pkgJsonFile : pkgJsonNoVFile, null]])
+					);
 					expect(await getDefinitions('b')).toStrictEqual([
 						undefined,
 						cachedTypeDefinition,
@@ -371,9 +375,9 @@ describe('schema registry', () => {
 						await expect(fs.access(cacheFile)).rejects.toThrow(); // Precondition: cache file does not exist yet
 						const modules = new Map([[pkgJsonFile, null]]);
 
-						await init({ cacheDownloadedSchemas }, modules);
+						await initLoading({ cacheDownloadedSchemas }, modules);
 						expect(await getDefinitions('bR', 'bT')).toStrictEqual(definitions);
-						await init({ cacheDownloadedSchemas }, modules);
+						await initLoading({ cacheDownloadedSchemas }, modules);
 						expect(await getDefinitions('bR', 'bT')).toStrictEqual(definitions);
 
 						expect(pulumi).toHaveBeenCalledTimes(pulumiCalls);
@@ -398,7 +402,7 @@ describe('schema registry', () => {
 					await expect(fs.access(fullCacheDir)).rejects.toThrow(); // Precondition: cache dir does not exist yet
 
 					const modules = new Map([[pkgJsonFile, null]]);
-					await init({ cacheSubdir }, modules);
+					await initLoading({ cacheSubdir }, modules);
 					expect(await getDefinitions('bR')).toStrictEqual([
 						resourceDefinition,
 						undefined,
@@ -409,6 +413,49 @@ describe('schema registry', () => {
 					await fs.rm(fullCacheDir, { recursive: true });
 				});
 			});
+		});
+	});
+
+	describe('resolving type reference', () => {
+		const initInstance = async (c: Partial<SchemaRegistryConfig> = {}) => {
+			await init(true, { downloadSchemas: false, ...c });
+			return SchemaRegistry.getInstance();
+		};
+		const noPoundStringArb = fc.string().map((s) => s.replaceAll('#', ''));
+
+		it('should resolve registered resource definition', () => {
+			const pred = async (origin: string, typ: string) => {
+				const instance = await initInstance({ resources: { [typ]: resourceDefinition } });
+				const expct = expect(await instance.resolveTypeRef(`${origin}#/resources/${typ}`));
+				expct.toStrictEqual(resourceDefinition);
+			};
+			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), pred));
+		});
+
+		it('should resolve registered type definition', () => {
+			const pred = async (origin: string, typ: string) => {
+				const instance = await initInstance({ types: { [typ]: typeDefinition } });
+				const expct = expect(await instance.resolveTypeRef(`${origin}#/types/${typ}`));
+				expct.toStrictEqual(typeDefinition);
+			};
+			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), pred));
+		});
+
+		it('should not resolve not registered definitions', () => {
+			const pred = async (origin: string, typ: string, kind: string) => {
+				const instance = await initInstance();
+				expect(await instance.resolveTypeRef(`${origin}#/${kind}/${typ}`)).toBeUndefined();
+			};
+			const kindsArb = fc.constantFrom('resources', 'types');
+			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), kindsArb, pred));
+		});
+
+		it('should not resolve any other reference', () => {
+			const pred = async (typeRef: string) => {
+				const instance = await initInstance();
+				expect(await instance.resolveTypeRef(typeRef)).toBeUndefined();
+			};
+			return fc.assert(fc.asyncProperty(fc.string(), pred));
 		});
 	});
 });

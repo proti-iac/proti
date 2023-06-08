@@ -1,6 +1,7 @@
 import { DeepReadonly } from '@proti/core';
 import { runPulumiCmd } from '@pulumi/pulumi/automation';
 import {
+	NamedType,
 	PulumiPackageMetaschema,
 	ResourceDefinition as PulumiResourceDefinition,
 	Token,
@@ -34,4 +35,5 @@ export type ResourceType = Token;
 export type ResourceDefinition = DeepReadonly<PulumiResourceDefinition>;
 export type Type = Token;
 export type TypeDefinition = DeepReadonly<PulumiTypeDefinition>;
+export type TypeRef = NamedType['$ref'];
 export type PkgSchema = DeepReadonly<PulumiPackageMetaschema>;
