@@ -107,66 +107,65 @@ describe('type reference to arbitrary', () => {
 		return fc.assert(fc.asyncProperty(arb, predicate));
 	};
 
-	it.each(['boolean', 'number', 'string'] as PrimitiveType['type'][])(
-		'primitive type should generate %s values',
-		async (type) => {
-			const arb = primitiveTypeArb().map((primitiveType) => ({ ...primitiveType, type }));
-			const valueCheck = (value: unknown) => expect(typeof value).toBe(type);
+	describe('primitive type', () => {
+		it.each(['boolean', 'number', 'string'] as PrimitiveType['type'][])(
+			'should generate %s values',
+			async (type) => {
+				const arb = primitiveTypeArb().map((primitiveType) => ({ ...primitiveType, type }));
+				const valueCheck = (value: unknown) => expect(typeof value).toBe(type);
+				await testTypeReferenceArbValues(arb, valueCheck);
+			}
+		);
+
+		it('should generate integer values', async () => {
+			const arb = primitiveTypeArb().map((primitiveType) => ({
+				...primitiveType,
+				type: 'integer' as 'integer',
+			}));
+			const valueCheck = (value: unknown) => {
+				expect(typeof value).toBe('number');
+				expect(Number.isInteger(value)).toBe(true);
+			};
 			await testTypeReferenceArbValues(arb, valueCheck);
-		}
-	);
-
-	it('primitive type should generate integer values', async () => {
-		const arb = primitiveTypeArb().map((primitiveType) => ({
-			...primitiveType,
-			type: 'integer' as 'integer',
-		}));
-		const valueCheck = (value: unknown) => {
-			expect(typeof value).toBe('number');
-			expect(Number.isInteger(value)).toBe(true);
-		};
-		await testTypeReferenceArbValues(arb, valueCheck);
+		});
 	});
 
-	it('array type should generate array values', async () => {
-		const arb = arrayTypeArb(jsTypeArb);
-		const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
-			expect(Array.isArray(value)).toBe(true);
-			const correctItemType = (item: unknown) => typeof item === typeRefDef.items!.type;
-			expect((value as unknown[]).every(correctItemType)).toBe(true);
-		};
-		await testTypeReferenceArbValues(arb, valueCheck);
+	describe('array type', () => {
+		it('should generate array values', async () => {
+			const arb = arrayTypeArb(jsTypeArb);
+			const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
+				expect(Array.isArray(value)).toBe(true);
+				const correctItemType = (item: unknown) => typeof item === typeRefDef.items!.type;
+				expect((value as unknown[]).every(correctItemType)).toBe(true);
+			};
+			await testTypeReferenceArbValues(arb, valueCheck);
+		});
 	});
 
-	it('map type should generate dictionary values', async () => {
-		const arb = mapTypeArb(jsTypeArb);
-		const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
-			expect(typeof value).toBe('object');
-			const correctKeyType = (key: unknown) => typeof key === 'string';
-			expect(Object.keys(value as object).every(correctKeyType)).toBe(true);
-			const correctValueType = (val: unknown) =>
-				typeof val === typeRefDef.additionalProperties?.type || 'string';
-			expect(Object.values(value as object).every(correctValueType)).toBe(true);
-		};
-		await testTypeReferenceArbValues(arb, valueCheck);
+	describe('map type', () => {
+		it('should generate dictionary values', async () => {
+			const arb = mapTypeArb(jsTypeArb);
+			const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
+				expect(typeof value).toBe('object');
+				const correctKeyType = (key: unknown) => typeof key === 'string';
+				expect(Object.keys(value as object).every(correctKeyType)).toBe(true);
+				const correctValueType = (val: unknown) =>
+					typeof val === typeRefDef.additionalProperties?.type || 'string';
+				expect(Object.values(value as object).every(correctValueType)).toBe(true);
+			};
+			await testTypeReferenceArbValues(arb, valueCheck);
+		});
 	});
 
-	// @TODO: Not anymore once we support them...
-	// it('named type should throw', () => {
-	// 	const predicate = (typeSchema: DeepReadonly<TypeReference>) =>
-	// 		expect(async () =>
-	// 			fc.check(fc.property(await typeReferenceToArbitrary(typeSchema), () => {}))
-	// 		).rejects.toThrow(/Support for named types not implemented.*Found reference to.*in/);
-	// 	return fc.assert(fc.asyncProperty(namedTypeArb(), predicate));
-	// });
-
-	it('union type should generate correct values', async () => {
-		const arb = unionTypeArb(jsTypeArb);
-		const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
-			const types: string[] = typeRefDef.oneOf!.map((def) => def.type!);
-			expect(types.includes(typeof value)).toBe(true);
-		};
-		await testTypeReferenceArbValues(arb, valueCheck);
+	describe('union type', () => {
+		it('should generate correct values', async () => {
+			const arb = unionTypeArb(jsTypeArb);
+			const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
+				const types: string[] = typeRefDef.oneOf!.map((def) => def.type!);
+				expect(types.includes(typeof value)).toBe(true);
+			};
+			await testTypeReferenceArbValues(arb, valueCheck);
+		});
 	});
 });
 
