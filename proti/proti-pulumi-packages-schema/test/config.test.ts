@@ -54,6 +54,8 @@ describe('config', () => {
 				cacheDownloadedSchemas: false,
 			},
 		},
+		{ arbitrary: {} },
+		{ arbitrary: { defaultResourceState: { a: true, b: 2 } } },
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
 			isObj(partialConf)
@@ -72,6 +74,7 @@ describe('config', () => {
 		{ registry: { resources: { a: 5 } }, loadSchemas: 5 },
 		{ registry: { types: 6 } },
 		{ registry: { types: { d: 6 } }, loadSchemas: 5 },
+		{ arbitrary: { a: true, b: 2 } },
 	])('should throw on invalid config %s', (partialConfig) => {
 		expect(() => config(partialConfig, true)).toThrow();
 	});

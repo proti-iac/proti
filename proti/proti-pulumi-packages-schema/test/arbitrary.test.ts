@@ -1,7 +1,8 @@
 import * as fc from 'fast-check';
-import type { RandomGenerator } from 'pure-rand';
-import type { DeepReadonly, ResourceOutput } from '@proti/core';
+import prand from 'pure-rand';
+import type { DeepReadonly, ResourceArgs, ResourceOutput } from '@proti/core';
 import { Arbitrary } from 'fast-check';
+import { createIs } from 'typia';
 import {
 	objectTypeDetailsToArbitrary,
 	propertyDefinitionToArbitrary,
@@ -9,7 +10,7 @@ import {
 	resourceOutputTraceToString,
 	typeReferenceToArbitrary,
 } from '../src/arbitrary';
-import { defaultArbitraryConfig } from '../src/config';
+import { ArbitraryConfig, defaultArbitraryConfig } from '../src/config';
 import { SchemaRegistry } from '../src/schema-registry';
 import type {
 	ObjectTypeDetails,
@@ -20,17 +21,18 @@ import type {
 import {
 	arrayTypeArb,
 	mapTypeArb,
-	namedTypeArb,
 	objectTypeDetailsArb,
 	primitiveTypeArb,
 	propertyDefinitionArb,
 	unionTypeArb,
 } from './pulumi-package-metaschema/arbitraries';
+import { ResourceDefinition } from '../src/pulumi';
 
-jest.spyOn(fc, 'Random').mockImplementation(jest.fn());
 jest.mock('../src/schema-registry', () => ({
 	SchemaRegistry: {
-		getInstance: jest.fn(),
+		getInstance: () => ({
+			getResource: jest.fn(),
+		}),
 	},
 }));
 
@@ -118,13 +120,13 @@ describe('type reference to arbitrary', () => {
 	});
 
 	// @TODO: Not anymore once we support them...
-	it('named type should throw', () => {
-		const predicate = (typeRefDef: DeepReadonly<TypeReference>) =>
-			expect(async () =>
-				fc.check(fc.property(await typeReferenceToArbitrary(typeRefDef), () => {}))
-			).rejects.toThrow(/Support for named types not implemented.*Found reference to.*in/);
-		return fc.assert(fc.asyncProperty(namedTypeArb(), predicate));
-	});
+	// it('named type should throw', () => {
+	// 	const predicate = (typeSchema: DeepReadonly<TypeReference>) =>
+	// 		expect(async () =>
+	// 			fc.check(fc.property(await typeReferenceToArbitrary(typeSchema), () => {}))
+	// 		).rejects.toThrow(/Support for named types not implemented.*Found reference to.*in/);
+	// 	return fc.assert(fc.asyncProperty(namedTypeArb(), predicate));
+	// });
 
 	it('union type should generate correct values', async () => {
 		const arb = unionTypeArb(jsTypeArb);
@@ -238,11 +240,76 @@ describe('object type details to arbitrary', () => {
 describe('pulumi packages schema generator', () => {
 	const conf = defaultArbitraryConfig();
 	const registry: SchemaRegistry = SchemaRegistry.getInstance();
-	const rng: fc.Random = new fc.Random(undefined as unknown as RandomGenerator);
+	const rng: fc.Random = new fc.Random(prand.xoroshiro128plus(42));
+	const init = (
+		c: Partial<ArbitraryConfig> = {},
+		resourceDefinition: ResourceDefinition | undefined = undefined
+	) => {
+		(registry.getResource as jest.MockedFunction<typeof registry.getResource>)
+			.mockReset()
+			.mockReturnValueOnce(Promise.resolve(resourceDefinition));
+		return new PulumiPackagesSchemaGenerator({ ...conf, ...c }, registry, rng, undefined);
+	};
+	const resourceArgsArb: fc.Arbitrary<ResourceArgs> = fc.record(
+		{
+			type: fc.string(),
+			name: fc.string(),
+			inputs: fc.anything(),
+			urn: fc.string(),
+			provider: fc.string(),
+			custom: fc.boolean(),
+			id: fc.string(),
+		},
+		{ requiredKeys: ['type', 'name', 'inputs', 'urn'] }
+	);
 
 	it('should instantiate', () => {
-		expect(
-			() => new PulumiPackagesSchemaGenerator(conf, registry, rng, undefined)
-		).not.toThrow();
+		expect(() => init()).not.toThrow();
+	});
+
+	describe('generating resource output', () => {
+		it('should throw on resource type without definition', () => {
+			const err = /Failed to find resource definition/;
+			const predicate = (args: ResourceArgs) =>
+				expect(() => init().generateResourceOutput(args)).rejects.toThrow(err);
+			return fc.assert(fc.asyncProperty(resourceArgsArb, predicate));
+		});
+
+		it('should return default state on resource type without definition', () => {
+			console.warn = jest.fn();
+			const predicate = (args: ResourceArgs, defaultResourceState: any) =>
+				expect(
+					init({
+						failOnMissingResourceDefinition: false,
+						defaultResourceState,
+					}).generateResourceOutput(args)
+				).resolves.toStrictEqual({ id: args.urn, state: defaultResourceState });
+			return fc.assert(fc.asyncProperty(resourceArgsArb, fc.anything(), predicate));
+		});
+
+		it.each([
+			['empty', {}, createIs<{}>()],
+			[
+				'a-b-resource',
+				{
+					properties: {
+						a: { type: 'number' },
+						b: { type: 'array', items: { type: 'string' } },
+					},
+					required: ['a'],
+				},
+				createIs<{ a: number; b?: string[] }>(),
+			],
+		] as [string, ResourceDefinition, (_: any) => boolean][])(
+			'should generate valid state for %s',
+			(_, resDef, validateState) => {
+				const predicate = async (args: ResourceArgs) => {
+					const { id, state } = await init({}, resDef).generateResourceOutput(args);
+					expect(id).toBe(args.urn);
+					expect(validateState(state)).toBe(true);
+				};
+				return fc.assert(fc.asyncProperty(resourceArgsArb, predicate));
+			}
+		);
 	});
 });

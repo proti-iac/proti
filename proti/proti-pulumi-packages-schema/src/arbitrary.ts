@@ -123,13 +123,16 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 	}
 
 	private async generateResourceState(resourceType: string): Promise<ResourceOutput['state']> {
-		const schema = await this.registry.getResource(resourceType);
-		const errMsgContext = `resourceDefinition:${resourceType}`;
-		if (schema === undefined)
-			if (this.conf.failOnMissingTypes) throw new Error(`Failed to find ${errMsgContext}`);
-			else return this.conf.defaultState;
-
-		return {};
+		const resDef = await this.registry.getResource(resourceType);
+		const errContext = `resourceDefinition:${resourceType}`;
+		if (resDef === undefined) {
+			const errMsg = `Failed to find resource definition of ${errContext}`;
+			if (this.conf.failOnMissingResourceDefinition) throw new Error(errMsg);
+			console.warn(`${errMsg}. Returning default resource state`);
+			return this.conf.defaultResourceState;
+		}
+		const resourceArb = await objectTypeDetailsToArbitrary(resDef, errContext);
+		return resourceArb.generate(this.mrng, this.biasFactor).value;
 	}
 
 	async generateResourceOutput(resource: ResourceArgs): Promise<ResourceOutput> {

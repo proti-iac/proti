@@ -4,12 +4,15 @@ import type { ResourceType, ResourceDefinition, Type, TypeDefinition } from './p
 
 export const defaultArbitraryConfig = () => ({
 	/**
-	 * Fail on generating state for resource type that is missing in schema
-	 * registry. If false, return `defaultState`.
+	 * Fail on generating state for resource type that cannot be retrieved. If
+	 * false, return `defaultResourceState`.
 	 */
-	failOnMissingTypes: true,
-	/** Default state to generate for missing resource types */
-	defaultState: {},
+	failOnMissingResourceDefinition: true,
+	/**
+	 * Default state to generate for missing resource types if
+	 * `failOnMissingResourceDefinition` is `false`.
+	 */
+	defaultResourceState: {} as any,
 });
 export type ArbitraryConfig = DeepReadonly<ReturnType<typeof defaultArbitraryConfig>>;
 
@@ -67,11 +70,15 @@ export const config = (partialConfig: any = {}, ignoreCache: boolean = false): C
 			defaultConfig(),
 			partialConfig,
 			[
+				'.plugins.pulumi-packages-schema.arbitrary.defaultResourceState',
 				'.plugins.pulumi-packages-schema.registry.resources',
 				'.plugins.pulumi-packages-schema.registry.types',
 			],
 			'.plugins.pulumi-packages-schema'
 		);
+		if (partialConfig?.arbitrary?.defaultResourceState !== undefined)
+			configCandidate.arbitrary.defaultResourceState =
+				partialConfig.arbitrary.defaultResourceState;
 		if (partialConfig?.registry?.resources !== undefined)
 			configCandidate.registry.resources = assertEquals<
 				Readonly<Record<ResourceType, ResourceDefinition>>
