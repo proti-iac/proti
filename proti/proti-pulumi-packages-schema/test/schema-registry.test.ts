@@ -426,7 +426,9 @@ describe('schema registry', () => {
 		it('should resolve registered resource definition', () => {
 			const pred = async (origin: string, typ: string) => {
 				const instance = await initInstance({ resources: { [typ]: resourceDefinition } });
-				const expct = expect(await instance.resolveTypeRef(`${origin}#/resources/${typ}`));
+				const expct = expect(
+					await instance.resolveTypeRef(`${origin}#/resources/${encodeURIComponent(typ)}`)
+				);
 				expct.toStrictEqual(resourceDefinition);
 			};
 			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), pred));
@@ -435,7 +437,9 @@ describe('schema registry', () => {
 		it('should resolve registered type definition', () => {
 			const pred = async (origin: string, typ: string) => {
 				const instance = await initInstance({ types: { [typ]: typeDefinition } });
-				const expct = expect(await instance.resolveTypeRef(`${origin}#/types/${typ}`));
+				const expct = expect(
+					await instance.resolveTypeRef(`${origin}#/types/${encodeURIComponent(typ)}`)
+				);
 				expct.toStrictEqual(typeDefinition);
 			};
 			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), pred));
