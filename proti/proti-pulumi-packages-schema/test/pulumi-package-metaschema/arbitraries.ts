@@ -2,6 +2,8 @@ import * as fc from 'fast-check';
 import {
 	AliasDefinition,
 	ArrayType,
+	EnumTypeDefinition,
+	EnumValueDefinition,
 	MapType,
 	NamedType,
 	ObjectTypeDetails,
@@ -130,6 +132,23 @@ export const objectTypeDetailsArb = (): fc.Arbitrary<ObjectTypeDetails> => {
 			return objectTypeDetails;
 		});
 };
+
+export const enumValueDefinitionArb = (): fc.Arbitrary<EnumValueDefinition> =>
+	fc.record(
+		{
+			name: fc.string(),
+			description: fc.string(),
+			value: fc.oneof(fc.boolean(), numberArb(), fc.string()),
+			deprecationMessage: fc.string(),
+		},
+		{ requiredKeys: ['value'] }
+	);
+
+export const enumTypeDefinitionArb = (): fc.Arbitrary<EnumTypeDefinition> =>
+	fc.record({
+		type: fc.constantFrom('boolean', 'integer', 'number', 'string'),
+		enum: fc.array(enumValueDefinitionArb(), { minLength: 1 }),
+	});
 
 export const aliasDefinitionArb = (): fc.Arbitrary<AliasDefinition> =>
 	fc.record({ name: fc.string(), project: fc.string(), type: fc.string() }, { requiredKeys: [] });

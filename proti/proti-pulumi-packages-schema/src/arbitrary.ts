@@ -11,7 +11,12 @@ import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { ArbitraryConfig, config } from './config';
-import { ObjectTypeDetails, PropertyDefinition, TypeReference } from './pulumi-package-metaschema';
+import {
+	EnumTypeDefinition,
+	ObjectTypeDetails,
+	PropertyDefinition,
+	TypeReference,
+} from './pulumi-package-metaschema';
 
 export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
 	const numLength = trace.length.toString().length;
@@ -23,6 +28,15 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 			),
 		])
 		.join('\n');
+};
+
+export const enumTypeDefinitionToArbitrary = (
+	schema: DeepReadonly<EnumTypeDefinition>,
+	errMsgContext: string = '*unspecified*'
+): fc.Arbitrary<unknown> => {
+	if (schema.enum.length <= 0)
+		throw Error(`Enum type definition has no values in ${errMsgContext}`);
+	return fc.constantFrom(...schema.enum.map((enumValue) => enumValue.value));
 };
 
 export const typeReferenceToArbitrary = async (

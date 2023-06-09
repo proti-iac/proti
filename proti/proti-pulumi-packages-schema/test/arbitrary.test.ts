@@ -4,6 +4,7 @@ import type { DeepReadonly, ResourceArgs, ResourceOutput } from '@proti/core';
 import { Arbitrary } from 'fast-check';
 import { createIs } from 'typia';
 import {
+	enumTypeDefinitionToArbitrary,
 	objectTypeDetailsToArbitrary,
 	propertyDefinitionToArbitrary,
 	PulumiPackagesSchemaGenerator,
@@ -13,6 +14,7 @@ import {
 import { ArbitraryConfig, defaultArbitraryConfig } from '../src/config';
 import { SchemaRegistry } from '../src/schema-registry';
 import type {
+	EnumTypeDefinition,
 	ObjectTypeDetails,
 	PrimitiveType,
 	PropertyDefinition,
@@ -20,6 +22,7 @@ import type {
 } from '../src/pulumi-package-metaschema';
 import {
 	arrayTypeArb,
+	enumTypeDefinitionArb,
 	mapTypeArb,
 	objectTypeDetailsArb,
 	primitiveTypeArb,
@@ -57,6 +60,35 @@ describe('resource output trace to string', () => {
 			expect(resourceOutputTraceToString(trace)).toBe(result);
 		}
 	);
+});
+
+describe('enum type definition to arbitrary', () => {
+	const testEnumTypeDefinitionArbValues = (
+		arb: fc.Arbitrary<DeepReadonly<EnumTypeDefinition>>,
+		valueCheck: (value: unknown, enumTypeDef: DeepReadonly<EnumTypeDefinition>) => void
+	) => {
+		const predicate = (enumTypeDef: DeepReadonly<EnumTypeDefinition>) => {
+			const valuePredicate = (value: unknown) => valueCheck(value, enumTypeDef);
+			const enumTypeDefArb = enumTypeDefinitionToArbitrary(enumTypeDef);
+			fc.assert(fc.property(enumTypeDefArb, valuePredicate), { numRuns: 1 });
+		};
+		fc.assert(fc.property(arb, predicate));
+	};
+
+	it('should throw if no enum values', () => {
+		const arb = enumTypeDefinitionArb().map((def) => ({ ...def, enum: [] }));
+		const predicate = (enumTypeDef: DeepReadonly<EnumTypeDefinition>) =>
+			expect(() => enumTypeDefinitionToArbitrary(enumTypeDef)).toThrow(
+				/Enum type definition has no values in/
+			);
+		fc.assert(fc.property(arb, predicate));
+	});
+
+	it('should generate one of the enum values', () => {
+		testEnumTypeDefinitionArbValues(enumTypeDefinitionArb(), (value: any, enumTypeDef) =>
+			enumTypeDef.enum.map((e) => e.value).includes(value)
+		);
+	});
 });
 
 describe('type reference to arbitrary', () => {
