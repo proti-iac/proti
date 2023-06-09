@@ -11,7 +11,7 @@ import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { ArbitraryConfig, config } from './config';
-import { PropertyDefinition, ResourceDefinition, TypeReference } from './pulumi-package-metaschema';
+import { ObjectTypeDetails, PropertyDefinition, TypeReference } from './pulumi-package-metaschema';
 
 export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
 	const numLength = trace.length.toString().length;
@@ -25,35 +25,38 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 		.join('\n');
 };
 
-export const typeReferenceToArbitrary = (
-	typeSchema: DeepReadonly<TypeReference>,
-	errMsgContext: string = '*unspecified*'
-): fc.Arbitrary<unknown> => {
+export const typeReferenceToArbitrary = async (
+	definition: DeepReadonly<TypeReference>,
+	errContext: string = '*unspecified*'
+): Promise<fc.Arbitrary<unknown>> => {
 	// NamedType
-	if (typeSchema.$ref !== undefined)
+	if (definition.$ref !== undefined)
 		throw new Error(
-			`Support for named types not implemented! Found reference to ${typeSchema.$ref} in ${errMsgContext}`
+			`Support for named types not implemented! Found reference to ${definition.$ref} in ${errContext}`
 		);
 	// UnionType
-	if (typeSchema.oneOf !== undefined)
-		return fc.oneof(
-			...typeSchema.oneOf.map((oneofSchema, i) =>
-				typeReferenceToArbitrary(oneofSchema, `${errMsgContext}$oneOf:${i}`)
-			)
+	if (definition.oneOf !== undefined) {
+		const typeArbs = definition.oneOf.map(
+			(oneOfSchema: DeepReadonly<TypeReference>, i: number) =>
+				typeReferenceToArbitrary(oneOfSchema, `${errContext}$oneOf:${i}`)
 		);
+		return fc.oneof(...(await Promise.all(typeArbs)));
+	}
 
-	const { type } = typeSchema;
+	const { type } = definition;
 	switch (type) {
 		case 'array': // ArrayType
-			return fc.array(typeReferenceToArbitrary(typeSchema.items, `${errMsgContext}$items`));
+			return fc.array(
+				await typeReferenceToArbitrary(definition.items, `${errContext}$items`)
+			);
 		case 'object': // MapType
 			return fc.dictionary(
 				fc.string(),
-				typeSchema.additionalProperties === undefined
+				definition.additionalProperties === undefined
 					? fc.string()
-					: typeReferenceToArbitrary(
-							typeSchema.additionalProperties,
-							`${errMsgContext}$additionalProperties`
+					: await typeReferenceToArbitrary(
+							definition.additionalProperties,
+							`${errContext}$additionalProperties`
 					  )
 			);
 		case 'boolean': // PrimitiveType
@@ -65,39 +68,39 @@ export const typeReferenceToArbitrary = (
 		case 'string': // PrimitiveType
 			return fc.string();
 		default:
-			throw new Error(`Found not implemented schema type "${type}" in ${errMsgContext}`);
+			throw new Error(`Found not implemented schema type "${type}" in ${errContext}`);
 	}
 };
 
-export const propertyDefinitionToArbitrary = (
-	propSchema: DeepReadonly<PropertyDefinition>,
-	errMsgContext: string = '*unspecified*'
-): fc.Arbitrary<unknown> => {
-	if (propSchema.const !== undefined) return fc.constant(propSchema.const);
-	const propTypeArbitrary = typeReferenceToArbitrary(propSchema, errMsgContext);
-	if (propSchema.default !== undefined)
-		return fc.oneof(fc.constant(propSchema.default), propTypeArbitrary);
+export const propertyDefinitionToArbitrary = async (
+	definition: DeepReadonly<PropertyDefinition>,
+	errContext: string = '*unspecified*'
+): Promise<fc.Arbitrary<unknown>> => {
+	if (definition.const !== undefined) return fc.constant(definition.const);
+	const propTypeArbitrary = await typeReferenceToArbitrary(definition, errContext);
+	if (definition.default !== undefined)
+		return fc.oneof(fc.constant(definition.default), propTypeArbitrary);
 	return propTypeArbitrary;
 };
 
-export const resourceDefinitionToArbitrary = (
-	schema: DeepReadonly<ResourceDefinition>,
-	errMsgContext: string = '*unspecified*'
-): fc.Arbitrary<Readonly<Record<string, unknown>>> => {
-	const props = Object.keys(schema.properties || {});
-	const propArbs: ReadonlyArray<[string, fc.Arbitrary<unknown>]> = props.map((prop) => {
-		const propSchema = schema.properties![prop];
-		const propErrMsgContext = `${errMsgContext}$property:${prop}`;
-		return [prop, propertyDefinitionToArbitrary(propSchema, propErrMsgContext)];
+export const objectTypeDetailsToArbitrary = async (
+	definition: DeepReadonly<ObjectTypeDetails>,
+	errContext: string = '*unspecified*'
+): Promise<fc.Arbitrary<Readonly<{ [_: string]: unknown }>>> => {
+	const props = Object.keys(definition.properties || {});
+	const propArbs = props.map(async (prop): Promise<[string, fc.Arbitrary<unknown>]> => {
+		const propSchema = definition.properties![prop];
+		const propErrMsgContext = `${errContext}$property:${prop}`;
+		return [prop, await propertyDefinitionToArbitrary(propSchema, propErrMsgContext)];
 	});
-	const requiredProps = [...(schema.required || [])];
-	requiredProps
+	const requiredKeys = [...(definition.required || [])];
+	requiredKeys
 		.filter((requiredProp) => !props.includes(requiredProp))
 		.forEach((requiredProp) => {
-			const errMsg = `Property "${requiredProp}" required but not defined in ${errMsgContext}`;
+			const errMsg = `Property "${requiredProp}" required but not defined in ${errContext}`;
 			throw new Error(errMsg);
 		});
-	return fc.record(Object.fromEntries(propArbs), { requiredKeys: requiredProps });
+	return fc.record(Object.fromEntries(await Promise.all(propArbs)), { requiredKeys });
 };
 
 export class PulumiPackagesSchemaGenerator implements Generator {

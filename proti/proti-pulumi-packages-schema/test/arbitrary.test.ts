@@ -3,27 +3,27 @@ import type { RandomGenerator } from 'pure-rand';
 import type { DeepReadonly, ResourceOutput } from '@proti/core';
 import { Arbitrary } from 'fast-check';
 import {
+	objectTypeDetailsToArbitrary,
 	propertyDefinitionToArbitrary,
 	PulumiPackagesSchemaGenerator,
-	resourceDefinitionToArbitrary,
 	resourceOutputTraceToString,
 	typeReferenceToArbitrary,
 } from '../src/arbitrary';
 import { defaultArbitraryConfig } from '../src/config';
 import { SchemaRegistry } from '../src/schema-registry';
 import type {
+	ObjectTypeDetails,
 	PrimitiveType,
 	PropertyDefinition,
-	ResourceDefinition,
 	TypeReference,
 } from '../src/pulumi-package-metaschema';
 import {
 	arrayTypeArb,
 	mapTypeArb,
 	namedTypeArb,
+	objectTypeDetailsArb,
 	primitiveTypeArb,
 	propertyDefinitionArb,
-	resourceDefinitionArb,
 	unionTypeArb,
 } from './pulumi-package-metaschema/arbitraries';
 
@@ -63,27 +63,26 @@ describe('type reference to arbitrary', () => {
 	);
 	const testTypeReferenceArbValues = (
 		arb: fc.Arbitrary<DeepReadonly<TypeReference>>,
-		valueCheck: (_: unknown, typeSchema: DeepReadonly<TypeReference>) => void
+		valueCheck: (_: unknown, typeRefDef: DeepReadonly<TypeReference>) => void
 	) => {
-		const predicate = (typeSchema: DeepReadonly<TypeReference>) => {
-			const valuePredicate = (value: unknown) => valueCheck(value, typeSchema);
-			fc.assert(fc.property(typeReferenceToArbitrary(typeSchema), valuePredicate), {
-				numRuns: 1,
-			});
+		const predicate = async (typeRefDef: DeepReadonly<TypeReference>) => {
+			const valuePredicate = (value: unknown) => valueCheck(value, typeRefDef);
+			const typeRefArb = await typeReferenceToArbitrary(typeRefDef);
+			fc.assert(fc.property(typeRefArb, valuePredicate), { numRuns: 1 });
 		};
-		fc.assert(fc.property(arb, predicate));
+		return fc.assert(fc.asyncProperty(arb, predicate));
 	};
 
 	it.each(['boolean', 'number', 'string'] as PrimitiveType['type'][])(
 		'primitive type should generate %s values',
-		(type) => {
+		async (type) => {
 			const arb = primitiveTypeArb().map((primitiveType) => ({ ...primitiveType, type }));
 			const valueCheck = (value: unknown) => expect(typeof value).toBe(type);
-			testTypeReferenceArbValues(arb, valueCheck);
+			await testTypeReferenceArbValues(arb, valueCheck);
 		}
 	);
 
-	it('primitive type should generate integer values', () => {
+	it('primitive type should generate integer values', async () => {
 		const arb = primitiveTypeArb().map((primitiveType) => ({
 			...primitiveType,
 			type: 'integer' as 'integer',
@@ -92,49 +91,48 @@ describe('type reference to arbitrary', () => {
 			expect(typeof value).toBe('number');
 			expect(Number.isInteger(value)).toBe(true);
 		};
-		testTypeReferenceArbValues(arb, valueCheck);
+		await testTypeReferenceArbValues(arb, valueCheck);
 	});
 
-	it('array type should generate array values', () => {
+	it('array type should generate array values', async () => {
 		const arb = arrayTypeArb(jsTypeArb);
-		const valueCheck = (value: unknown, typeSchema: DeepReadonly<TypeReference>) => {
+		const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
 			expect(Array.isArray(value)).toBe(true);
-			const correctItemType = (item: unknown) => typeof item === typeSchema.items!.type;
+			const correctItemType = (item: unknown) => typeof item === typeRefDef.items!.type;
 			expect((value as unknown[]).every(correctItemType)).toBe(true);
 		};
-		testTypeReferenceArbValues(arb, valueCheck);
+		await testTypeReferenceArbValues(arb, valueCheck);
 	});
 
-	it('map type should generate dictionary values', () => {
+	it('map type should generate dictionary values', async () => {
 		const arb = mapTypeArb(jsTypeArb);
-		const valueCheck = (value: unknown, typeSchema: DeepReadonly<TypeReference>) => {
+		const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
 			expect(typeof value).toBe('object');
 			const correctKeyType = (key: unknown) => typeof key === 'string';
 			expect(Object.keys(value as object).every(correctKeyType)).toBe(true);
 			const correctValueType = (val: unknown) =>
-				typeof val === typeSchema.additionalProperties?.type || 'string';
+				typeof val === typeRefDef.additionalProperties?.type || 'string';
 			expect(Object.values(value as object).every(correctValueType)).toBe(true);
 		};
-		testTypeReferenceArbValues(arb, valueCheck);
+		await testTypeReferenceArbValues(arb, valueCheck);
 	});
 
 	// @TODO: Not anymore once we support them...
 	it('named type should throw', () => {
-		const predicate = (typeSchema: DeepReadonly<TypeReference>) => {
-			expect(() =>
-				fc.check(fc.property(typeReferenceToArbitrary(typeSchema), () => {}))
-			).toThrow(/Support for named types not implemented.*Found reference to.*in/);
-		};
-		fc.assert(fc.property(namedTypeArb(), predicate));
+		const predicate = (typeRefDef: DeepReadonly<TypeReference>) =>
+			expect(async () =>
+				fc.check(fc.property(await typeReferenceToArbitrary(typeRefDef), () => {}))
+			).rejects.toThrow(/Support for named types not implemented.*Found reference to.*in/);
+		return fc.assert(fc.asyncProperty(namedTypeArb(), predicate));
 	});
 
-	it('union type should generate correct values', () => {
+	it('union type should generate correct values', async () => {
 		const arb = unionTypeArb(jsTypeArb);
-		const valueCheck = (value: unknown, typeSchema: DeepReadonly<TypeReference>) => {
-			const types: string[] = typeSchema.oneOf!.map((schema) => schema.type!);
+		const valueCheck = (value: unknown, typeRefDef: DeepReadonly<TypeReference>) => {
+			const types: string[] = typeRefDef.oneOf!.map((def) => def.type!);
 			expect(types.includes(typeof value)).toBe(true);
 		};
-		testTypeReferenceArbValues(arb, valueCheck);
+		await testTypeReferenceArbValues(arb, valueCheck);
 	});
 });
 
@@ -143,20 +141,20 @@ describe('property definition to arbitrary', () => {
 		[
 			'should generate constant value if const is set',
 			(propDef) => propDef.const !== undefined,
-			(schemaArb) => (propSchema) => {
-				const check = (value: unknown) => expect(value).toStrictEqual(propSchema.const);
-				fc.assert(fc.property(schemaArb, check), { numRuns: 1 });
+			(propDefArb) => (propDef) => {
+				const check = (value: unknown) => expect(value).toStrictEqual(propDef.const);
+				fc.assert(fc.property(propDefArb, check), { numRuns: 1 });
 			},
 		],
 		[
 			'should generate default value at least once if default is set',
 			(propDef) => propDef.const === undefined && propDef.default !== undefined,
-			(schemaArb) => (propSchema) => {
+			(propDefArb) => (propDef) => {
 				let defaultOccured: boolean = false;
 				const check = (value: unknown) => {
-					if (Object.is(value, propSchema.default)) defaultOccured = true;
+					if (Object.is(value, propDef.default)) defaultOccured = true;
 				};
-				fc.assert(fc.property(schemaArb, check), { numRuns: 20 });
+				fc.assert(fc.property(propDefArb, check), { numRuns: 20 });
 				expect(defaultOccured).toBe(true);
 			},
 		],
@@ -164,25 +162,24 @@ describe('property definition to arbitrary', () => {
 		'%s',
 		(_, propDefFilter, predicate) => {
 			const arb = propertyDefinitionArb().filter(propDefFilter);
-			const pred = (propSchema: DeepReadonly<PropertyDefinition>) =>
-				predicate(propertyDefinitionToArbitrary(propSchema))(propSchema);
-			fc.assert(fc.property(arb, pred));
+			const pred = async (propSchema: DeepReadonly<PropertyDefinition>) =>
+				predicate(await propertyDefinitionToArbitrary(propSchema))(propSchema);
+			return fc.assert(fc.asyncProperty(arb, pred));
 		}
 	);
 });
 
-describe('resource definition to arbitrary', () => {
-	const testResourceDefinitionArbValues = (
-		arb: fc.Arbitrary<DeepReadonly<ResourceDefinition>>,
-		valueCheck: (value: unknown, resSchema: DeepReadonly<ResourceDefinition>) => void
+describe('object type details to arbitrary', () => {
+	const testObjectTypeDetailsArbValues = (
+		arb: fc.Arbitrary<DeepReadonly<ObjectTypeDetails>>,
+		valueCheck: (value: unknown, objTypeDetails: DeepReadonly<ObjectTypeDetails>) => void
 	) => {
-		const predicate = (resSchema: DeepReadonly<ResourceDefinition>) => {
-			const valuePredicate = (value: unknown) => valueCheck(value, resSchema);
-			fc.assert(fc.property(resourceDefinitionToArbitrary(resSchema), valuePredicate), {
-				numRuns: 1,
-			});
+		const predicate = async (objTypeDetails: DeepReadonly<ObjectTypeDetails>) => {
+			const valuePredicate = (value: unknown) => valueCheck(value, objTypeDetails);
+			const objTypeDetailsArb = await objectTypeDetailsToArbitrary(objTypeDetails);
+			fc.assert(fc.property(objTypeDetailsArb, valuePredicate), { numRuns: 1 });
 		};
-		fc.assert(fc.property(arb, predicate));
+		return fc.assert(fc.asyncProperty(arb, predicate));
 	};
 
 	it.each([
@@ -192,50 +189,49 @@ describe('resource definition to arbitrary', () => {
 		[{}, []],
 	] as [Record<string, PropertyDefinition> | undefined, string[] | undefined][])(
 		'should generate empty dictionary if properties %s and required %s',
-		(properties, required) => {
-			const arb = resourceDefinitionArb().map((resourceSchema) => ({
-				...resourceSchema,
+		async (properties, required) => {
+			const arb = objectTypeDetailsArb().map((objTypeDetails) => ({
+				...objTypeDetails,
 				properties,
 				required,
 			}));
 			const predicate = (value: unknown) => expect(value).toStrictEqual({});
-			testResourceDefinitionArbValues(arb, predicate);
+			await testObjectTypeDetailsArbValues(arb, predicate);
 		}
 	);
 
-	it('should only generate properties specified in schema', () => {
-		const predicate = (value: any, resSchema: DeepReadonly<ResourceDefinition>) => {
+	it('should only generate specified properties', async () => {
+		const predicate = (value: any, objTypeDetails: DeepReadonly<ObjectTypeDetails>) => {
 			expect(typeof value).toBe('object');
 			Object.keys(value).forEach((prop) =>
-				expect(Object.keys(resSchema.properties || {}).includes(prop)).toBe(true)
+				expect(Object.keys(objTypeDetails.properties || {}).includes(prop)).toBe(true)
 			);
 		};
-		testResourceDefinitionArbValues(resourceDefinitionArb(), predicate);
+		await testObjectTypeDetailsArbValues(objectTypeDetailsArb(), predicate);
 	});
 
-	it('should always generate properties required in schema', () => {
-		const predicate = (value: any, resSchema: DeepReadonly<ResourceDefinition>) => {
+	it('should always generate properties required in schema', async () => {
+		const predicate = (value: any, objTypeDetails: DeepReadonly<ObjectTypeDetails>) => {
 			expect(typeof value).toBe('object');
-			(resSchema.required || []).forEach(
-				(requiredProp) => expect(value[requiredProp]).toBeDefined
-			);
+			const propCheck = (requiredProp: string) => expect(value[requiredProp]).toBeDefined;
+			(objTypeDetails.required || []).forEach(propCheck);
 		};
-		testResourceDefinitionArbValues(resourceDefinitionArb(), predicate);
+		await testObjectTypeDetailsArbValues(objectTypeDetailsArb(), predicate);
 	});
 
-	it('should throw on non-defined but required property', () => {
+	it('should throw on non-defined but required property', async () => {
 		const arb = fc
-			.tuple(fc.string(), resourceDefinitionArb())
+			.tuple(fc.string(), objectTypeDetailsArb())
 			.filter(([newProp, resDef]) => !Object.keys(resDef.properties || {}).includes(newProp))
 			.map(([nonExistingProp, resDef]) => ({
 				...resDef,
 				required: [...(resDef.required || []), nonExistingProp],
 			}));
-		const predicate = (resSchema: DeepReadonly<ResourceDefinition>) =>
-			expect(() => resourceDefinitionToArbitrary(resSchema)).toThrow(
+		const predicate = (objTypeDetails: DeepReadonly<ObjectTypeDetails>) =>
+			expect(() => objectTypeDetailsToArbitrary(objTypeDetails)).rejects.toThrow(
 				/Property ".*" required but not defined in /
 			);
-		fc.assert(fc.property(arb, predicate));
+		await fc.assert(fc.asyncProperty(arb, predicate));
 	});
 });
 
