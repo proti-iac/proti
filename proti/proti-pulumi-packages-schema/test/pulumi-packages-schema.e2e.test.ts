@@ -16,12 +16,13 @@ const jestCmd = (...projects: string[]): string =>
 	}).replaceAll('"', '\\"')}" ${projects
 		.map((p) => `--roots ${path.resolve(__dirname, p)}`)
 		.join(' ')}`;
+const execConf = { maxBuffer: 10 * 1024 * 1024 /* 10MB */ };
 
 describe('pulumi packags schema end-to-end', () => {
 	it.each([
 		'../../../examples/s3-website/flat' /* , '../../../examples/s3-website/cb-dependent' */,
 	])('should run on %s', (project) =>
-		expect(() => cp.execSync(jestCmd(project)).toString()).not.toThrow()
+		expect(() => cp.execSync(jestCmd(project), execConf).toString()).not.toThrow()
 	);
 
 	it.each([
@@ -29,6 +30,6 @@ describe('pulumi packags schema end-to-end', () => {
 		'../../../examples/s3-website/invalid',
 		'../../../examples/s3-website/flat-throws',
 	])('should fail on %s', (project) => {
-		expect(() => cp.execSync(jestCmd(project))).toThrow('Command failed');
+		expect(() => cp.execSync(jestCmd(project), execConf)).toThrow('Command failed');
 	});
 });
