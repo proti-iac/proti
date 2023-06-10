@@ -24,13 +24,13 @@
   },
   "dependencies": {
     "@proti/core": "workspace:^",
-    "@pulumi/pulumi": "^3.68.0",
-    "fast-check": "^3.8.0",
-    "typia": "^4.0.0"
+    "@pulumi/pulumi": "^3.70.0",
+    "fast-check": "^3.10.0",
+    "typia": "^4.0.5"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "@types/node": "^18.15.11",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^18.16.17",
     "pure-rand": "^6.0.2",
     "ttypescript": "^1.5.15",
     "typescript": "^4.9.5"
