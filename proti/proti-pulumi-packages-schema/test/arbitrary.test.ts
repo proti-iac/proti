@@ -43,6 +43,8 @@ jest.mock('../src/schema-registry', () => ({
 		}),
 	},
 }));
+const registry = SchemaRegistry.getInstance();
+const conf = defaultArbitraryConfig();
 
 describe('resource output trace to string', () => {
 	const res = { id: 'a', state: {} };
@@ -106,7 +108,7 @@ describe('type reference to arbitrary', () => {
 	) => {
 		const predicate = async (typeRefDef: DeepReadonly<TypeReference>) => {
 			const valuePredicate = (value: unknown) => valueCheck(value, typeRefDef);
-			const typeRefArb = await typeReferenceToArbitrary(typeRefDef);
+			const typeRefArb = await typeReferenceToArbitrary(typeRefDef, registry, conf);
 			fc.assert(fc.property(typeRefArb, valuePredicate), { numRuns: 1 });
 		};
 		return fc.assert(fc.asyncProperty(arb, predicate));
@@ -184,7 +186,7 @@ describe('type reference to arbitrary', () => {
 			) => {
 				resolveTypeRefMock.mockResolvedValue(enumTypeDef);
 				const typeRef = { ...namedType, $ref: `#${ref}` };
-				const typeRefArb = await typeReferenceToArbitrary(typeRef);
+				const typeRefArb = await typeReferenceToArbitrary(typeRef, registry, conf);
 				const enumValues = enumTypeDef.enum.map((e) => e.value);
 				const valuePredicate = (value: any) =>
 					expect(enumValues.includes(value)).toBe(true);
@@ -203,7 +205,7 @@ describe('type reference to arbitrary', () => {
 			) => {
 				resolveTypeRefMock.mockResolvedValue(objTypeDetails);
 				const typeRef = { ...namedType, $ref: `#${ref}` };
-				const typeRefArb = await typeReferenceToArbitrary(typeRef);
+				const typeRefArb = await typeReferenceToArbitrary(typeRef, registry, conf);
 				const valuePredicate = (value: any) => {
 					expect(typeof value).toBe('object');
 					const props = Object.keys(objTypeDetails.properties || {});
@@ -224,10 +226,33 @@ describe('type reference to arbitrary', () => {
 				resolveTypeRefMock.mockResolvedValue(undefined);
 				const typeRef = { ...namedType, $ref: `#${ref}` };
 				const errMsg = /Failed to find type definition.*in/;
-				return expect(() => typeReferenceToArbitrary(typeRef)).rejects.toThrow(errMsg);
+				const c = { ...conf, failOnMissingTypeReference: true };
+				return expect(() => typeReferenceToArbitrary(typeRef, registry, c)).rejects.toThrow(
+					errMsg
+				);
 			};
 			return fc.assert(fc.asyncProperty(namedTypeArb(), fc.string(), predicate));
 		});
+
+		it.each([
+			[undefined, undefined],
+			[{ type: 'string', enum: [{ value: 'a' }] }, 'a'],
+			[{}, {}],
+		])(
+			'should generate value for default type reference definition for unresolvable reference %s',
+			(defaultTypeReferenceDefinition, result) => {
+				console.warn = jest.fn();
+				const predicate = async (namedType: DeepReadonly<NamedType>, ref: string) => {
+					resolveTypeRefMock.mockResolvedValue(undefined);
+					const typeRef = { ...namedType, $ref: `#${ref}` };
+					const c = { ...conf, defaultTypeReferenceDefinition };
+					const typeRefArb = await typeReferenceToArbitrary(typeRef, registry, c);
+					const valuePredicate = (value: any) => expect(value).toStrictEqual(result);
+					fc.assert(fc.property(typeRefArb, valuePredicate), { numRuns: 1 });
+				};
+				return fc.assert(fc.asyncProperty(namedTypeArb(), fc.string(), predicate));
+			}
+		);
 	});
 
 	describe('union type', () => {
@@ -269,7 +294,9 @@ describe('property definition to arbitrary', () => {
 		(_, propDefFilter, predicate) => {
 			const arb = propertyDefinitionArb().filter(propDefFilter);
 			const pred = async (propSchema: DeepReadonly<PropertyDefinition>) =>
-				predicate(await propertyDefinitionToArbitrary(propSchema))(propSchema);
+				predicate(await propertyDefinitionToArbitrary(propSchema, registry, conf))(
+					propSchema
+				);
 			return fc.assert(fc.asyncProperty(arb, pred));
 		}
 	);
@@ -282,7 +309,11 @@ describe('object type details to arbitrary', () => {
 	) => {
 		const predicate = async (objTypeDetails: DeepReadonly<ObjectTypeDetails>) => {
 			const valuePredicate = (value: unknown) => valueCheck(value, objTypeDetails);
-			const objTypeDetailsArb = await objectTypeDetailsToArbitrary(objTypeDetails);
+			const objTypeDetailsArb = await objectTypeDetailsToArbitrary(
+				objTypeDetails,
+				registry,
+				conf
+			);
 			fc.assert(fc.property(objTypeDetailsArb, valuePredicate), { numRuns: 1 });
 		};
 		return fc.assert(fc.asyncProperty(arb, predicate));
@@ -334,16 +365,14 @@ describe('object type details to arbitrary', () => {
 				required: [...(resDef.required || []), nonExistingProp],
 			}));
 		const predicate = (objTypeDetails: DeepReadonly<ObjectTypeDetails>) =>
-			expect(() => objectTypeDetailsToArbitrary(objTypeDetails)).rejects.toThrow(
-				/Property ".*" required but not defined in /
-			);
+			expect(() =>
+				objectTypeDetailsToArbitrary(objTypeDetails, registry, conf)
+			).rejects.toThrow(/Property ".*" required but not defined in /);
 		await fc.assert(fc.asyncProperty(arb, predicate));
 	});
 });
 
 describe('pulumi packages schema generator', () => {
-	const conf = defaultArbitraryConfig();
-	const registry: SchemaRegistry = SchemaRegistry.getInstance();
 	const rng: fc.Random = new fc.Random(prand.xoroshiro128plus(42));
 	const init = (
 		c: Partial<ArbitraryConfig> = {},

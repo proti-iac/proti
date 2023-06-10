@@ -13,6 +13,17 @@ export const defaultArbitraryConfig = () => ({
 	 * `failOnMissingResourceDefinition` is `false`.
 	 */
 	defaultResourceState: {} as any,
+	/**
+	 * Fail if type reference in a namd type cannot be resolved. If false,
+	 * `defaultTypeReferenceDefinition` will be used as default.
+	 */
+	failOnMissingTypeReference: false,
+	/**
+	 * Default definition used for unresolvable type references if
+	 * `failOnMissingTypeReference` is false. If undefined, no type will be
+	 * generated, i.e., `undefined` values.
+	 */
+	defaultTypeReferenceDefinition: undefined as ResourceDefinition | TypeDefinition | undefined,
 });
 export type ArbitraryConfig = DeepReadonly<ReturnType<typeof defaultArbitraryConfig>>;
 
@@ -71,6 +82,7 @@ export const config = (partialConfig: any = {}, ignoreCache: boolean = false): C
 			partialConfig,
 			[
 				'.plugins.pulumi-packages-schema.arbitrary.defaultResourceState',
+				'.plugins.pulumi-packages-schema.arbitrary.defaultTypeReferenceDefinition',
 				'.plugins.pulumi-packages-schema.registry.resources',
 				'.plugins.pulumi-packages-schema.registry.types',
 			],
@@ -79,6 +91,10 @@ export const config = (partialConfig: any = {}, ignoreCache: boolean = false): C
 		if (partialConfig?.arbitrary?.defaultResourceState !== undefined)
 			configCandidate.arbitrary.defaultResourceState =
 				partialConfig.arbitrary.defaultResourceState;
+		if (partialConfig?.arbitrary?.defaultTypeReferenceDefinition !== undefined)
+			configCandidate.arbitrary.defaultTypeReferenceDefinition = assertEquals<
+				ArbitraryConfig['defaultTypeReferenceDefinition']
+			>(partialConfig.arbitrary.defaultTypeReferenceDefinition);
 		if (partialConfig?.registry?.resources !== undefined)
 			configCandidate.registry.resources = assertEquals<
 				Readonly<Record<ResourceType, ResourceDefinition>>

@@ -56,6 +56,23 @@ describe('config', () => {
 		},
 		{ arbitrary: {} },
 		{ arbitrary: { defaultResourceState: { a: true, b: 2 } } },
+		{
+			arbitrary: {
+				defaultTypeReferenceDefinition: {
+					properties: {
+						a: { type: 'number' },
+						b: { type: 'array', items: { type: 'string' } },
+					},
+					required: ['a'],
+				},
+			},
+		},
+		{
+			arbitrary: {
+				failOnMissingTypeReference: true,
+				defaultTypeReferenceDefinition: undefined,
+			},
+		},
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
 			isObj(partialConf)

@@ -31,20 +31,24 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 };
 
 export const enumTypeDefinitionToArbitrary = (
-	schema: DeepReadonly<EnumTypeDefinition>,
-	errMsgContext: string = '*unspecified*'
+	definition: DeepReadonly<EnumTypeDefinition>,
+	errContext: string = '*unspecified*'
 ): fc.Arbitrary<unknown> => {
-	if (schema.enum.length <= 0)
-		throw Error(`Enum type definition has no values in ${errMsgContext}`);
-	return fc.constantFrom(...schema.enum.map((e) => e.value));
+	if (definition.enum.length <= 0)
+		throw Error(`Enum type definition has no values in ${errContext}`);
+	return fc.constantFrom(...definition.enum.map((e) => e.value));
 };
 
 let objTypeDetailsToArb: (
-	schema: DeepReadonly<ObjectTypeDetails>,
-	errMsgContext: string
+	definition: DeepReadonly<ObjectTypeDetails>,
+	registry: SchemaRegistry,
+	conf: ArbitraryConfig,
+	errContext: string
 ) => Promise<fc.Arbitrary<Readonly<Record<string, unknown>>>>;
 export const typeReferenceToArbitrary = async (
 	typeRefDef: DeepReadonly<TypeReference>,
+	registry: SchemaRegistry,
+	conf: ArbitraryConfig,
 	errContext: string = '*unspecified*'
 ): Promise<fc.Arbitrary<unknown>> => {
 	// NamedType
@@ -65,38 +69,39 @@ export const typeReferenceToArbitrary = async (
 				return fc.json();
 			default:
 		}
-		const definition = await SchemaRegistry.getInstance().resolveTypeRef(typeRefDef.$ref);
+		let definition = await registry.resolveTypeRef(typeRefDef.$ref);
 		if (definition === undefined) {
 			const errMsg = `Failed to find type definition for ${typeRefDef.$ref} in ${errContext}`;
-			throw new Error(errMsg);
+			if (conf.failOnMissingTypeReference) throw new Error(errMsg);
+			console.warn(`${errMsg}. Returning default type reference definition`);
+			definition = conf.defaultTypeReferenceDefinition;
+			if (definition === undefined) return fc.constant(undefined);
 		}
+		const objErrContext = () => `${errContext}$ref#obj:${typeRefDef.$ref}`;
 		return is<EnumTypeDefinition>(definition)
 			? enumTypeDefinitionToArbitrary(definition, `${errContext}$ref#enum:${typeRefDef.$ref}`)
-			: objTypeDetailsToArb(definition, `${errContext}$ref#obj:${typeRefDef.$ref}`);
+			: objTypeDetailsToArb(definition, registry, conf, objErrContext());
 	}
 	// UnionType
 	if (typeRefDef.oneOf !== undefined) {
 		const typeArbs = typeRefDef.oneOf.map((oneofSchema, i) =>
-			typeReferenceToArbitrary(oneofSchema, `${errContext}$oneOf:${i}`)
+			typeReferenceToArbitrary(oneofSchema, registry, conf, `${errContext}$oneOf:${i}`)
 		);
 		return fc.oneof(...(await Promise.all(typeArbs)));
 	}
 
 	const { type } = typeRefDef;
+	const typeRefArb = (typeRef: DeepReadonly<TypeReference>, err: string) =>
+		typeReferenceToArbitrary(typeRef, registry, conf, `${errContext}${err}`);
 	switch (type) {
 		case 'array': // ArrayType
-			return fc.array(
-				await typeReferenceToArbitrary(typeRefDef.items, `${errContext}$items`)
-			);
+			return fc.array(await typeRefArb(typeRefDef.items, `items`));
 		case 'object': // MapType
 			return fc.dictionary(
 				fc.string(),
 				typeRefDef.additionalProperties === undefined
 					? fc.string()
-					: await typeReferenceToArbitrary(
-							typeRefDef.additionalProperties,
-							`${errContext}$additionalProperties`
-					  )
+					: await typeRefArb(typeRefDef.additionalProperties, `additionalProperties`)
 			);
 		case 'boolean': // PrimitiveType
 			return fc.boolean();
@@ -113,24 +118,31 @@ export const typeReferenceToArbitrary = async (
 
 export const propertyDefinitionToArbitrary = async (
 	definition: DeepReadonly<PropertyDefinition>,
+	registry: SchemaRegistry,
+	conf: ArbitraryConfig,
 	errContext: string = '*unspecified*'
 ): Promise<fc.Arbitrary<unknown>> => {
 	if (definition.const !== undefined) return fc.constant(definition.const);
-	const propTypeArbitrary = await typeReferenceToArbitrary(definition, errContext);
+	const propTypeArb = await typeReferenceToArbitrary(definition, registry, conf, errContext);
 	if (definition.default !== undefined)
-		return fc.oneof(fc.constant(definition.default), propTypeArbitrary);
-	return propTypeArbitrary;
+		return fc.oneof(fc.constant(definition.default), propTypeArb);
+	return propTypeArb;
 };
 
 export const objectTypeDetailsToArbitrary = async (
 	definition: DeepReadonly<ObjectTypeDetails>,
+	registry: SchemaRegistry,
+	conf: ArbitraryConfig,
 	errContext: string = '*unspecified*'
-): Promise<fc.Arbitrary<Readonly<{ [_: string]: unknown }>>> => {
+): Promise<fc.Arbitrary<Readonly<Record<string, unknown>>>> => {
 	const props = Object.keys(definition.properties || {});
 	const propArbs = props.map(async (prop): Promise<[string, fc.Arbitrary<unknown>]> => {
 		const propSchema = definition.properties![prop];
 		const propErrMsgContext = `${errContext}$property:${prop}`;
-		return [prop, await propertyDefinitionToArbitrary(propSchema, propErrMsgContext)];
+		return [
+			prop,
+			await propertyDefinitionToArbitrary(propSchema, registry, conf, propErrMsgContext),
+		];
 	});
 	const requiredKeys = [...(definition.required || [])];
 	requiredKeys
@@ -171,7 +183,12 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 			console.warn(`${errMsg}. Returning default resource state`);
 			return this.conf.defaultResourceState;
 		}
-		const resourceArb = await objectTypeDetailsToArbitrary(resDef, errContext);
+		const resourceArb = await objectTypeDetailsToArbitrary(
+			resDef,
+			this.registry,
+			this.conf,
+			errContext
+		);
 		return resourceArb.generate(this.mrng, this.biasFactor).value;
 	}
 
