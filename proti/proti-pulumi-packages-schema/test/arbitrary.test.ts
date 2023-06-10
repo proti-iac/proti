@@ -15,6 +15,7 @@ import { ArbitraryConfig, defaultArbitraryConfig } from '../src/config';
 import { SchemaRegistry } from '../src/schema-registry';
 import type {
 	EnumTypeDefinition,
+	NamedType,
 	ObjectTypeDetails,
 	PrimitiveType,
 	PropertyDefinition,
@@ -24,6 +25,7 @@ import {
 	arrayTypeArb,
 	enumTypeDefinitionArb,
 	mapTypeArb,
+	namedTypeArb,
 	objectTypeDetailsArb,
 	primitiveTypeArb,
 	propertyDefinitionArb,
@@ -31,10 +33,13 @@ import {
 } from './pulumi-package-metaschema/arbitraries';
 import { ResourceDefinition } from '../src/pulumi';
 
+const getResourceMock = jest.fn();
+const resolveTypeRefMock = jest.fn();
 jest.mock('../src/schema-registry', () => ({
 	SchemaRegistry: {
 		getInstance: () => ({
-			getResource: jest.fn(),
+			getResource: getResourceMock,
+			resolveTypeRef: resolveTypeRefMock,
 		}),
 	},
 }));
@@ -157,6 +162,74 @@ describe('type reference to arbitrary', () => {
 		});
 	});
 
+	describe('named type', () => {
+		it.each([
+			['pulumi.json#/Archive', createIs<string>()],
+			['pulumi.json#/Asset', createIs<string>()],
+			['pulumi.json#/Any', createIs<any>()],
+			['pulumi.json#/Json', createIs<string>()],
+		] as [string, (value: unknown) => boolean][])(
+			'should generate values for built-in type %s',
+			async (type, valueCheck) => {
+				const arb = namedTypeArb().map((namedType) => ({ ...namedType, $ref: type }));
+				await testTypeReferenceArbValues(arb, (v) => valueCheck(v));
+			}
+		);
+
+		it('should generate enum values for referenced enum type definition', () => {
+			const predicate = async (
+				namedType: DeepReadonly<NamedType>,
+				ref: string,
+				enumTypeDef: DeepReadonly<EnumTypeDefinition>
+			) => {
+				resolveTypeRefMock.mockResolvedValue(enumTypeDef);
+				const typeRef = { ...namedType, $ref: `#${ref}` };
+				const typeRefArb = await typeReferenceToArbitrary(typeRef);
+				const enumValues = enumTypeDef.enum.map((e) => e.value);
+				const valuePredicate = (value: any) =>
+					expect(enumValues.includes(value)).toBe(true);
+				fc.assert(fc.property(typeRefArb, valuePredicate), { numRuns: 1 });
+			};
+			return fc.assert(
+				fc.asyncProperty(namedTypeArb(), fc.string(), enumTypeDefinitionArb(), predicate)
+			);
+		});
+
+		it('should generate object value for referenced object type details', () => {
+			const predicate = async (
+				namedType: DeepReadonly<NamedType>,
+				ref: string,
+				objTypeDetails: DeepReadonly<ObjectTypeDetails>
+			) => {
+				resolveTypeRefMock.mockResolvedValue(objTypeDetails);
+				const typeRef = { ...namedType, $ref: `#${ref}` };
+				const typeRefArb = await typeReferenceToArbitrary(typeRef);
+				const valuePredicate = (value: any) => {
+					expect(typeof value).toBe('object');
+					const props = Object.keys(objTypeDetails.properties || {});
+					const valueProps = Object.keys(value);
+					const requiredProps = objTypeDetails.required || [];
+					expect(requiredProps.every((prop) => valueProps.includes(prop))).toBe(true);
+					expect(valueProps.every((prop) => props.includes(prop))).toBe(true);
+				};
+				fc.assert(fc.property(typeRefArb, valuePredicate), { numRuns: 1 });
+			};
+			return fc.assert(
+				fc.asyncProperty(namedTypeArb(), fc.string(), objectTypeDetailsArb(), predicate)
+			);
+		});
+
+		it('should fail for unresolved reference', () => {
+			const predicate = (namedType: DeepReadonly<NamedType>, ref: string) => {
+				resolveTypeRefMock.mockResolvedValue(undefined);
+				const typeRef = { ...namedType, $ref: `#${ref}` };
+				const errMsg = /Failed to find type definition.*in/;
+				return expect(() => typeReferenceToArbitrary(typeRef)).rejects.toThrow(errMsg);
+			};
+			return fc.assert(fc.asyncProperty(namedTypeArb(), fc.string(), predicate));
+		});
+	});
+
 	describe('union type', () => {
 		it('should generate correct values', async () => {
 			const arb = unionTypeArb(jsTypeArb);
@@ -276,9 +349,7 @@ describe('pulumi packages schema generator', () => {
 		c: Partial<ArbitraryConfig> = {},
 		resourceDefinition: ResourceDefinition | undefined = undefined
 	) => {
-		(registry.getResource as jest.MockedFunction<typeof registry.getResource>)
-			.mockReset()
-			.mockReturnValueOnce(Promise.resolve(resourceDefinition));
+		getResourceMock.mockReset().mockReturnValueOnce(Promise.resolve(resourceDefinition));
 		return new PulumiPackagesSchemaGenerator({ ...conf, ...c }, registry, rng, undefined);
 	};
 	const resourceArgsArb: fc.Arbitrary<ResourceArgs> = fc.record(

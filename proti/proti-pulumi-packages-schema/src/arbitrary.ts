@@ -36,40 +36,65 @@ export const enumTypeDefinitionToArbitrary = (
 ): fc.Arbitrary<unknown> => {
 	if (schema.enum.length <= 0)
 		throw Error(`Enum type definition has no values in ${errMsgContext}`);
-	return fc.constantFrom(...schema.enum.map((enumValue) => enumValue.value));
+	return fc.constantFrom(...schema.enum.map((e) => e.value));
 };
 
+let objTypeDetailsToArb: (
+	schema: DeepReadonly<ObjectTypeDetails>,
+	errMsgContext: string
+) => Promise<fc.Arbitrary<Readonly<Record<string, unknown>>>>;
 export const typeReferenceToArbitrary = async (
-	definition: DeepReadonly<TypeReference>,
+	typeRefDef: DeepReadonly<TypeReference>,
 	errContext: string = '*unspecified*'
 ): Promise<fc.Arbitrary<unknown>> => {
 	// NamedType
-	if (definition.$ref !== undefined)
-		throw new Error(
-			`Support for named types not implemented! Found reference to ${definition.$ref} in ${errContext}`
-		);
+	if (typeRefDef.$ref !== undefined) {
+		// Type references have the format `[origin]#[type]`. `[origin]` is
+		// `pulumi.json` for built-in Pulumi types. For non built-in types we
+		// rely on the schema registry to find a type definition.
+
+		// Built-in Pulumi types
+		switch (typeRefDef.$ref) {
+			case 'pulumi.json#/Archive':
+				return fc.string();
+			case 'pulumi.json#/Asset':
+				return fc.string();
+			case 'pulumi.json#/Any':
+				return fc.anything();
+			case 'pulumi.json#/Json':
+				return fc.json();
+			default:
+		}
+		const definition = await SchemaRegistry.getInstance().resolveTypeRef(typeRefDef.$ref);
+		if (definition === undefined) {
+			const errMsg = `Failed to find type definition for ${typeRefDef.$ref} in ${errContext}`;
+			throw new Error(errMsg);
+		}
+		return is<EnumTypeDefinition>(definition)
+			? enumTypeDefinitionToArbitrary(definition, `${errContext}$ref#enum:${typeRefDef.$ref}`)
+			: objTypeDetailsToArb(definition, `${errContext}$ref#obj:${typeRefDef.$ref}`);
+	}
 	// UnionType
-	if (definition.oneOf !== undefined) {
-		const typeArbs = definition.oneOf.map(
-			(oneOfSchema: DeepReadonly<TypeReference>, i: number) =>
-				typeReferenceToArbitrary(oneOfSchema, `${errContext}$oneOf:${i}`)
+	if (typeRefDef.oneOf !== undefined) {
+		const typeArbs = typeRefDef.oneOf.map((oneofSchema, i) =>
+			typeReferenceToArbitrary(oneofSchema, `${errContext}$oneOf:${i}`)
 		);
 		return fc.oneof(...(await Promise.all(typeArbs)));
 	}
 
-	const { type } = definition;
+	const { type } = typeRefDef;
 	switch (type) {
 		case 'array': // ArrayType
 			return fc.array(
-				await typeReferenceToArbitrary(definition.items, `${errContext}$items`)
+				await typeReferenceToArbitrary(typeRefDef.items, `${errContext}$items`)
 			);
 		case 'object': // MapType
 			return fc.dictionary(
 				fc.string(),
-				definition.additionalProperties === undefined
+				typeRefDef.additionalProperties === undefined
 					? fc.string()
 					: await typeReferenceToArbitrary(
-							definition.additionalProperties,
+							typeRefDef.additionalProperties,
 							`${errContext}$additionalProperties`
 					  )
 			);
@@ -116,6 +141,7 @@ export const objectTypeDetailsToArbitrary = async (
 		});
 	return fc.record(Object.fromEntries(await Promise.all(propArbs)), { requiredKeys });
 };
+objTypeDetailsToArb = objectTypeDetailsToArbitrary;
 
 export class PulumiPackagesSchemaGenerator implements Generator {
 	private static generatorIdCounter: number = 0;
