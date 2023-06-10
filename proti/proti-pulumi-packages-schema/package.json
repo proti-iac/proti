@@ -16,11 +16,12 @@
   ],
   "scripts": {
     "clean": "yarn g:clean",
-    "build": "yarn g:build:ttsc",
+    "build": "yarn g:build:tspc",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
     "prepack": "yarn g:prepack",
-    "update-schema": "curl https://raw.githubusercontent.com/pulumi/pulumi/master/pkg/codegen/schema/pulumi.json | yarn json2ts > src/pulumi-generated.d.ts"
+    "update-schema": "curl https://raw.githubusercontent.com/pulumi/pulumi/master/pkg/codegen/schema/pulumi.json | yarn json2ts > src/pulumi-generated.d.ts",
+    "postinstall": "ts-patch install"
   },
   "dependencies": {
     "@proti/core": "workspace:^",
@@ -32,7 +33,7 @@
     "@types/jest": "^29.5.2",
     "@types/node": "^18.16.17",
     "pure-rand": "^6.0.2",
-    "ttypescript": "^1.5.15",
-    "typescript": "^4.9.5"
+    "ts-patch": "3.0.0-beta3",
+    "typescript": "^5.1.3"
   }
 }

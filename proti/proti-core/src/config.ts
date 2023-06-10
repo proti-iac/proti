@@ -72,4 +72,4 @@ export const config = (partialConfig: any = {}): Config => {
 		},
 	});
 };
-export const isConfig = (conf: any): conf is Config => equals<Config>(conf);
+export const isConfig: (conf: any) => conf is Config = (conf): conf is Config => equals<Config>(conf);

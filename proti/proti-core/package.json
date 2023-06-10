@@ -16,10 +16,11 @@
   ],
   "scripts": {
     "clean": "yarn g:clean",
-    "build": "yarn g:build:ttsc",
+    "build": "yarn g:build:tspc",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
-    "prepack": "yarn g:prepack"
+    "prepack": "yarn g:prepack",
+    "postinstall": "ts-patch install"
   },
   "dependencies": {
     "fast-check": "^3.10.0",
@@ -37,7 +38,7 @@
     "jest-haste-map": "^29.5.0",
     "jest-resolve": "^29.5.0",
     "jest-runtime": "^29.5.0",
-    "ttypescript": "^1.5.15",
-    "typescript": "^4.9.5"
+    "ts-patch": "3.0.0-beta3",
+    "typescript": "^5.1.3"
   }
 }

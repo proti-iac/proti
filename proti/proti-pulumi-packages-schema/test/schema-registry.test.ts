@@ -77,12 +77,12 @@ describe('schema registry', () => {
 		cachedPkgSchemaFile = path.join(cacheDir, conf.cacheSubdir, 'bar@1.2.3.json');
 		pkgJsonFile = path.join(pkgJsonFile, 'package.json');
 		pkgJsonNoVFile = path.join(pkgJsonNoVFile, 'package.json');
+		await fs.mkdir(path.join(cacheDir, conf.cacheSubdir));
 		await Promise.all([
 			fs.writeFile(pkgSchemaFile, stringify(pkgSchema)),
 			fs.writeFile(cachedPkgSchemaFile, stringify(cachedPkgSchema)),
 			fs.writeFile(pkgJsonFile, stringify(pkgJson)),
 			fs.writeFile(pkgJsonNoVFile, stringify(pkgJsonNoV)),
-			fs.mkdir(path.join(cacheDir, conf.cacheSubdir)),
 		]);
 	});
 

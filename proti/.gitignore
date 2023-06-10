@@ -6,3 +6,4 @@
 !.yarn/sdks
 !.yarn/versions
 */bin
+node_modules/
