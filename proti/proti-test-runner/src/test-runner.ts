@@ -14,6 +14,7 @@ import { hrtime } from 'process';
 
 import {
 	Config as ProtiConfig,
+	DeepReadonly,
 	errMsg,
 	Generator,
 	interceptConstructor,
@@ -53,7 +54,7 @@ const makeAccompanyingTest =
 	};
 
 const getGlobals = async (
-	globals: Config.ConfigGlobals
+	globals: DeepReadonly<Config.ConfigGlobals>
 ): Promise<[ProtiConfig, Resolver, IHasteFS]> => {
 	const err = (subject: string, property: string) =>
 		new Error(
@@ -74,7 +75,7 @@ process.on('unhandledRejection', (err: Error) => {
 });
 
 const runProti = async (
-	config: Config.ProjectConfig,
+	config: DeepReadonly<Config.ProjectConfig>,
 	environment: JestEnvironment,
 	runtime: Runtime,
 	testPath: string,
@@ -229,12 +230,12 @@ const runProti = async (
 };
 
 const testRunner = async (
-	globalConfig: Config.GlobalConfig,
-	config: Config.ProjectConfig,
+	globalConfig: DeepReadonly<Config.GlobalConfig>,
+	config: DeepReadonly<Config.ProjectConfig>,
 	environment: JestEnvironment,
 	runtime: Runtime,
 	testPath: string
-): Promise<TestResult> => {
+): Promise<DeepReadonly<TestResult>> => {
 	const start = now();
 	const accompanyingResults: Result[] = [];
 	const runAccompanyingTest = makeAccompanyingTest((result) => accompanyingResults.push(result));

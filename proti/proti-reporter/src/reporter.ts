@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { hrtime } from 'process';
 import { assert } from 'typia';
+import type { DeepReadonly } from '@proti/core';
 
 import type { SerializableCheckResult, SerializableRunResult } from '@proti/test-runner';
 
@@ -22,7 +23,7 @@ const programRunsPrefix: string = 'program-runs-';
 const toCsv = (data: any): string => stringify(data, { quoted_string: true });
 
 const generateHash = (s: string) => createHash('sha3-224').update(s, 'utf8').digest('base64url');
-const isCheckProgramsTest = (result: AssertionResult): boolean => {
+const isCheckProgramsTest = (result: DeepReadonly<AssertionResult>): boolean => {
 	const title = result.fullName.split('#');
 	if (title.length < 2) return false;
 	return title[1] === 'Check program';
@@ -37,11 +38,11 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 
 	private readonly testFiles: Map<
 		string,
-		{
+		DeepReadonly<{
 			startTime: bigint;
 			endTime?: bigint;
 			result?: TestResult;
-		}
+		}>
 	> = new Map();
 
 	onRunStart() {
@@ -49,18 +50,17 @@ export default class TestReporter implements Omit<Reporter, 'getLastError'> {
 		this.startTime = now();
 	}
 
-	onTestFileStart(test: Test) {
+	onTestFileStart(test: DeepReadonly<Test>) {
 		if (this.testFiles.has(test.path))
 			throw new Error(`Test file already in report: ${test.path}`);
 		this.testFiles.set(test.path, { startTime: now() });
 	}
 
-	onTestFileResult(test: Test, testResult: TestResult) {
+	onTestFileResult(test: DeepReadonly<Test>, testResult: DeepReadonly<TestResult>) {
 		const fileResult = this.testFiles.get(test.path);
 		if (!fileResult) throw new Error(`Test file not in report: ${test.path}`);
 		if (fileResult.endTime) throw new Error(`Test file's end time already set: ${test.path}`);
-		fileResult.endTime = now();
-		fileResult.result = testResult;
+		this.testFiles.set(test.path, { ...fileResult, endTime: now(), result: testResult });
 	}
 
 	onRunComplete() {

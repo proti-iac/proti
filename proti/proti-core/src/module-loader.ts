@@ -6,7 +6,7 @@ import { buildSnapshotResolver } from 'jest-snapshot';
 import type { Config } from '@jest/types';
 
 import type { ModuleLoadingConfig } from './config';
-import { errMsg } from './utils';
+import { DeepReadonly, errMsg } from './utils';
 
 export class ModuleLoader {
 	private readonly log: (msg: string) => void;
@@ -26,7 +26,7 @@ export class ModuleLoader {
 	public readonly isolatedModules: () => ReadonlyMap<string, unknown>;
 
 	constructor(
-		projectConfig: Config.ProjectConfig,
+		projectConfig: DeepReadonly<Config.ProjectConfig>,
 		private readonly config: ModuleLoadingConfig,
 		private readonly runtime: Runtime,
 		private readonly resolver: Resolver,
@@ -45,7 +45,7 @@ export class ModuleLoader {
 			new DependencyResolver(
 				resolver,
 				hasteFS,
-				await buildSnapshotResolver(projectConfig)
+				await buildSnapshotResolver(projectConfig as Config.ProjectConfig)
 			))();
 		this.programDependencies = this.findProgramDependencies();
 		this.preloads = this.findPreloads();

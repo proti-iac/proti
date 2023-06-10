@@ -1154,6 +1154,7 @@ __metadata:
   dependencies:
     "@jest/reporters": ^29.5.0
     "@jest/test-result": ^29.5.0
+    "@proti/core": "workspace:^"
     "@proti/test-runner": "workspace:^"
     "@types/jest": ^29.5.0
     "@types/node": ^18.15.11

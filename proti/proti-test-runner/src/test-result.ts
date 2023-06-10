@@ -1,41 +1,46 @@
 import type { AssertionResult, TestResult } from '@jest/test-result';
+import { DeepReadonly } from '@proti/core';
 import type { RunDetailsCommon } from 'fast-check';
 
-export type Result = {
+export type Result = DeepReadonly<{
 	title: string;
 	start: number;
 	end: number;
 	duration: number;
 	errors: Error[];
-};
-export type SerializableResult = Omit<Result, 'errors'> & { errors: string[] };
+}>;
+export type SerializableResult = Omit<Result, 'errors'> & DeepReadonly<{ errors: string[] }>;
 
-export type RunResult = Result & {
-	generator: string;
-};
-export type SerializableRunResult = Omit<RunResult, 'errors'> & { errors: string[] };
+export type RunResult = Result &
+	DeepReadonly<{
+		generator: string;
+	}>;
+export type SerializableRunResult = Omit<RunResult, 'errors'> & DeepReadonly<{ errors: string[] }>;
 
-export type CheckResult = Pick<
-	RunDetailsCommon<unknown>,
-	'failed' | 'interrupted' | 'numRuns' | 'numSkips' | 'numShrinks'
-> & {
-	start: number;
-	end: number;
-	duration: number;
-	runResults: RunResult[];
-	report?: string;
-};
-export type SerializableCheckResult = Omit<CheckResult, 'runResults'> & {
-	runResults: SerializableRunResult[];
-};
+export type CheckResult = DeepReadonly<
+	Pick<
+		RunDetailsCommon<unknown>,
+		'failed' | 'interrupted' | 'numRuns' | 'numSkips' | 'numShrinks'
+	> & {
+		start: number;
+		end: number;
+		duration: number;
+		runResults: RunResult[];
+		report?: string;
+	}
+>;
+export type SerializableCheckResult = Omit<CheckResult, 'runResults'> &
+	DeepReadonly<{
+		runResults: SerializableRunResult[];
+	}>;
 
-type RunnerResult = {
+type RunnerResult = DeepReadonly<{
 	testPath: string;
 	start: number;
 	end: number;
 	accompanyingResults: Result[];
 	checkResult?: CheckResult;
-};
+}>;
 
 const hasFailed = (result: Result): boolean => result.errors.length > 0;
 
@@ -50,7 +55,7 @@ const toHeader = (headline: string): string => `${'#'.repeat(80)}\n# ${headline}
 const toFailureMessage = (result: Result, id: number): string =>
 	`${toHeader(`🐞 ${id}: ${result.title}`)}${result.errors.map(toErrorMessage).join('\n\n')}\n\n`;
 
-export const toTestResult = (state: RunnerResult): TestResult => {
+export const toTestResult = (state: RunnerResult): DeepReadonly<TestResult> => {
 	const accompanyingFailures = state.accompanyingResults.filter(hasFailed);
 	const accompanyingSuccesses = state.accompanyingResults.filter((r) => !hasFailed(r));
 	const checkResult: CheckResult = state.checkResult || {
@@ -137,6 +142,6 @@ export const toTestResult = (state: RunnerResult): TestResult => {
 				status: checkResult.failed ? 'failed' : 'passed',
 				title: 'Check program',
 			},
-		] as AssertionResult[],
+		] as DeepReadonly<AssertionResult[]>,
 	};
 };
