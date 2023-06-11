@@ -173,11 +173,11 @@ const runProti = async (
 			programPulumi.runtime.setMockOptions(monitor);
 
 			const runStart = now();
+			await moduleLoader.execProgram().catch((error) => errors.push(error));
+			errors.push(...(await outputsWaiter.isCompleted()));
+			// Skips deployment validation if an error was found already
 			await Promise.race([
 				(async () => {
-					await moduleLoader.execProgram().catch((error) => errors.push(error));
-					errors.push(...(await outputsWaiter.isCompleted()));
-
 					testRunCoordinator.validateDeployment(monitor.resources);
 					await testRunCoordinator.isDone;
 				})(),
@@ -188,7 +188,7 @@ const runProti = async (
 			testRunCoordinator.fails.forEach((fail) => {
 				errors.push(
 					new Error(
-						`Oracle ${fail.oracle.name} failed on ${
+						`Oracle "${fail.oracle.name}" failed on ${
 							fail.resource ? `${fail.resource.urn}` : 'deployment'
 						}`,
 						{ cause: fail.error }
