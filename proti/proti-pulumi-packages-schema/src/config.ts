@@ -27,6 +27,14 @@ export const defaultArbitraryConfig = () => ({
 });
 export type ArbitraryConfig = DeepReadonly<ReturnType<typeof defaultArbitraryConfig>>;
 
+export const defaultOracleConfig = () => ({
+	/**
+	 * Fail on validating state for resource type that cannot be retrieved.
+	 */
+	failOnMissingResourceDefinition: true,
+});
+export type OracleConfig = DeepReadonly<ReturnType<typeof defaultOracleConfig>>;
+
 export const defaultSchemaRegistryConfig = () => ({
 	/**
 	 * Sub-directory in Jest project cache directory to use for Pulumi package
@@ -63,6 +71,7 @@ export type SchemaRegistryConfig = DeepReadonly<ReturnType<typeof defaultSchemaR
 
 export const defaultConfig = () => ({
 	arbitrary: defaultArbitraryConfig(),
+	oracle: defaultOracleConfig(),
 	registry: defaultSchemaRegistryConfig(),
 	verbose: false,
 });

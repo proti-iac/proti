@@ -1,6 +1,12 @@
 import * as fc from 'fast-check';
-import type { DeepReadonly } from '@proti/core';
-import { objectTypeToValidator, typeRefToValidator } from '../src/oracle';
+import type { DeepReadonly, ResourceArgs } from '@proti/core';
+import { type OracleConfig, defaultOracleConfig } from '../src/config';
+import {
+	PulumiPackagesSchemaOracle,
+	objectTypeToValidator,
+	typeRefToValidator,
+} from '../src/oracle';
+import { ResourceDefinition } from '../src/pulumi';
 import {
 	arrayTypeArb,
 	mapTypeArb,
@@ -30,6 +36,7 @@ jest.mock('../src/schema-registry', () => ({
 		}),
 	},
 }));
+const conf = defaultOracleConfig();
 
 describe('type reference validator', () => {
 	const typeRefPredicate =
@@ -210,5 +217,89 @@ describe('object type details validator', () => {
 			expect(() => objectTypeToValidator(type, '')(obj)).toThrowError();
 		};
 		fc.assert(fc.property(arbs, predicate));
+	});
+});
+
+describe('Pulumi packages schema oracle', () => {
+	const init = (
+		c: Partial<OracleConfig> = {},
+		resourceDefinition: ResourceDefinition | undefined = undefined
+	) => {
+		getResourceMock.mockReset().mockReturnValueOnce(Promise.resolve(resourceDefinition));
+		return new PulumiPackagesSchemaOracle({ ...conf, ...c });
+	};
+	const resourceArgsArb: fc.Arbitrary<ResourceArgs> = fc.record(
+		{
+			type: fc.string(),
+			name: fc.string(),
+			inputs: fc.anything(),
+			urn: fc.string(),
+			provider: fc.string(),
+			custom: fc.boolean(),
+			id: fc.string(),
+		},
+		{ requiredKeys: ['type', 'name', 'inputs', 'urn'] }
+	);
+
+	it('should instantiate', () => {
+		expect(() => init()).not.toThrow();
+	});
+
+	describe('validate resource arguments', () => {
+		const resDefAb: ResourceDefinition = {
+			inputProperties: {
+				a: { type: 'number' },
+				b: { type: 'array', items: { type: 'string' } },
+			},
+			requiredInputs: ['a'],
+			properties: { c: { type: 'boolean' } },
+			required: ['c'],
+		};
+
+		it('should throw on resource type without definition', () => {
+			const err = /Failed to find resource definition/;
+			const predicate = (args: ResourceArgs) =>
+				expect(init().asyncValidateResource(args)).resolves.toThrow(err);
+			return fc.assert(fc.asyncProperty(resourceArgsArb, predicate));
+		});
+
+		it('should validate on resource type without definition', () => {
+			console.warn = () => {};
+			const c = { failOnMissingResourceDefinition: false };
+			const predicate = (args: ResourceArgs) =>
+				expect(init(c).asyncValidateResource(args)).resolves.toBeUndefined();
+			return fc.assert(fc.asyncProperty(resourceArgsArb, predicate));
+		});
+
+		it.each([
+			['empty', {}, {}],
+			['a-resource', resDefAb, { a: 1 }],
+			['a-b-resource', resDefAb, { a: 1, b: [] }],
+			['a-bb-resource', resDefAb, { a: 1, b: ['c', 'd'] }],
+		] as [string, ResourceDefinition, (_: any) => boolean][])(
+			'should validate resource args for %s',
+			(_, resDef, inputs) => {
+				const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
+				const predicate = (args: ResourceArgs) =>
+					expect(init({}, resDef).asyncValidateResource(args)).resolves.toBeUndefined();
+				return fc.assert(fc.asyncProperty(arb, predicate));
+			}
+		);
+
+		it.each([
+			['empty', {}, ''],
+			['a-resource', resDefAb, {}],
+			['a-resource', resDefAb, { a: 'a' }],
+			['a-b-resource', resDefAb, { a: 1, b: [5] }],
+			['a-b-c-resource', resDefAb, { a: 1, b: ['c', 'd'], c: false }],
+		] as [string, ResourceDefinition, (_: any) => boolean][])(
+			'should fail to validate resource args for %s',
+			(_, resDef, inputs) => {
+				const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
+				const predicate = (args: ResourceArgs) =>
+					expect(init({}, resDef).asyncValidateResource(args)).resolves.toThrowError();
+				return fc.assert(fc.asyncProperty(arb, predicate));
+			}
+		);
 	});
 });

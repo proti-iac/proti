@@ -1,25 +1,29 @@
-import { DeepPartial, isObj, Obj } from '@proti/core';
+import { type DeepPartial, isObj, type Obj } from '@proti/core';
 import {
-	ArbitraryConfig,
+	type ArbitraryConfig,
 	config,
-	Config,
+	type Config,
 	defaultArbitraryConfig,
 	defaultConfig,
+	defaultOracleConfig,
 	defaultSchemaRegistryConfig,
+	type OracleConfig,
 	resetCachedConfig,
-	SchemaRegistryConfig,
+	type SchemaRegistryConfig,
 } from '../src/config';
 import type { ResourceDefinition, TypeDefinition } from '../src/pulumi';
 
 describe('config defaults', () => {
 	it.each([
 		['arbitrary config', defaultArbitraryConfig as () => ArbitraryConfig],
+		['oracle config', defaultOracleConfig as () => OracleConfig],
 		['schema registry config', defaultSchemaRegistryConfig as () => SchemaRegistryConfig],
 		['config', defaultConfig as () => Config],
 	])('%s should work', (_, defConfig) => expect(typeof defConfig()).toBe('object'));
 
 	it.each([
 		['arbitrary config', defaultConfig().arbitrary, defaultArbitraryConfig()],
+		['oracle config', defaultConfig().oracle, defaultOracleConfig()],
 		['schema registry config', defaultConfig().registry, defaultSchemaRegistryConfig()],
 	])('%s should be in config', (_, conf, refConfig) => expect(conf).toStrictEqual(refConfig));
 });
@@ -73,6 +77,8 @@ describe('config', () => {
 				defaultTypeReferenceDefinition: undefined,
 			},
 		},
+		{ oracle: {} },
+		{ oracle: { failOnMissingResourceDefinition: false } },
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
 			isObj(partialConf)
@@ -92,6 +98,7 @@ describe('config', () => {
 		{ registry: { types: 6 } },
 		{ registry: { types: { d: 6 } }, loadSchemas: 5 },
 		{ arbitrary: { a: true, b: 2 } },
+		{ oracle: { failOn: true } },
 	])('should throw on invalid config %s', (partialConfig) => {
 		expect(() => config(partialConfig, true)).toThrow();
 	});

@@ -1,4 +1,5 @@
 import {
+	type AsyncResourceOracle,
 	type JsType,
 	type ResourceArgs,
 	type TestModuleInitFn,
@@ -7,9 +8,10 @@ import {
 	typeOf,
 	type DeepReadonly,
 	createReadonlyAppendArray,
-	ResourceOracle,
 } from '@proti/core';
+import { is } from 'typia';
 import { initModule } from './utils';
+import { SchemaRegistry } from './schema-registry';
 import type {
 	ArrayType,
 	MapType,
@@ -19,6 +21,7 @@ import type {
 	TypeReference,
 	UnionType,
 } from './pulumi-package-metaschema';
+import { OracleConfig, config } from './config';
 
 /**
  * Validators are type guards to get support from the type system. For better
@@ -173,14 +176,36 @@ export const objectTypeToValidator = (
 		isObject(value) && hasRequiredProps(value) && allPropsValid(value);
 };
 
-class PulumiPackagesSchemaOracle implements ResourceOracle {
+export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 	name = 'Pulumi Packages Schema Types';
 
 	description =
 		'Checks that each resource configuration satisfies the type defined in the Pulumi package schema.';
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars, class-methods-use-this
-	validateResource = (resource: ResourceArgs): TestResult => undefined; // @TODO implement
+	private readonly registry: SchemaRegistry = SchemaRegistry.getInstance();
+
+	constructor(private readonly conf: OracleConfig = config().oracle) {}
+
+	asyncValidateResource = async (resource: ResourceArgs): Promise<TestResult> => {
+		const resDef = await this.registry.getResource(resource.type);
+		if (resDef === undefined) {
+			const errMsg = `Failed to find resource definition of ${resource.type}`;
+			if (this.conf.failOnMissingResourceDefinition) return new Error(errMsg);
+			console.warn(`${errMsg}. Returning default resource state`);
+			return undefined;
+		}
+		try {
+			const objTypeDetails = {
+				properties: resDef.inputProperties,
+				required: resDef.requiredInputs,
+			};
+			objectTypeToValidator(objTypeDetails, resource.urn)(resource.inputs);
+			return undefined;
+		} catch (e) {
+			const errMsg = `Resource configuration invalid: ${resource.urn}`;
+			return is<Error>(e) ? e : new Error(errMsg, { cause: e });
+		}
+	};
 }
 
 export default PulumiPackagesSchemaOracle;
