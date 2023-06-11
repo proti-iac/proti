@@ -1,22 +1,39 @@
 import * as fc from 'fast-check';
 import {
 	createReadonlyAppendArray,
-	DeepReadonly,
+	type DeepReadonly,
 	Generator,
-	ResourceArgs,
-	ResourceOutput,
-	TestModuleInitFn,
+	type ResourceArgs,
+	type ResourceOutput,
+	type TestModuleInitFn,
 } from '@proti/core';
 import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
-import { ArbitraryConfig, config } from './config';
-import {
+import { type ArbitraryConfig, config } from './config';
+import type {
 	EnumTypeDefinition,
+	NamedType,
 	ObjectTypeDetails,
 	PropertyDefinition,
 	TypeReference,
+	UnionType,
 } from './pulumi-package-metaschema';
+
+type ObjectTypeToArb = (
+	definition: DeepReadonly<ObjectTypeDetails>,
+	registry: SchemaRegistry,
+	conf: ArbitraryConfig,
+	errContext: string
+) => Promise<fc.Arbitrary<Readonly<Record<string, unknown>>>>;
+
+type TypeRefToArb = (
+	typeRefDef: DeepReadonly<TypeReference>,
+	registry: SchemaRegistry,
+	conf: ArbitraryConfig,
+	objTypeArb: ObjectTypeToArb,
+	path: string
+) => Promise<fc.Arbitrary<unknown>>;
 
 export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
 	const numLength = trace.length.toString().length;
@@ -30,69 +47,81 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 		.join('\n');
 };
 
-export const enumTypeDefinitionToArbitrary = (
+export const enumTypeDefToArb = (
 	definition: DeepReadonly<EnumTypeDefinition>,
-	errContext: string = '*unspecified*'
+	path: string = '*unspecified*'
 ): fc.Arbitrary<unknown> => {
-	if (definition.enum.length <= 0)
-		throw Error(`Enum type definition has no values in ${errContext}`);
+	if (definition.enum.length <= 0) throw Error(`Enum type definition has no values in ${path}`);
 	return fc.constantFrom(...definition.enum.map((e) => e.value));
 };
 
-let objTypeDetailsToArb: (
-	definition: DeepReadonly<ObjectTypeDetails>,
+const namedTypeToArb = async (
+	namedType: DeepReadonly<NamedType>,
 	registry: SchemaRegistry,
 	conf: ArbitraryConfig,
-	errContext: string
-) => Promise<fc.Arbitrary<Readonly<Record<string, unknown>>>>;
-export const typeReferenceToArbitrary = async (
-	typeRefDef: DeepReadonly<TypeReference>,
-	registry: SchemaRegistry,
-	conf: ArbitraryConfig,
-	errContext: string = '*unspecified*'
+	objTypeArb: ObjectTypeToArb,
+	path: string = '*unspecified*'
 ): Promise<fc.Arbitrary<unknown>> => {
-	// NamedType
-	if (typeRefDef.$ref !== undefined) {
-		// Type references have the format `[origin]#[type]`. `[origin]` is
-		// `pulumi.json` for built-in Pulumi types. For non built-in types we
-		// rely on the schema registry to find a type definition.
+	// Type references have the format `[origin]#[type]`. `[origin]` is
+	// `pulumi.json` for built-in Pulumi types. For non built-in types we
+	// rely on the schema registry to find a type definition.
 
-		// Built-in Pulumi types
-		switch (typeRefDef.$ref) {
-			case 'pulumi.json#/Archive':
-				return fc.string();
-			case 'pulumi.json#/Asset':
-				return fc.string();
-			case 'pulumi.json#/Any':
-				return fc.anything();
-			case 'pulumi.json#/Json':
-				return fc.json();
-			default:
-		}
-		let definition = await registry.resolveTypeRef(typeRefDef.$ref);
-		if (definition === undefined) {
-			const errMsg = `Failed to find type definition for ${typeRefDef.$ref} in ${errContext}`;
-			if (conf.failOnMissingTypeReference) throw new Error(errMsg);
-			console.warn(`${errMsg}. Returning default type reference definition`);
-			definition = conf.defaultTypeReferenceDefinition;
-			if (definition === undefined) return fc.constant(undefined);
-		}
-		const objErrContext = () => `${errContext}$ref#obj:${typeRefDef.$ref}`;
-		return is<EnumTypeDefinition>(definition)
-			? enumTypeDefinitionToArbitrary(definition, `${errContext}$ref#enum:${typeRefDef.$ref}`)
-			: objTypeDetailsToArb(definition, registry, conf, objErrContext());
+	// Built-in Pulumi types
+	switch (namedType.$ref) {
+		case 'pulumi.json#/Archive':
+			return fc.string();
+		case 'pulumi.json#/Asset':
+			return fc.string();
+		case 'pulumi.json#/Any':
+			return fc.anything();
+		case 'pulumi.json#/Json':
+			return fc.json();
+		default:
 	}
-	// UnionType
-	if (typeRefDef.oneOf !== undefined) {
-		const typeArbs = typeRefDef.oneOf.map((oneofSchema, i) =>
-			typeReferenceToArbitrary(oneofSchema, registry, conf, `${errContext}$oneOf:${i}`)
-		);
-		return fc.oneof(...(await Promise.all(typeArbs)));
+	let definition = await registry.resolveTypeRef(namedType.$ref);
+	if (definition === undefined) {
+		const errMsg = `Failed to find type definition for ${namedType.$ref} in ${path}`;
+		if (conf.failOnMissingTypeReference) throw new Error(errMsg);
+		console.warn(`${errMsg}. Returning default type reference definition`);
+		definition = conf.defaultTypeReferenceDefinition;
+		if (definition === undefined) return fc.constant(undefined);
 	}
+	const objErrContext = () => `${path}$ref#obj:${namedType.$ref}`;
+	return is<EnumTypeDefinition>(definition)
+		? enumTypeDefToArb(definition, `${path}$ref#enum:${namedType.$ref}`)
+		: objTypeArb(definition, registry, conf, objErrContext());
+};
+
+const unionTypeToArb = async (
+	unionType: DeepReadonly<UnionType>,
+	registry: SchemaRegistry,
+	conf: ArbitraryConfig,
+	objTypeArb: ObjectTypeToArb,
+	typeRefToArb: TypeRefToArb,
+	path: string = '*unspecified*'
+): Promise<fc.Arbitrary<unknown>> => {
+	const typeArbs = unionType.oneOf.map((oneOfSchema: DeepReadonly<TypeReference>, i: number) => {
+		const oneOfPath = `${path}$oneOf:${i}`;
+		return typeRefToArb(oneOfSchema, registry, conf, objTypeArb, oneOfPath);
+	});
+	return fc.oneof(...(await Promise.all(typeArbs)));
+};
+
+export const typeRefToArb: TypeRefToArb = async (
+	typeRefDef,
+	registry,
+	conf,
+	objectTypeToArb,
+	path = '*unspecified*'
+) => {
+	if (typeRefDef.$ref !== undefined)
+		return namedTypeToArb(typeRefDef, registry, conf, objectTypeToArb, path);
+	if (typeRefDef.oneOf !== undefined)
+		return unionTypeToArb(typeRefDef, registry, conf, objectTypeToArb, typeRefToArb, path);
 
 	const { type } = typeRefDef;
 	const typeRefArb = (typeRef: DeepReadonly<TypeReference>, err: string) =>
-		typeReferenceToArbitrary(typeRef, registry, conf, `${errContext}${err}`);
+		typeRefToArb(typeRef, registry, conf, objectTypeToArb, `${path}${err}`);
 	switch (type) {
 		case 'array': // ArrayType
 			return fc.array(await typeRefArb(typeRefDef.items, `items`));
@@ -112,48 +141,48 @@ export const typeReferenceToArbitrary = async (
 		case 'string': // PrimitiveType
 			return fc.string();
 		default:
-			throw new Error(`Found not implemented schema type "${type}" in ${errContext}`);
+			throw new Error(`Found not implemented schema type "${type}" in ${path}`);
 	}
 };
 
-export const propertyDefinitionToArbitrary = async (
+export const propertyDefToArb = async (
 	definition: DeepReadonly<PropertyDefinition>,
 	registry: SchemaRegistry,
 	conf: ArbitraryConfig,
-	errContext: string = '*unspecified*'
+	objTypeArb: ObjectTypeToArb,
+	path: string = '*unspecified*'
 ): Promise<fc.Arbitrary<unknown>> => {
 	if (definition.const !== undefined) return fc.constant(definition.const);
-	const propTypeArb = await typeReferenceToArbitrary(definition, registry, conf, errContext);
+	const propTypeArb = await typeRefToArb(definition, registry, conf, objTypeArb, path);
 	if (definition.default !== undefined)
 		return fc.oneof(fc.constant(definition.default), propTypeArb);
 	return propTypeArb;
 };
 
-export const objectTypeDetailsToArbitrary = async (
-	definition: DeepReadonly<ObjectTypeDetails>,
-	registry: SchemaRegistry,
-	conf: ArbitraryConfig,
-	errContext: string = '*unspecified*'
-): Promise<fc.Arbitrary<Readonly<Record<string, unknown>>>> => {
+export const objectTypeToArb: ObjectTypeToArb = async (
+	definition,
+	registry,
+	conf,
+	path = '*unspecified*'
+) => {
 	const props = Object.keys(definition.properties || {});
 	const propArbs = props.map(async (prop): Promise<[string, fc.Arbitrary<unknown>]> => {
 		const propSchema = definition.properties![prop];
-		const propErrMsgContext = `${errContext}$property:${prop}`;
+		const propErrMsgContext = `${path}$property:${prop}`;
 		return [
 			prop,
-			await propertyDefinitionToArbitrary(propSchema, registry, conf, propErrMsgContext),
+			await propertyDefToArb(propSchema, registry, conf, objectTypeToArb, propErrMsgContext),
 		];
 	});
 	const requiredKeys = [...(definition.required || [])];
 	requiredKeys
 		.filter((requiredProp) => !props.includes(requiredProp))
 		.forEach((requiredProp) => {
-			const errMsg = `Property "${requiredProp}" required but not defined in ${errContext}`;
+			const errMsg = `Property "${requiredProp}" required but not defined in ${path}`;
 			throw new Error(errMsg);
 		});
 	return fc.record(Object.fromEntries(await Promise.all(propArbs)), { requiredKeys });
 };
-objTypeDetailsToArb = objectTypeDetailsToArbitrary;
 
 export class PulumiPackagesSchemaGenerator implements Generator {
 	private static generatorIdCounter: number = 0;
@@ -183,12 +212,7 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 			console.warn(`${errMsg}. Returning default resource state`);
 			return this.conf.defaultResourceState;
 		}
-		const resourceArb = await objectTypeDetailsToArbitrary(
-			resDef,
-			this.registry,
-			this.conf,
-			errContext
-		);
+		const resourceArb = await objectTypeToArb(resDef, this.registry, this.conf, errContext);
 		return resourceArb.generate(this.mrng, this.biasFactor).value;
 	}
 
