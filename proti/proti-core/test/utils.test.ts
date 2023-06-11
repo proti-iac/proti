@@ -1,14 +1,16 @@
 import * as fc from 'fast-check';
-import { Arbitrary } from 'fast-check';
 import {
-	DeepPartial,
+	type DeepPartial,
 	deepMerge,
 	errMsg,
 	isObj,
-	Obj,
+	type Obj,
 	interceptConstructor,
-	DeepReadonly,
+	type DeepReadonly,
 	createReadonlyAppendArray,
+	type Types,
+	type JsType,
+	typeOf,
 } from '../src/utils';
 
 describe('util', () => {
@@ -122,6 +124,52 @@ describe('util', () => {
 		});
 	});
 
+	describe('typeOf', () => {
+		it.each([
+			['number', 1],
+			['number', 2.3],
+			['bigint', 4n],
+			['boolean', true],
+			['symbol', Symbol('')],
+			['undefined', undefined],
+			['array', []],
+			['array', [1, 'two']],
+			['object', {}],
+			['object', new Map()],
+			['function', () => {}],
+			['null', null],
+		] as [Types, unknown][])('should be %s: %s', (type, value) =>
+			expect(typeOf(value)).toBe(type)
+		);
+	});
+
+	describe('JsType', () => {
+		it('should type correctly', () => {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const vals: {
+				number: number;
+				bigint: bigint;
+				boolean: boolean;
+				symbol: symbol;
+				undefined: undefined;
+				array: unknown[];
+				object: object;
+				function: Function;
+				null: null;
+			} = {
+				number: null as unknown as JsType<'number'>,
+				bigint: null as unknown as JsType<'bigint'>,
+				boolean: 1 as unknown as JsType<'boolean'>,
+				symbol: 2 as unknown as JsType<'symbol'>,
+				undefined: 3 as unknown as JsType<'undefined'>,
+				array: 4 as unknown as JsType<'array'>,
+				object: 5 as unknown as JsType<'object'>,
+				function: 6 as unknown as JsType<'function'>,
+				null: 7 as unknown as JsType<'null'>,
+			};
+		});
+	});
+
 	describe('is object', () => {
 		it('should accept objects', () => {
 			fc.assert(fc.property(fc.object(), (obj) => expect(isObj(obj)).toBe(true)));
@@ -146,7 +194,7 @@ describe('util', () => {
 			undefined: () => fc.constant(undefined),
 		};
 		type ValueType = keyof typeof valueArbs;
-		const objToNestedRecordArb = (pattern: Obj, requiredKeys?: []): Arbitrary<Obj> =>
+		const objToNestedRecordArb = (pattern: Obj, requiredKeys?: []): fc.Arbitrary<Obj> =>
 			fc.record(
 				Object.fromEntries(
 					Object.entries(pattern).map(([k, v]) => {

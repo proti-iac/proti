@@ -37,6 +37,28 @@ export const typeOf = (val: unknown): Types => {
 	}
 	return type;
 };
+export type JsType<T extends Types> = T extends 'string'
+	? string
+	: T extends 'number'
+	? number
+	: T extends 'bigint'
+	? bigint
+	: T extends 'boolean'
+	? boolean
+	: T extends 'symbol'
+	? symbol
+	: T extends 'undefined'
+	? undefined
+	: T extends 'array'
+	? unknown[]
+	: T extends 'object'
+	? object
+	: T extends 'function'
+	? Function
+	: T extends 'null'
+	? null
+	: never;
+
 export type Obj = { [_: string]: unknown | Obj };
 export const isObj = (obj: unknown): obj is Obj => typeOf(obj) === 'object';
 
