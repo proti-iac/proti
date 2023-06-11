@@ -1,10 +1,11 @@
 import * as fc from 'fast-check';
 import type { DeepReadonly } from '@proti/core';
-import { typeRefToValidator } from '../src/oracle';
+import { objectTypeToValidator, typeRefToValidator } from '../src/oracle';
 import {
 	arrayTypeArb,
 	mapTypeArb,
 	namedTypeArb,
+	objectTypeDetailsArb,
 	primitiveTypeArb,
 	typeReferenceArb,
 	unionTypeArb,
@@ -13,6 +14,7 @@ import type {
 	ArrayType,
 	MapType,
 	NamedType,
+	ObjectTypeDetails,
 	PrimitiveType,
 	TypeReference,
 	UnionType,
@@ -148,5 +150,65 @@ describe('type reference validator', () => {
 			);
 			fc.assert(fc.property(typeArb, arb, typeRefPredicate(validate === 'validate')));
 		});
+	});
+});
+
+describe('object type details validator', () => {
+	const adjustObjType = (obj: object, objType: DeepReadonly<ObjectTypeDetails>) => ({
+		...objType,
+		properties: Object.fromEntries(
+			Object.keys(obj).map((k) => [k, { type: 'string' }])
+		) as Record<string, TypeReference>,
+		required: Object.keys(obj),
+	});
+	const arbs: fc.Arbitrary<[unknown, DeepReadonly<ObjectTypeDetails>]> = fc
+		.tuple(fc.dictionary(fc.string(), fc.string()), objectTypeDetailsArb())
+		.map(([obj, objType]) => [obj, adjustObjType(obj, objType)]);
+
+	it('should validate valid objects', () => {
+		const predicate = ([obj, objType]: [unknown, DeepReadonly<ObjectTypeDetails>]) =>
+			expect(objectTypeToValidator(objType, '')(obj)).toBe(true);
+		fc.assert(fc.property(arbs, predicate));
+	});
+
+	it('should not validate if value is no object', () => {
+		const objTypeArb = objectTypeDetailsArb();
+		const valArb = fc
+			.anything()
+			.filter((v) => typeof v !== 'object' || Array.isArray(v) || v === null);
+		const predicate = (objType: DeepReadonly<ObjectTypeDetails>, value: unknown) =>
+			expect(() => objectTypeToValidator(objType, '')(value)).toThrowError();
+		fc.assert(fc.property(objTypeArb, valArb, predicate));
+	});
+
+	it('should not validate if required properties are missing', () => {
+		const predicate = ([obj, objType]: [any, DeepReadonly<ObjectTypeDetails>]) => {
+			const type: DeepReadonly<ObjectTypeDetails> = {
+				...objType,
+				required: ['a'],
+			};
+			// eslint-disable-next-line no-param-reassign
+			obj.a = undefined;
+			expect(() => objectTypeToValidator(type, '')(obj)).toThrowError();
+		};
+		fc.assert(fc.property(arbs, predicate));
+	});
+
+	it('should not validate if object has non-defined properties', () => {
+		const predicate = ([obj, objType]: [any, DeepReadonly<ObjectTypeDetails>]) => {
+			const type: DeepReadonly<ObjectTypeDetails> = {
+				...objType,
+				properties: Object.fromEntries(
+					Object.keys(objType.properties || {})
+						.slice(-1)
+						.map((k) => [k, objType[k]])
+				) as Record<string, TypeReference>,
+			};
+			if (Object.keys(objType.properties || {}).length === 0)
+				// eslint-disable-next-line no-param-reassign
+				obj.a = 'true';
+			expect(() => objectTypeToValidator(type, '')(obj)).toThrowError();
+		};
+		fc.assert(fc.property(arbs, predicate));
 	});
 });

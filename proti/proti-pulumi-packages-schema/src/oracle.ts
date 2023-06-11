@@ -14,6 +14,7 @@ import type {
 	ArrayType,
 	MapType,
 	NamedType,
+	ObjectTypeDetails,
 	PrimitiveType,
 	TypeReference,
 	UnionType,
@@ -140,6 +141,36 @@ export const typeRefToValidator: TypeRefToValidator = (typeRef, path) => {
 		default:
 			return primitiveTypeToValidator(typeRef, path);
 	}
+};
+
+export const objectTypeToValidator = (
+	objTypeDetails: DeepReadonly<ObjectTypeDetails>,
+	path: string
+): Validator<unknown, Readonly<Record<string, unknown>>> => {
+	const isObject = jsTypeValidator('object', path);
+	const hasRequiredProps = (value: Object): value is Object =>
+		(objTypeDetails.required || []).every((property: string) => {
+			if (value[property] === undefined)
+				throw new Error(`${path} misses required object property ${property}`);
+			return true;
+		});
+	const propValidators: ReadonlyMap<string, Validator<unknown, unknown>> = new Map(
+		Object.entries(objTypeDetails.properties || {}).map(([property, propDef]) => [
+			property,
+			typeRefToValidator(propDef, `${path}$prop:${property}`),
+		])
+	);
+	const allPropsValid = (
+		value: Readonly<Record<string, unknown>>
+	): value is Readonly<Record<string, unknown>> =>
+		Object.keys(value).every((property) => {
+			const validator = propValidators.get(property);
+			if (validator === undefined)
+				throw new Error(`${path} has unknown property ${property}`);
+			return validator(value[property]);
+		});
+	return (value): value is ObjectTypeDetails =>
+		isObject(value) && hasRequiredProps(value) && allPropsValid(value);
 };
 
 class PulumiPackagesSchemaOracle implements ResourceOracle {
