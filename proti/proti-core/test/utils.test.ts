@@ -56,6 +56,7 @@ describe('deep readonly', () => {
 			f: new Map<{ f: 'g' }, { h: 'i' }>(),
 			j: new Array<{ k: 'l' }>(),
 			m: { n: 'o' },
+			p: [{ q: 'r' }, 's', { t: 'q' }] as [{ q: string }, 's', { t: string }],
 		},
 	};
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -64,6 +65,17 @@ describe('deep readonly', () => {
 	it('should type check', () => {
 		t = o;
 		t = o as Readonly<typeof o>;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const s: {
+			readonly a: {
+				readonly b: string;
+				readonly c: ReadonlySet<{ readonly d: 'e' }>;
+				readonly f: ReadonlyMap<{ readonly f: 'g' }, { readonly h: 'i' }>;
+				readonly j: readonly { readonly k: 'l' }[];
+				readonly m: { readonly n: string };
+				readonly p: readonly [{ readonly q: string }, 's', { readonly t: string }];
+			};
+		} = t;
 	});
 
 	it('should alert mutating property', () => {
@@ -121,6 +133,15 @@ describe('deep readonly', () => {
 			// eslint-disable-next-line no-param-reassign
 			v.k = 'l';
 		});
+	});
+
+	it('should alert mutating tuple value', () => {
+		// @ts-expect-error
+		t.a.p[0] = { q: 'r' };
+		// @ts-expect-error
+		t.a.p[0].q = 'r';
+		// @ts-expect-error
+		t.a.p[2].t = 'q';
 	});
 });
 

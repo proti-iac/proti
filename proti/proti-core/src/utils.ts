@@ -10,7 +10,8 @@ export type DeepPartial<T> = {
 };
 
 /**
- * Like Readonly<T> but recursive and also making Arrays, Maps, and Sets readonly.
+ * Like Readonly<T> but recursive and also making Arrays, Maps, Sets, and Tuples
+ * readonly.
  */
 export type DeepReadonly<T> = T extends Function
 	? T
@@ -18,6 +19,10 @@ export type DeepReadonly<T> = T extends Function
 	? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
 	: T extends Set<infer U>
 	? ReadonlySet<DeepReadonly<U>>
+	: T extends [infer H] // One-Tuple
+	? Readonly<[DeepReadonly<H>]>
+	: T extends [infer H, ...infer R] // Tuples
+	? Readonly<[DeepReadonly<H>, ...DeepReadonly<R>]>
 	: T extends Array<infer U>
 	? ReadonlyArray<DeepReadonly<U>>
 	: T extends object
