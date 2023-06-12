@@ -14,6 +14,7 @@ import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import type {
 	ArrayType,
+	EnumTypeDefinition,
 	MapType,
 	NamedType,
 	ObjectTypeDetails,
@@ -44,6 +45,18 @@ const jsTypeValidator =
 		if (valueType !== type) throw Error(`${path} is not of type ${type}`);
 		return true;
 	};
+
+export const enumTypeDefToValidator = (
+	enumType: DeepReadonly<EnumTypeDefinition>,
+	path: string
+): Validator<unknown, unknown> => {
+	const values = enumType.enum.map((e) => e.value);
+	return (value: any): value is unknown => {
+		if (!values.includes(value))
+			throw new Error(`${path} value ${value} is not part of enum ${JSON.stringify(values)}`);
+		return true;
+	};
+};
 
 const namedTypeToValidator = (
 	namedType: DeepReadonly<NamedType>,

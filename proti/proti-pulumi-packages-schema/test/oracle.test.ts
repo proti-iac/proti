@@ -3,12 +3,14 @@ import type { DeepReadonly, ResourceArgs } from '@proti/core';
 import { type OracleConfig, defaultOracleConfig } from '../src/config';
 import {
 	PulumiPackagesSchemaOracle,
+	enumTypeDefToValidator,
 	objectTypeToValidator,
 	typeRefToValidator,
 } from '../src/oracle';
 import { ResourceDefinition } from '../src/pulumi';
 import {
 	arrayTypeArb,
+	enumTypeDefinitionArb,
 	mapTypeArb,
 	namedTypeArb,
 	objectTypeDetailsArb,
@@ -18,6 +20,7 @@ import {
 } from './pulumi-package-metaschema/arbitraries';
 import type {
 	ArrayType,
+	EnumTypeDefinition,
 	MapType,
 	NamedType,
 	ObjectTypeDetails,
@@ -37,6 +40,30 @@ jest.mock('../src/schema-registry', () => ({
 	},
 }));
 const conf = defaultOracleConfig();
+
+describe('enum type definition to validator', () => {
+	it('should validate enum values', () => {
+		const arb: fc.Arbitrary<[DeepReadonly<EnumTypeDefinition>, unknown]> = fc
+			.tuple(enumTypeDefinitionArb(), fc.array(fc.string()), fc.string())
+			.map(([enumType, values, value]) => {
+				const vals = new Set([value, ...values]);
+				const enumVals = [...vals].map((v: string) => ({ value: v }));
+				return [{ ...enumType, enum: enumVals }, value];
+			});
+		const predicate = ([enumType, value]: [DeepReadonly<EnumTypeDefinition>, unknown]) =>
+			expect(enumTypeDefToValidator(enumType, '')(value)).toBe(true);
+		fc.assert(fc.property(arb, predicate));
+	});
+
+	it('should not validate non-enum values', () => {
+		const arb: fc.Arbitrary<[DeepReadonly<EnumTypeDefinition>, unknown]> = fc
+			.tuple(enumTypeDefinitionArb(), fc.string())
+			.filter(([enumType, value]) => enumType.enum.every((v) => v.value !== value));
+		const predicate = ([enumType, value]: [DeepReadonly<EnumTypeDefinition>, unknown]) =>
+			expect(() => enumTypeDefToValidator(enumType, '')(value)).toThrowError();
+		fc.assert(fc.property(arb, predicate));
+	});
+});
 
 describe('type reference validator', () => {
 	const typeRefPredicate =
