@@ -7,10 +7,11 @@ import {
 	type Obj,
 	interceptConstructor,
 	type DeepReadonly,
-	createReadonlyAppendArray,
+	createAppendOnlyArray,
 	type Types,
 	type JsType,
 	typeOf,
+	createAppendOnlyMap,
 } from '../src/utils';
 
 describe('deep partial', () => {
@@ -350,15 +351,37 @@ describe('interceptConstructor', () => {
 	});
 });
 
-describe('create readonly append array', () => {
+describe('create append only array', () => {
 	it('should append values', () => {
 		fc.assert(
 			fc.property(fc.array(fc.anything()), (array) => {
-				const [a, push] = createReadonlyAppendArray();
+				const [a, push] = createAppendOnlyArray();
 				expect(a).toStrictEqual([]);
 				array.forEach((v) => push(v));
 				expect(a).toStrictEqual(array);
 			})
 		);
+	});
+});
+
+describe('create append only map', () => {
+	it('should append values for unique keys', () => {
+		const predicate = (keys: any[], values: any[]) => {
+			const [map, set] = createAppendOnlyMap();
+			keys.forEach((key, i) => set(key, values[i % values.length]));
+			expect(new Set(map.keys())).toStrictEqual(new Set(keys));
+			expect(new Set(map.values())).toStrictEqual(new Set(values.slice(0, keys.length)));
+		};
+		const valuesArb = fc.array(fc.anything(), { minLength: 1 });
+		fc.assert(fc.property(fc.uniqueArray(fc.anything()), valuesArb, predicate));
+	});
+
+	it('should throw on mutating value', () => {
+		const predicate = (key: any, value: any) => {
+			const [, set] = createAppendOnlyMap();
+			set(key, value);
+			expect(() => set(key, value)).toThrowError(/already has value for/);
+		};
+		fc.assert(fc.property(fc.anything(), fc.anything(), predicate));
 	});
 });

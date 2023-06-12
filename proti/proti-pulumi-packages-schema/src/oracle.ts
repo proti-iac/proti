@@ -7,7 +7,7 @@ import {
 	type Types,
 	typeOf,
 	type DeepReadonly,
-	createReadonlyAppendArray,
+	createAppendOnlyArray,
 } from '@proti/core';
 import { is } from 'typia';
 import { initModule } from './utils';
@@ -141,7 +141,7 @@ const unionTypeToValidator = async (
 		unionType.oneOf.map(typeRefToErrVal)
 	);
 	return (value: unknown): value is unknown => {
-		const [errors, appendError] = createReadonlyAppendArray<string>();
+		const [errors, appendError] = createAppendOnlyArray<string>();
 		if (validators.some((validator) => validator(value, appendError))) return true;
 		throw new Error(`${path} is not any of the valid type. Errors: ${errors.join('. ')}`);
 	};

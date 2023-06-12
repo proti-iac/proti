@@ -147,10 +147,30 @@ export const interceptConstructor = <T, U extends { new (...v: any[]): T }>(
 };
 
 /**
- * Create an array without mutable methods with a separate append function.
+ * Create a readonly array with a separate append function.
  * @returns Bituple of readonly array and its append function.
  */
-export const createReadonlyAppendArray = <T>(): readonly [ReadonlyArray<T>, (i: T) => void] => {
-	const array: T[] = [];
+export const createAppendOnlyArray = <T>(): readonly [
+	DeepReadonly<T[]>,
+	(i: DeepReadonly<T>) => void
+] => {
+	const array: DeepReadonly<T>[] = [];
 	return [array, array.push.bind(array)];
+};
+
+/**
+ * Create a readonly map with a separate append-only function that does not
+ * permit overwriting existing keys.
+ * @returns Bituple of readonly map and its append function.
+ */
+export const createAppendOnlyMap = <K, V>(): [
+	ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>,
+	(key: DeepReadonly<K>, value: DeepReadonly<V>) => void
+] => {
+	const map = new Map<DeepReadonly<K>, DeepReadonly<V>>();
+	const append = (key: DeepReadonly<K>, value: DeepReadonly<V>) => {
+		if (map.has(key)) throw new Error(`Append only map already has value for ${key}`);
+		map.set(key, value);
+	};
+	return [map, append];
 };

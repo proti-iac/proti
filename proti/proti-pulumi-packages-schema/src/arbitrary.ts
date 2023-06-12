@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import {
-	createReadonlyAppendArray,
+	createAppendOnlyArray,
 	type DeepReadonly,
 	Generator,
 	type ResourceArgs,
@@ -200,7 +200,7 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 		private readonly biasFactor: number | undefined
 	) {
 		this.generatorId = PulumiPackagesSchemaGenerator.generatorIdCounter++;
-		[this.trace, this.appendTrace] = createReadonlyAppendArray<ResourceOutput>();
+		[this.trace, this.appendTrace] = createAppendOnlyArray<ResourceOutput>();
 	}
 
 	private async generateResourceState(resourceType: string): Promise<ResourceOutput['state']> {
