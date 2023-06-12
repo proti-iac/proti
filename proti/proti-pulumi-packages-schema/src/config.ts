@@ -32,6 +32,10 @@ export const defaultOracleConfig = () => ({
 	 * Fail on validating state for resource type that cannot be retrieved.
 	 */
 	failOnMissingResourceDefinition: true,
+	/**
+	 * Fail if type reference in a named type cannot be resolved.
+	 */
+	failOnMissingTypeReference: false,
 });
 export type OracleConfig = DeepReadonly<ReturnType<typeof defaultOracleConfig>>;
 

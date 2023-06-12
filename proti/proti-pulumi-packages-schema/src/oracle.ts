@@ -32,8 +32,21 @@ import { OracleConfig, config } from './config';
 type Validator<T, R extends T> = (value: T) => value is R;
 type TypeRefToValidator = (
 	typeRef: DeepReadonly<TypeReference>,
+	registry: SchemaRegistry,
+	conf: OracleConfig,
+	objectTypeToValidator: ObjTypeToValidator,
 	path: string
-) => Validator<unknown, unknown>;
+) => Promise<Validator<unknown, unknown>>;
+type PreConfTypeRefToValidator = (
+	typeRef: DeepReadonly<TypeReference>,
+	path: string
+) => ReturnType<TypeRefToValidator>;
+type ObjTypeToValidator = (
+	objTypeDetails: DeepReadonly<ObjectTypeDetails>,
+	registry: SchemaRegistry,
+	conf: OracleConfig,
+	path: string
+) => Promise<Validator<unknown, Readonly<Record<string, unknown>>>>;
 
 type Object = Readonly<Record<string, unknown>>;
 type JsTypeObject<T extends Types> = T extends 'object' ? Object : JsType<T>;
@@ -58,32 +71,75 @@ export const enumTypeDefToValidator = (
 	};
 };
 
-const namedTypeToValidator = (
+const namedTypeToValidator = async (
 	namedType: DeepReadonly<NamedType>,
+	registry: SchemaRegistry,
+	conf: OracleConfig,
+	objectTypeToValidator: ObjTypeToValidator,
 	path: string
-): Validator<unknown, unknown> => {
-	throw new Error(`${path} has not implemented named type ${namedType.$ref}`);
+): Promise<Validator<unknown, unknown>> => {
+	const jsonValidator = (value: string): value is string => {
+		try {
+			JSON.parse(value);
+		} catch (e) {
+			throw new Error(`${path} is not a parsable JSON string`);
+		}
+		return true;
+	};
+	const isString = jsTypeValidator('string', path);
+	const any = (value: unknown): value is any => true;
+
+	// Type references have the format `[origin]#[type]`. `[origin]` is
+	// `pulumi.json` for built-in Pulumi types. For non built-in types we
+	// rely on the schema registry to find a type definition.
+
+	// Built-in Pulumi types
+	switch (namedType.$ref) {
+		case 'pulumi.json#/Archive':
+			return isString;
+		case 'pulumi.json#/Asset':
+			return isString;
+		case 'pulumi.json#/Any':
+			return any;
+		case 'pulumi.json#/Json':
+			return (value: unknown): value is string => isString(value) && jsonValidator(value);
+		default:
+	}
+
+	const definition = await registry.resolveTypeRef(namedType.$ref);
+	if (definition === undefined) {
+		const errMsg = `${path} has unknown type reference to ${namedType.$ref}`;
+		if (conf.failOnMissingTypeReference) throw new Error(errMsg);
+		console.warn(`${errMsg}. Treating it as "pulumi.json#/Any"`);
+		return any;
+	}
+	return is<EnumTypeDefinition>(definition)
+		? enumTypeDefToValidator(definition, `${path}$ref#enum:${namedType.$ref}`)
+		: objectTypeToValidator(definition, registry, conf, `${path}$ref#obj:${namedType.$ref}`);
 };
 
-const unionTypeToValidator = (
+const unionTypeToValidator = async (
 	unionType: DeepReadonly<UnionType>,
-	typeReferenceToValidator: TypeRefToValidator,
+	preConfiguredTypeRefToValidator: PreConfTypeRefToValidator,
 	path: string
-): Validator<unknown, unknown> => {
-	const validators: ((value: unknown, addError: (e: string) => void) => boolean)[] =
-		unionType.oneOf.map((oneOfTypeRef: DeepReadonly<TypeReference>, i: number) => {
-			const validator = typeReferenceToValidator(oneOfTypeRef, `${path}$oneOf:${i}`);
-			return (value: unknown, addError: (e: string) => void): boolean => {
-				try {
-					const isValid = validator(value);
-					if (!isValid) addError(`${path}$oneOf:${i} invalid`);
-					return isValid;
-				} catch (e: unknown) {
-					addError((e as any)?.message);
-					return false;
-				}
-			};
-		});
+): Promise<Validator<unknown, unknown>> => {
+	type ErrValidator = (value: unknown, addError: (e: string) => void) => boolean;
+	const typeRefToErrVal = async (oneOfTypeRef: DeepReadonly<TypeReference>, i: number) => {
+		const validator = await preConfiguredTypeRefToValidator(oneOfTypeRef, `${path}$oneOf:${i}`);
+		return (value: unknown, addError: (e: string) => void): boolean => {
+			try {
+				const isValid = validator(value);
+				if (!isValid) addError(`${path}$oneOf:${i} invalid`);
+				return isValid;
+			} catch (e: unknown) {
+				addError((e as any)?.message);
+				return false;
+			}
+		};
+	};
+	const validators: ReadonlyArray<ErrValidator> = await Promise.all(
+		unionType.oneOf.map(typeRefToErrVal)
+	);
 	return (value: unknown): value is unknown => {
 		const [errors, appendError] = createReadonlyAppendArray<string>();
 		if (validators.some((validator) => validator(value, appendError))) return true;
@@ -91,33 +147,33 @@ const unionTypeToValidator = (
 	};
 };
 
-const arrayTypeToValidator = (
+const arrayTypeToValidator = async (
 	arrayType: DeepReadonly<ArrayType>,
-	typeReferenceToValidator: TypeRefToValidator,
+	preConfiguredTypeRefToValidator: PreConfTypeRefToValidator,
 	path: string
-): Validator<unknown, readonly unknown[]> => {
+): Promise<Validator<unknown, readonly unknown[]>> => {
 	const isArray = jsTypeValidator('array', path);
-	const itemValidator = typeReferenceToValidator(arrayType.items, `${path}$items`);
+	const itemValidator = await preConfiguredTypeRefToValidator(arrayType.items, `${path}$items`);
 	const allItemValid = (value: readonly unknown[]): value is readonly unknown[] =>
 		value.every(itemValidator);
 	return (value: unknown): value is readonly unknown[] => isArray(value) && allItemValid(value);
 };
 
-const mapTypeToValidator = (
+const mapTypeToValidator = async (
 	arrayType: DeepReadonly<MapType>,
-	typeReferenceToValidator: TypeRefToValidator,
+	preConfiguredTypeRefToValidator: PreConfTypeRefToValidator,
 	path: string
-): Validator<unknown, unknown> => {
+): Promise<Validator<unknown, unknown>> => {
 	const isObject = jsTypeValidator('object', path);
-	const propsValidator =
+	const propValidators =
 		arrayType.additionalProperties === undefined
 			? jsTypeValidator('string', `${path}$additionalProperties`)
-			: typeReferenceToValidator(
+			: await preConfiguredTypeRefToValidator(
 					arrayType.additionalProperties,
 					`${path}$additionalProperties`
 			  );
 	const allpropsValid = (value: Object): value is Object =>
-		Object.values(value).every(propsValidator);
+		Object.values(value).every(propValidators);
 	return (value: unknown): value is Object => isObject(value) && allpropsValid(value);
 };
 
@@ -146,23 +202,29 @@ const primitiveTypeToValidator = (
 	}
 };
 
-export const typeRefToValidator: TypeRefToValidator = (typeRef, path) => {
-	if (typeRef.$ref !== undefined) return namedTypeToValidator(typeRef, path);
-	if (typeRef.oneOf !== undefined) return unionTypeToValidator(typeRef, typeRefToValidator, path);
+export const typeRefToValidator: TypeRefToValidator = (typeRef, registry, conf, objTypTV, path) => {
+	const preConfiguredTypeRefToValidator: PreConfTypeRefToValidator = (typeRefL, pathL) =>
+		typeRefToValidator(typeRefL, registry, conf, objTypTV, pathL);
+	if (typeRef.$ref !== undefined)
+		return namedTypeToValidator(typeRef, registry, conf, objTypTV, path);
+	if (typeRef.oneOf !== undefined)
+		return unionTypeToValidator(typeRef, preConfiguredTypeRefToValidator, path);
 	switch (typeRef.type) {
 		case 'array':
-			return arrayTypeToValidator(typeRef, typeRefToValidator, path);
+			return arrayTypeToValidator(typeRef, preConfiguredTypeRefToValidator, path);
 		case 'object':
-			return mapTypeToValidator(typeRef, typeRefToValidator, path);
+			return mapTypeToValidator(typeRef, preConfiguredTypeRefToValidator, path);
 		default:
-			return primitiveTypeToValidator(typeRef, path);
+			return Promise.resolve(primitiveTypeToValidator(typeRef, path));
 	}
 };
 
-export const objectTypeToValidator = (
-	objTypeDetails: DeepReadonly<ObjectTypeDetails>,
-	path: string
-): Validator<unknown, Readonly<Record<string, unknown>>> => {
+export const objTypeToValidator: ObjTypeToValidator = async (
+	objTypeDetails,
+	registry,
+	conf,
+	path
+) => {
 	const isObject = jsTypeValidator('object', path);
 	const hasRequiredProps = (value: Object): value is Object =>
 		(objTypeDetails.required || []).every((property: string) => {
@@ -170,12 +232,16 @@ export const objectTypeToValidator = (
 				throw new Error(`${path} misses required object property ${property}`);
 			return true;
 		});
-	const propValidators: ReadonlyMap<string, Validator<unknown, unknown>> = new Map(
-		Object.entries(objTypeDetails.properties || {}).map(([property, propDef]) => [
-			property,
-			typeRefToValidator(propDef, `${path}$prop:${property}`),
-		])
+	const asyncPropValidators = Object.entries(objTypeDetails.properties || {}).map(
+		async ([property, propDef]): Promise<[string, Validator<unknown, unknown>]> => {
+			const pathL = `${path}$prop:${property}`;
+			return [
+				property,
+				await typeRefToValidator(propDef, registry, conf, objTypeToValidator, pathL),
+			];
+		}
 	);
+	const propValidators = new Map(await Promise.all(asyncPropValidators));
 	const allPropsValid = (
 		value: Readonly<Record<string, unknown>>
 	): value is Readonly<Record<string, unknown>> =>
@@ -208,11 +274,12 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 			return undefined;
 		}
 		try {
-			const objTypeDetails = {
+			const obj = {
 				properties: resDef.inputProperties,
 				required: resDef.requiredInputs,
 			};
-			objectTypeToValidator(objTypeDetails, resource.urn)(resource.inputs);
+			const validator = await objTypeToValidator(obj, this.registry, this.conf, resource.urn);
+			validator(resource.inputs);
 			return undefined;
 		} catch (e) {
 			const errMsg = `Resource configuration invalid: ${resource.urn}`;
