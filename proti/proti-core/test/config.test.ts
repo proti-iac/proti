@@ -11,7 +11,7 @@ import {
 	TestCoordinatorConfig,
 	TestRunnerConfig,
 } from '../src/config';
-import { DeepPartial, isObj, Obj } from '../src/utils';
+import { typeOf, type DeepPartial } from '../src/utils';
 
 describe('config defaults', () => {
 	it.each([
@@ -49,9 +49,9 @@ describe('config', () => {
 		},
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
-			isObj(partialConf)
+			typeOf(partialConf) === 'object'
 				? Object.entries(partialConf).forEach(([k, v]: [string, unknown]) =>
-						check((conf as Obj)[k], v as DeepPartial<Obj>)
+						check((conf as any)[k], v as DeepPartial<any>)
 				  )
 				: expect(conf).toStrictEqual(partialConf);
 		check(config(partialConfig), partialConfig);
@@ -65,6 +65,8 @@ describe('config', () => {
 		{ testRunner: { waitTick: 'false' } },
 		{ plugins: 'test' },
 	])('should throw on invalid config %s', (partialConfig) => {
-		expect(() => config(partialConfig)).toThrow();
+		expect(() => config(partialConfig)).toThrow(
+			/Invalid ProTI configuration. \$input.* should be .* but is .*./
+		);
 	});
 });

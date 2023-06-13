@@ -23,7 +23,7 @@ describe('init module', () => {
 	it('should not initialize with invalid plugin config', () => {
 		const pluginsConfig = { 'pulumi-packages-schema': { verbose: 'false' } };
 		return expect(initModule({ ...testModuleConfig, pluginsConfig })).rejects.toThrow(
-			'Update property .plugins.pulumi-packages-schema.verbose is string, not boolean'
+			'Invalid @proti/pulumi-packages-schema configuration. $input.verbose should be (boolean | undefined) but is false.'
 		);
 	});
 });

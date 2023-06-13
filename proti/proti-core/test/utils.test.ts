@@ -3,8 +3,6 @@ import {
 	type DeepPartial,
 	deepMerge,
 	errMsg,
-	isObj,
-	type Obj,
 	interceptConstructor,
 	type DeepReadonly,
 	createAppendOnlyArray,
@@ -12,6 +10,7 @@ import {
 	type JsType,
 	typeOf,
 	createAppendOnlyMap,
+	type Dict,
 } from '../src/utils';
 
 describe('deep partial', () => {
@@ -189,20 +188,6 @@ describe('JsType', () => {
 	});
 });
 
-describe('is object', () => {
-	it('should accept objects', () => {
-		fc.assert(fc.property(fc.object(), (obj) => expect(isObj(obj)).toBe(true)));
-	});
-	it('should not accept non-objects', () => {
-		const nonObjArb = fc.oneof(
-			fc.array(fc.anything()),
-			fc.tuple(),
-			fc.anything({ maxDepth: 0 })
-		);
-		fc.assert(fc.property(nonObjArb, (nonObj) => expect(isObj(nonObj)).toBe(false)));
-	});
-});
-
 describe('deep merge', () => {
 	const valueArbs = {
 		array: () => fc.array(fc.string()),
@@ -213,11 +198,11 @@ describe('deep merge', () => {
 		undefined: () => fc.constant(undefined),
 	};
 	type ValueType = keyof typeof valueArbs;
-	const objToNestedRecordArb = (pattern: Obj, requiredKeys?: []): fc.Arbitrary<Obj> =>
+	const objToNestedRecordArb = (pattern: Dict, requiredKeys?: []): fc.Arbitrary<Dict> =>
 		fc.record(
 			Object.fromEntries(
 				Object.entries(pattern).map(([k, v]) => {
-					if (isObj(v)) return [k, objToNestedRecordArb(v)];
+					if (typeOf(v) === 'object') return [k, objToNestedRecordArb(v)];
 					if (Array.isArray(v)) return [k, valueArbs.array()];
 					return [k, valueArbs[v as ValueType]()];
 				})
@@ -229,95 +214,49 @@ describe('deep merge', () => {
 			.object({ values: Object.keys(valueArbs).map(fc.constant) })
 			.chain((obj) => fc.tuple(objToNestedRecordArb(obj), objToNestedRecordArb(obj, [])));
 
-	it('throws if update is invalid', () => {
-		fc.assert(
-			fc.property(fc.object(), fc.anything({ maxDepth: 0 }), (obj, update) => {
-				const fail = () => deepMerge(obj, update as DeepPartial<Obj>);
-				expect(fail).toThrow('Update is not an object');
-			})
-		);
-	});
-
-	it('throws if update contains unknown property, but not if it is on ignored path', () => {
-		const objWInvalidUpdate = fc
-			.tuple(fc.string(), objAndUpdateArb(), fc.anything())
-			.filter(([addProp, [obj]]) => !(addProp in obj))
-			.map(([addProp, [obj, upd], val]) => {
-				const update = { ...upd };
-				update[addProp] = val;
-				return [obj, update];
-			});
-		fc.assert(
-			fc.property(objWInvalidUpdate, ([obj, update]) => {
-				const properties = Object.keys(update).map((p) => `.${p}`);
-				expect(() => deepMerge(obj, update, properties)).not.toThrow();
-				expect(() => deepMerge(obj, update)).toThrow(/^Update property .* not in object$/);
-			})
-		);
-	});
-
-	it('throws if update value has wrong type', () => {
-		const objWInvalidUpdate = objAndUpdateArb()
-			.filter(([, upd]) => Object.keys(upd).length > 0)
-			.chain(([obj, upd]) =>
-				fc.tuple(
-					fc.constant(obj),
-					fc.constant(upd),
-					fc.constantFrom(...Object.keys(upd)),
-					fc.constantFrom<ValueType>(...(Object.keys(valueArbs) as ValueType[]))
-				)
-			)
-			.filter(
-				([, update, key, type]) =>
-					typeof update[key] !== type &&
-					!(Array.isArray(update[key]) && type === 'array') &&
-					!(update[key] === null && type === 'null')
-			)
-			.chain(([obj, upd, key, type]) =>
-				fc.tuple(fc.constant([obj, upd, key] as [Obj, Obj, string]), valueArbs[type]())
-			)
-			.map(([[obj, upd, key], val]) => {
-				const update = { ...upd };
-				update[key] = val;
-				return [obj, update];
-			});
-		fc.assert(
-			fc.property(objWInvalidUpdate, ([obj, update]) =>
-				expect(() => deepMerge(obj, update)).toThrow(/^Update property \..* is .*, not .*$/)
-			)
-		);
+	it('throws if update contains unknown property, but not if it is on overwrite path', () => {
+		const objWInvalidUpdate: fc.Arbitrary<[Dict, Dict]> = fc
+			.tuple(fc.string(), objAndUpdateArb(), fc.object())
+			.map(([addProp, [obj, upd], val]) => [
+				{ ...obj, [addProp]: {} },
+				{ ...upd, [addProp]: { ...val, new: true } },
+			]);
+		const predicate = ([obj, update]: [Dict, Dict]) => {
+			const properties = Object.keys(update).map((p) => `.${p}`);
+			expect(() => deepMerge(obj, update, properties)).not.toThrow();
+			expect(() => deepMerge(obj, update)).toThrow(/^Update property .* not in object$/);
+		};
+		fc.assert(fc.property(objWInvalidUpdate, predicate));
 	});
 
 	it('should update values', () => {
-		const checkUpdatedValues = (obj: Obj, upd: Obj): void =>
+		const checkUpdatedValues = (obj: Dict, upd: Dict): void =>
 			Object.keys(upd).forEach((k) =>
-				isObj(obj[k])
-					? checkUpdatedValues(obj[k] as Obj, upd[k] as Obj)
+				typeOf(obj[k]) === 'object'
+					? checkUpdatedValues(obj[k], upd[k])
 					: expect(obj[k]).toStrictEqual(upd[k])
 			);
-		fc.assert(
-			fc.property(objAndUpdateArb(), ([object, update]) => {
-				const updated = deepMerge(object, update);
-				checkUpdatedValues(updated, update);
-			})
-		);
+		const predicate = ([object, update]: [Dict, Dict]) => {
+			const updated = deepMerge(object, update);
+			checkUpdatedValues(updated, update);
+		};
+		fc.assert(fc.property(objAndUpdateArb(), predicate));
 	});
 
 	it('should not change non-updated values', () => {
-		const checkUnchangedValues = (obj: Obj, orig: Obj, upd: Obj): void =>
+		const checkUnchangedValues = (obj: Dict, orig: Dict, upd: Dict): void =>
 			Object.keys(orig)
-				.filter((k) => !(k in upd) || isObj(orig[k]))
+				.filter((k) => typeOf(upd[k]) === 'object' || !(k in upd))
 				.forEach((k) =>
-					k in upd
-						? checkUnchangedValues(obj[k] as Obj, orig[k] as Obj, upd[k] as Obj)
+					typeOf(upd[k]) === 'object'
+						? checkUnchangedValues(obj[k], orig[k], upd[k])
 						: expect(obj[k]).toStrictEqual(orig[k])
 				);
-		fc.assert(
-			fc.property(objAndUpdateArb(), ([object, update]) => {
-				const updated = deepMerge(object, update);
-				checkUnchangedValues(updated, object, update);
-			})
-		);
+		const predicate = ([object, update]: [Dict, Dict]) => {
+			const updated = deepMerge(object, update);
+			checkUnchangedValues(updated, object, update);
+		};
+		fc.assert(fc.property(objAndUpdateArb(), predicate));
 	});
 });
 

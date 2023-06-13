@@ -1,4 +1,4 @@
-import { type DeepPartial, isObj, type Obj } from '@proti/core';
+import { typeOf, type DeepPartial } from '@proti/core';
 import {
 	type ArbitraryConfig,
 	config,
@@ -81,9 +81,9 @@ describe('config', () => {
 		{ oracle: { failOnMissingResourceDefinition: false } },
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>
-			isObj(partialConf)
+			typeOf(partialConf) === 'object'
 				? Object.entries(partialConf).forEach(([k, v]: [string, unknown]) =>
-						check((conf as Obj)[k], v as DeepPartial<Obj>)
+						check((conf as any)[k], v as DeepPartial<any>)
 				  )
 				: expect(conf).toStrictEqual(partialConf);
 		check(config(partialConfig, true), partialConfig);

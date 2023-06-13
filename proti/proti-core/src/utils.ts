@@ -64,46 +64,39 @@ export type JsType<T extends Types> = T extends 'string'
 	? null
 	: never;
 
-export type Obj = { [_: string]: unknown | Obj };
-export const isObj = (obj: unknown): obj is Obj => typeOf(obj) === 'object';
+export type Dict = { [_: string]: any };
 
 /**
- * Recursively overwrite values in `obj` with values in `update`. Expects that `update`'s
- * structure, including types, is a subset of `obj`'s structure.
+ * Recursively overwrite values in `obj` with values in `update`. Expects that
+ * `update`'s structure, including types, is a subset of `obj`'s structure.
  * @param obj Object to update.
  * @param update Update to merge onto `obj`.
- * @param ignorePaths Ignores the properties of the update, which's paths are contained in this list.
+ * @param overwritePaths Does not recursively merge but overwrite such
+ * properties, if present `update`.
  * @param propertyPath Current property path. Used for nicer error messages.
  * @returns Updated copy of `obj`.
- * @throws If `update` has shape that is incompatible with `obj`.
+ * @throws If `update` contains a property that is not in `obj` in a not
+ * overwritten path.
  */
-export const deepMerge = <T extends Obj>(
+export const deepMerge = <T extends Dict>(
 	obj: T,
 	update: DeepPartial<T>,
-	ignorePaths: string[] = [],
+	overwritePaths: string[] = [],
 	propertyPath = ''
 ): T => {
-	if (!isObj(update)) throw new Error(`Update is not an object but ${update}`);
 	const updateProperty = (key: string) => {
 		const property = `${propertyPath}.${key}`;
-		if (ignorePaths.indexOf(property) >= 0) return [];
 		if (!(key in obj)) throw new Error(`Update property ${property} not in object`);
-		if (typeOf(obj[key]) !== typeOf(update[key]))
-			throw new Error(
-				`Update property ${property} is ${typeOf(update[key])}, not ${typeOf(obj[key])}`
-			);
-		const v = isObj(obj[key])
-			? deepMerge(obj[key] as Obj, update[key] as Obj, ignorePaths, property)
-			: update[key];
-		return [key, v];
+		return [
+			key,
+			overwritePaths.includes(property) || typeOf(update[key]) !== 'object'
+				? update[key]
+				: deepMerge(obj[key], update[key]!, overwritePaths, property),
+		];
 	};
 	return {
 		...obj,
-		...Object.fromEntries(
-			Object.keys(update)
-				.map(updateProperty)
-				.filter((e) => e.length === 2)
-		),
+		...Object.fromEntries(Object.keys(update).map(updateProperty)),
 	};
 };
 

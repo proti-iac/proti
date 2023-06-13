@@ -1,5 +1,5 @@
-import { assertEquals, equals } from 'typia';
-import { deepMerge, DeepReadonly } from '@proti/core';
+import { type TypeGuardError, assertEquals, equals, is } from 'typia';
+import { deepMerge, DeepPartial, DeepReadonly } from '@proti/core';
 import type { ResourceType, ResourceDefinition, Type, TypeDefinition } from './pulumi';
 
 export const defaultArbitraryConfig = () => ({
@@ -85,39 +85,30 @@ let cachedConfig: Config | undefined;
 export const resetCachedConfig = () => {
 	cachedConfig = undefined;
 };
-export const config = (partialConfig: any = {}, ignoreCache: boolean = false): Config => {
+export const config = (partialConfig: unknown = {}, ignoreCache: boolean = false): Config => {
 	if (ignoreCache) resetCachedConfig();
-	if (cachedConfig === undefined) {
-		// Deep merge only handles structure present in the default config.
-		// Hence, resource and type definitions have to be treated manually.
-		const configCandidate = deepMerge(
-			defaultConfig(),
-			partialConfig,
-			[
-				'.plugins.pulumi-packages-schema.arbitrary.defaultResourceState',
-				'.plugins.pulumi-packages-schema.arbitrary.defaultTypeReferenceDefinition',
-				'.plugins.pulumi-packages-schema.registry.resources',
-				'.plugins.pulumi-packages-schema.registry.types',
-			],
-			'.plugins.pulumi-packages-schema'
-		);
-		if (partialConfig?.arbitrary?.defaultResourceState !== undefined)
-			configCandidate.arbitrary.defaultResourceState =
-				partialConfig.arbitrary.defaultResourceState;
-		if (partialConfig?.arbitrary?.defaultTypeReferenceDefinition !== undefined)
-			configCandidate.arbitrary.defaultTypeReferenceDefinition = assertEquals<
-				ArbitraryConfig['defaultTypeReferenceDefinition']
-			>(partialConfig.arbitrary.defaultTypeReferenceDefinition);
-		if (partialConfig?.registry?.resources !== undefined)
-			configCandidate.registry.resources = assertEquals<
-				Readonly<Record<ResourceType, ResourceDefinition>>
-			>(partialConfig.registry.resources);
-		if (partialConfig?.registry?.types !== undefined)
-			configCandidate.registry.types = assertEquals<Readonly<Record<Type, TypeDefinition>>>(
-				partialConfig.registry.types
+	if (cachedConfig === undefined)
+		// Deep merge only allows properties present in the default config.
+		// Hence, complex config values have to be overwritten.
+		try {
+			cachedConfig = deepMerge(
+				defaultConfig(),
+				assertEquals<DeepPartial<Config>>(partialConfig),
+				[
+					'.plugins.pulumi-packages-schema.arbitrary.defaultResourceState',
+					'.plugins.pulumi-packages-schema.arbitrary.defaultTypeReferenceDefinition',
+					'.plugins.pulumi-packages-schema.registry.resources',
+					'.plugins.pulumi-packages-schema.registry.types',
+				],
+				'.plugins.pulumi-packages-schema'
 			);
-		cachedConfig = assertEquals<Config>(configCandidate);
-	}
+		} catch (e) {
+			if (is<TypeGuardError>(e))
+				throw new Error(
+					`Invalid @proti/pulumi-packages-schema configuration. ${e.path} should be ${e.expected} but is ${e.value}.`
+				);
+			throw e;
+		}
 	return cachedConfig;
 };
 export const isConfig = (conf: any): conf is Config => equals<Config>(conf);

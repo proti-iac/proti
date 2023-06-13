@@ -1,7 +1,7 @@
 import * as fc from 'fast-check';
-import { assertEquals, equals } from 'typia';
+import { type TypeGuardError, assertEquals, equals, is } from 'typia';
 import type { Generator } from './generator';
-import { deepMerge, DeepPartial, DeepReadonly, isObj } from './utils';
+import { deepMerge, type DeepPartial, type DeepReadonly } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
 	/** Test generator arbitrary to use */
@@ -49,28 +49,22 @@ export const defaultConfig = () => ({
 });
 export type Config = DeepReadonly<ReturnType<typeof defaultConfig>>;
 
-export const config = (partialConfig: any = {}): Config => {
-	// Deep merge only handles structure present in the default config. Hence,
-	// plugins and runner config has to be treated manually.
-	const configCandidate = deepMerge<Config>(defaultConfig(), partialConfig, [
-		'.testRunner',
-		'.plugins',
-	]);
-	if (partialConfig.plugins && !isObj(partialConfig.plugins))
-		throw new Error(`Plugins config is not an object but ${typeof partialConfig.plugins}`);
-	return assertEquals<Config>({
-		...configCandidate,
-		testRunner: {
-			...configCandidate.testRunner,
-			...(partialConfig.testRunner
-				? assertEquals<DeepPartial<TestRunnerConfig>>(partialConfig.testRunner)
-				: {}),
-		},
-		plugins: {
-			...configCandidate.plugins,
-			...(partialConfig.plugins ? partialConfig.plugins : {}),
-		},
-	});
+export const config = (partialConfig: unknown = {}): Config => {
+	try {
+		// Deep merge only allows properties present in the default config. Hence,
+		// plugins and runner config have to be overwritten.
+		return deepMerge<Config>(
+			defaultConfig(),
+			assertEquals<DeepPartial<Config>>(partialConfig),
+			['.testRunner', '.plugins']
+		);
+	} catch (e) {
+		if (is<TypeGuardError>(e))
+			throw new Error(
+				`Invalid ProTI configuration. ${e.path} should be ${e.expected} but is ${e.value}.`
+			);
+		throw e;
+	}
 };
 export const isConfig: (conf: any) => conf is Config = (conf): conf is Config =>
 	equals<Config>(conf);
