@@ -31,11 +31,14 @@ import { OracleConfig, config } from './config';
  * instead of return false.
  */
 type Validator<T = unknown, R extends T = T> = (value: T) => value is R;
+export type NamedTypeToValidatorArgs = {
+	typeRefResolver: TypeRefResolver;
+	conf: OracleConfig;
+	objTypeToValidator: ObjTypeToValidator;
+};
 type TypeRefToValidator = (
 	typeRef: DeepReadonly<TypeReference>,
-	typeRefs: TypeRefResolver,
-	conf: OracleConfig,
-	objectTypeToValidator: ObjTypeToValidator,
+	namedTypeArgs: NamedTypeToValidatorArgs,
 	path: string
 ) => Promise<Validator>;
 type PreConfTypeRefToValidator = (
@@ -44,8 +47,7 @@ type PreConfTypeRefToValidator = (
 ) => ReturnType<TypeRefToValidator>;
 type ObjTypeToValidator = (
 	objTypeDetails: DeepReadonly<ObjectTypeDetails>,
-	typeRefs: TypeRefResolver,
-	conf: OracleConfig,
+	namedTypeArgs: NamedTypeToValidatorArgs,
 	path: string
 ) => Promise<Validator<unknown, Readonly<Record<string, unknown>>>>;
 
@@ -76,9 +78,7 @@ export const enumTypeDefToValidator = (
 
 const namedTypeToValidator = async (
 	namedType: DeepReadonly<NamedType>,
-	typeRefs: TypeRefResolver,
-	conf: OracleConfig,
-	objectTypeToValidator: ObjTypeToValidator,
+	args: NamedTypeToValidatorArgs,
 	path: string
 ): Promise<Validator> => {
 	const jsonValidator = (value: string): value is string => {
@@ -108,17 +108,17 @@ const namedTypeToValidator = async (
 		default:
 	}
 
-	let definition = await typeRefs(namedType.$ref);
+	let definition = await args.typeRefResolver(namedType.$ref);
 	if (definition === undefined) {
 		const errMsg = `${path} has unknown type reference to ${namedType.$ref}`;
-		if (conf.failOnMissingTypeReference) throw new Error(errMsg);
+		if (args.conf.failOnMissingTypeReference) throw new Error(errMsg);
 		console.warn(`${errMsg}.  Using default type reference definition"`);
-		definition = conf.defaultTypeReferenceDefinition;
+		definition = args.conf.defaultTypeReferenceDefinition;
 		if (definition === undefined) return anyValidator;
 	}
 	return is<EnumTypeDefinition>(definition)
 		? enumTypeDefToValidator(definition, `${path}$ref#enum:${namedType.$ref}`)
-		: objectTypeToValidator(definition, typeRefs, conf, `${path}$ref#obj:${namedType.$ref}`);
+		: args.objTypeToValidator(definition, args, `${path}$ref#obj:${namedType.$ref}`);
 };
 
 const unionTypeToValidator = async (
@@ -205,11 +205,10 @@ const primitiveTypeToValidator = (
 	}
 };
 
-export const typeRefToValidator: TypeRefToValidator = (typeRef, typeRefs, conf, objTypTV, path) => {
+export const typeRefToValidator: TypeRefToValidator = (typeRef, namedTypeArgs, path) => {
 	const preConfiguredTypeRefToValidator: PreConfTypeRefToValidator = (typeRefL, pathL) =>
-		typeRefToValidator(typeRefL, typeRefs, conf, objTypTV, pathL);
-	if (typeRef.$ref !== undefined)
-		return namedTypeToValidator(typeRef, typeRefs, conf, objTypTV, path);
+		typeRefToValidator(typeRefL, namedTypeArgs, pathL);
+	if (typeRef.$ref !== undefined) return namedTypeToValidator(typeRef, namedTypeArgs, path);
 	if (typeRef.oneOf !== undefined)
 		return unionTypeToValidator(typeRef, preConfiguredTypeRefToValidator, path);
 	switch (typeRef.type) {
@@ -224,8 +223,7 @@ export const typeRefToValidator: TypeRefToValidator = (typeRef, typeRefs, conf, 
 
 export const objTypeToValidator: ObjTypeToValidator = async (
 	objTypeDetails,
-	typeRefs,
-	conf,
+	namedTypeArgs,
 	path
 ) => {
 	const isObject = jsTypeValidator('object', path);
@@ -238,10 +236,7 @@ export const objTypeToValidator: ObjTypeToValidator = async (
 	const asyncPropValidators = Object.entries(objTypeDetails.properties || {}).map(
 		async ([property, propDef]): Promise<[string, Validator]> => {
 			const pathL = `${path}$prop:${property}`;
-			return [
-				property,
-				await typeRefToValidator(propDef, typeRefs, conf, objTypeToValidator, pathL),
-			];
+			return [property, await typeRefToValidator(propDef, namedTypeArgs, pathL)];
 		}
 	);
 	const propValidators = new Map(await Promise.all(asyncPropValidators));
@@ -300,7 +295,11 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 			properties: resDef.inputProperties,
 			required: resDef.requiredInputs,
 		};
-		return objTypeToValidator(objType, this.registry.resolveTypeRef, this.conf, resourceType);
+		return objTypeToValidator(
+			objType,
+			{ typeRefResolver: this.registry.resolveTypeRef, conf: this.conf, objTypeToValidator },
+			resourceType
+		);
 	}
 
 	private getValidator(resourceType: string): Promise<Validator> {

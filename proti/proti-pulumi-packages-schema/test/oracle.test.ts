@@ -2,9 +2,9 @@ import * as fc from 'fast-check';
 import type { DeepReadonly, ResourceArgs } from '@proti/core';
 import { type OracleConfig, defaultOracleConfig } from '../src/config';
 import {
+	type NamedTypeToValidatorArgs,
 	PulumiPackagesSchemaOracle,
 	enumTypeDefToValidator,
-	objTypeToValidator as objTypeToV,
 	objTypeToValidator,
 	typeRefToValidator,
 } from '../src/oracle';
@@ -42,6 +42,11 @@ jest.mock('../src/schema-registry', () => ({
 	},
 }));
 const conf = defaultOracleConfig();
+const defaultNamedTypeArgs: NamedTypeToValidatorArgs = {
+	conf,
+	typeRefResolver: resolveTypeRefMock,
+	objTypeToValidator,
+};
 
 describe('enum type definition to validator', () => {
 	it('should validate enum values', () => {
@@ -70,8 +75,7 @@ describe('enum type definition to validator', () => {
 describe('type reference validator', () => {
 	const typeRefPredicate =
 		(valid: boolean) => async (typeDef: DeepReadonly<TypeReference>, value: unknown) => {
-			const typeRefs = resolveTypeRefMock;
-			const validator = await typeRefToValidator(typeDef, typeRefs, conf, objTypeToV, '');
+			const validator = await typeRefToValidator(typeDef, defaultNamedTypeArgs, '');
 			if (valid) expect(validator(value)).toBe(true);
 			else expect(() => validator(value)).toThrowError();
 		};
@@ -157,10 +161,12 @@ describe('type reference validator', () => {
 
 		const unresolvedNamedTypeArb = namedTypeArb().filter((type) => !types.includes(type.$ref));
 		it('should fail for unresolved reference', () => {
-			const c = { ...conf, failOnMissingTypeReference: true };
-			const typeRefs = resolveTypeRefMock;
+			const namedTypeArgs: NamedTypeToValidatorArgs = {
+				...defaultNamedTypeArgs,
+				conf: { ...conf, failOnMissingTypeReference: true },
+			};
 			const predicate = async (namedType: DeepReadonly<NamedType>) =>
-				expect(typeRefToValidator(namedType, typeRefs, c, objTypeToV, '')).rejects.toThrow(
+				expect(typeRefToValidator(namedType, namedTypeArgs, '')).rejects.toThrow(
 					/has unknown type reference/
 				);
 			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, predicate));
@@ -175,10 +181,12 @@ describe('type reference validator', () => {
 		it('should not validate for default unresolvable reference', () => {
 			console.warn = () => {};
 			const nonEmptyObjArb = fc.object().filter((o) => Object.keys(o).length > 0);
+			const namedTypeArgs = {
+				...defaultNamedTypeArgs,
+				conf: { ...conf, defaultTypeReferenceDefinition: {} },
+			};
 			const predicate = async (typeDef: DeepReadonly<TypeReference>, value: unknown) => {
-				const c = { ...conf, defaultTypeReferenceDefinition: {} };
-				const typeRefs = resolveTypeRefMock;
-				const validator = await typeRefToValidator(typeDef, typeRefs, c, objTypeToV, '');
+				const validator = await typeRefToValidator(typeDef, namedTypeArgs, '');
 				expect(() => validator(value)).toThrowError();
 			};
 			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, nonEmptyObjArb, predicate));
@@ -301,9 +309,8 @@ describe('object type details validator', () => {
 		.map(([obj, objType]) => [obj, adjustObjType(obj, objType)]);
 
 	it('should validate valid objects', () => {
-		const typeRefs = resolveTypeRefMock;
 		const predicate = async ([obj, objType]: [unknown, DeepReadonly<ObjectTypeDetails>]) =>
-			expect((await objTypeToValidator(objType, typeRefs, conf, ''))(obj)).toBe(true);
+			expect((await objTypeToValidator(objType, defaultNamedTypeArgs, ''))(obj)).toBe(true);
 		return fc.assert(fc.asyncProperty(arbs, predicate));
 	});
 
@@ -313,7 +320,7 @@ describe('object type details validator', () => {
 			.anything()
 			.filter((v) => typeof v !== 'object' || Array.isArray(v) || v === null);
 		const predicate = async (objType: DeepReadonly<ObjectTypeDetails>, value: unknown) => {
-			const validator = await objTypeToValidator(objType, resolveTypeRefMock, conf, '');
+			const validator = await objTypeToValidator(objType, defaultNamedTypeArgs, '');
 			expect(() => validator(value)).toThrowError();
 		};
 		return fc.assert(fc.asyncProperty(objTypeArb, valArb, predicate));
@@ -328,7 +335,7 @@ describe('object type details validator', () => {
 			};
 			// eslint-disable-next-line no-param-reassign
 			delete obj.a;
-			const validator = await objTypeToValidator(type, resolveTypeRefMock, conf, '');
+			const validator = await objTypeToValidator(type, defaultNamedTypeArgs, '');
 			expect(() => validator(obj)).toThrowError();
 		};
 		return fc.assert(fc.asyncProperty(arbs, predicate));
@@ -347,7 +354,7 @@ describe('object type details validator', () => {
 			if (Object.keys(objType.properties || {}).length === 0)
 				// eslint-disable-next-line no-param-reassign
 				obj.a = 'true';
-			const validator = await objTypeToValidator(type, resolveTypeRefMock, conf, '');
+			const validator = await objTypeToValidator(type, defaultNamedTypeArgs, '');
 			expect(() => validator(obj)).toThrowError();
 		};
 		return fc.assert(fc.asyncProperty(arbs, predicate));
