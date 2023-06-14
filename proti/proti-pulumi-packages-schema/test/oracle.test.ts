@@ -252,7 +252,7 @@ describe('type reference validator', () => {
 			['undefined', fc.constant(undefined), []],
 			['object', fc.object(), []],
 		];
-		type Case = readonly [PrimitiveType['type'], string, string, fc.Arbitrary<unknown>];
+		type Case = DeepReadonly<[PrimitiveType['type'], string, string, fc.Arbitrary<unknown>]>;
 		const mapCase =
 			(validatorType: PrimitiveType['type']) =>
 			([valueType, arb, validTypes]: RawCase): Case =>
@@ -377,9 +377,13 @@ describe('Pulumi packages schema oracle', () => {
 		};
 
 		it('should throw on resource type without definition', () => {
-			const err = /Failed to find resource definition/;
-			const predicate = (args: ResourceArgs) =>
-				expect(init().asyncValidateResource(args)).resolves.toThrow(err);
+			const predicate = async (args: ResourceArgs) => {
+				const result = init().asyncValidateResource(args);
+				await expect(result).resolves.toThrow(/Failed to generate resource validator/);
+				await expect(result.then((e) => (e as Error).cause)).resolves.toThrow(
+					/Failed to find resource definition/
+				);
+			};
 			return fc.assert(fc.asyncProperty(resourceArgsArb, predicate));
 		});
 
@@ -391,35 +395,40 @@ describe('Pulumi packages schema oracle', () => {
 			return fc.assert(fc.asyncProperty(resourceArgsArb, predicate));
 		});
 
-		it.each([
+		it('should not validate on resource type without definition', () => {
+			console.warn = () => {};
+			const c = { failOnMissingResourceDefinition: false, defaultResourceDefinition: {} };
+			const predicate = (args: ResourceArgs) =>
+				expect(init(c).asyncValidateResource(args)).resolves.toThrow(/has .* property/);
+			const withInputsArb = fc
+				.tuple(resourceArgsArb, fc.dictionary(fc.string(), fc.anything(), { minKeys: 1 }))
+				.map(([res, inputs]) => ({ ...res, inputs }));
+			return fc.assert(fc.asyncProperty(withInputsArb, predicate));
+		});
+
+		it.each<DeepReadonly<[string, ResourceDefinition, unknown]>>([
 			['empty', {}, {}],
 			['a-resource', resDefAb, { a: 1 }],
 			['a-b-resource', resDefAb, { a: 1, b: [] }],
 			['a-bb-resource', resDefAb, { a: 1, b: ['c', 'd'] }],
-		] as [string, ResourceDefinition, (_: any) => boolean][])(
-			'should validate resource args for %s',
-			(_, resDef, inputs) => {
-				const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
-				const predicate = (args: ResourceArgs) =>
-					expect(init({}, resDef).asyncValidateResource(args)).resolves.toBeUndefined();
-				return fc.assert(fc.asyncProperty(arb, predicate));
-			}
-		);
+		])('should validate resource args for %s', (_, resDef, inputs) => {
+			const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
+			const predicate = (args: ResourceArgs) =>
+				expect(init({}, resDef).asyncValidateResource(args)).resolves.toBeUndefined();
+			return fc.assert(fc.asyncProperty(arb, predicate));
+		});
 
-		it.each([
+		it.each<DeepReadonly<[string, ResourceDefinition, unknown]>>([
 			['empty', {}, ''],
 			['a-resource', resDefAb, {}],
 			['a-resource', resDefAb, { a: 'a' }],
 			['a-b-resource', resDefAb, { a: 1, b: [5] }],
 			['a-b-c-resource', resDefAb, { a: 1, b: ['c', 'd'], c: false }],
-		] as [string, ResourceDefinition, (_: any) => boolean][])(
-			'should fail to validate resource args for %s',
-			(_, resDef, inputs) => {
-				const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
-				const predicate = (args: ResourceArgs) =>
-					expect(init({}, resDef).asyncValidateResource(args)).resolves.toThrowError();
-				return fc.assert(fc.asyncProperty(arb, predicate));
-			}
-		);
+		])('should fail to validate resource args for %s', (_, resDef, inputs) => {
+			const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
+			const predicate = (args: ResourceArgs) =>
+				expect(init({}, resDef).asyncValidateResource(args)).resolves.toThrowError();
+			return fc.assert(fc.asyncProperty(arb, predicate));
+		});
 	});
 });

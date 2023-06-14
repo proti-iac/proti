@@ -29,9 +29,16 @@ export type ArbitraryConfig = DeepReadonly<ReturnType<typeof defaultArbitraryCon
 
 export const defaultOracleConfig = () => ({
 	/**
-	 * Fail on validating state for resource type that cannot be retrieved.
+	 * Fail on validating state for resource type that cannot be resolved. If
+	 * false, `defaultResourceDefinition` will be used as default.
 	 */
 	failOnMissingResourceDefinition: true,
+	/**
+	 * Default definition used for unresolvable resource definitions if
+	 * `failOnMissingResourceDefinition` is false. If `undefined`, any resource
+	 * will be validated.
+	 */
+	defaultResourceDefinition: undefined as ResourceDefinition | undefined,
 	/**
 	 * Fail if type reference in a named type cannot be resolved.
 	 */

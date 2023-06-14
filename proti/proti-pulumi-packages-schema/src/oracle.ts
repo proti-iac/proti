@@ -29,14 +29,14 @@ import { OracleConfig, config } from './config';
  * error messages they should throw on validation errors with a detailed message
  * instead of return false.
  */
-type Validator<T, R extends T> = (value: T) => value is R;
+type Validator<T = unknown, R extends T = T> = (value: T) => value is R;
 type TypeRefToValidator = (
 	typeRef: DeepReadonly<TypeReference>,
 	registry: SchemaRegistry,
 	conf: OracleConfig,
 	objectTypeToValidator: ObjTypeToValidator,
 	path: string
-) => Promise<Validator<unknown, unknown>>;
+) => Promise<Validator>;
 type PreConfTypeRefToValidator = (
 	typeRef: DeepReadonly<TypeReference>,
 	path: string
@@ -62,7 +62,7 @@ const jsTypeValidator =
 export const enumTypeDefToValidator = (
 	enumType: DeepReadonly<EnumTypeDefinition>,
 	path: string
-): Validator<unknown, unknown> => {
+): Validator => {
 	const values = enumType.enum.map((e) => e.value);
 	return (value: any): value is unknown => {
 		if (!values.includes(value))
@@ -77,7 +77,7 @@ const namedTypeToValidator = async (
 	conf: OracleConfig,
 	objectTypeToValidator: ObjTypeToValidator,
 	path: string
-): Promise<Validator<unknown, unknown>> => {
+): Promise<Validator> => {
 	const jsonValidator = (value: string): value is string => {
 		try {
 			JSON.parse(value);
@@ -122,7 +122,7 @@ const unionTypeToValidator = async (
 	unionType: DeepReadonly<UnionType>,
 	preConfiguredTypeRefToValidator: PreConfTypeRefToValidator,
 	path: string
-): Promise<Validator<unknown, unknown>> => {
+): Promise<Validator> => {
 	type ErrValidator = (value: unknown, addError: (e: string) => void) => boolean;
 	const typeRefToErrVal = async (oneOfTypeRef: DeepReadonly<TypeReference>, i: number) => {
 		const validator = await preConfiguredTypeRefToValidator(oneOfTypeRef, `${path}$oneOf:${i}`);
@@ -163,7 +163,7 @@ const mapTypeToValidator = async (
 	arrayType: DeepReadonly<MapType>,
 	preConfiguredTypeRefToValidator: PreConfTypeRefToValidator,
 	path: string
-): Promise<Validator<unknown, unknown>> => {
+): Promise<Validator> => {
 	const isObject = jsTypeValidator('object', path);
 	const propValidators =
 		arrayType.additionalProperties === undefined
@@ -180,7 +180,7 @@ const mapTypeToValidator = async (
 const primitiveTypeToValidator = (
 	primitiveType: DeepReadonly<PrimitiveType>,
 	path: string
-): Validator<unknown, unknown> => {
+): Validator => {
 	switch (primitiveType.type) {
 		case 'boolean':
 			return jsTypeValidator('boolean', path);
@@ -233,7 +233,7 @@ export const objTypeToValidator: ObjTypeToValidator = async (
 			return true;
 		});
 	const asyncPropValidators = Object.entries(objTypeDetails.properties || {}).map(
-		async ([property, propDef]): Promise<[string, Validator<unknown, unknown>]> => {
+		async ([property, propDef]): Promise<[string, Validator]> => {
 			const pathL = `${path}$prop:${property}`;
 			return [
 				property,
@@ -265,27 +265,33 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 
 	constructor(private readonly conf: OracleConfig = config().oracle) {}
 
-	asyncValidateResource = async (resource: ResourceArgs): Promise<TestResult> => {
-		const resDef = await this.registry.getResource(resource.type);
+	private async generateValidator(resourceType: string): Promise<Validator> {
+		let resDef = await this.registry.getResource(resourceType);
 		if (resDef === undefined) {
-			const errMsg = `Failed to find resource definition of ${resource.type}`;
-			if (this.conf.failOnMissingResourceDefinition) return new Error(errMsg);
-			console.warn(`${errMsg}. Returning default resource state`);
-			return undefined;
+			const errMsg = `Failed to find resource definition of ${resourceType}`;
+			if (this.conf.failOnMissingResourceDefinition) throw new Error(errMsg);
+			console.warn(`${errMsg}. Using default resource definition`);
+			resDef = this.conf.defaultResourceDefinition;
+			if (resDef === undefined) return (value: unknown): value is unknown => true;
 		}
+		const objType = {
+			properties: resDef.inputProperties,
+			required: resDef.requiredInputs,
+		};
+		return objTypeToValidator(objType, this.registry, this.conf, resourceType);
+	}
+
+	public async asyncValidateResource(resource: ResourceArgs): Promise<TestResult> {
 		try {
-			const obj = {
-				properties: resDef.inputProperties,
-				required: resDef.requiredInputs,
-			};
-			const validator = await objTypeToValidator(obj, this.registry, this.conf, resource.urn);
-			validator(resource.inputs);
+			const validator = await this.generateValidator(resource.type).catch((cause) => {
+				throw new Error('Failed to generate resource validator', { cause });
+			});
+			if (!validator(resource.inputs)) throw new Error('Invalid resource configuration');
 			return undefined;
 		} catch (e) {
-			const errMsg = `Resource configuration invalid: ${resource.urn}`;
-			return is<Error>(e) ? e : new Error(errMsg, { cause: e });
+			return is<Error>(e) ? e : new Error('Failed to validate resource config', { cause: e });
 		}
-	};
+	}
 }
 
 export default PulumiPackagesSchemaOracle;
