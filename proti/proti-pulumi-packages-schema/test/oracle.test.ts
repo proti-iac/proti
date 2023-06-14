@@ -458,6 +458,7 @@ describe('Pulumi packages schema oracle', () => {
 			[string, Partial<OracleConfig>, boolean, boolean, OptNumber, OptNumber]
 		>;
 		it.each<CachingCase>([
+			['cache resource validator', {}, false, false, 1, undefined],
 			['not cache validator', { cacheValidators: false }, true, true, 2, 2],
 		])('should %s', (a, c, sameTypeName1, sameTypeName2, rootResLookups, namedTypeLookups) => {
 			const predicate = async (

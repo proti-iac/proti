@@ -8,6 +8,7 @@ import {
 	typeOf,
 	type DeepReadonly,
 	createAppendOnlyArray,
+	createAppendOnlyMap,
 } from '@proti/core';
 import { is } from 'typia';
 import { initModule } from './utils';
@@ -265,7 +266,26 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 
 	private readonly registry: SchemaRegistry = SchemaRegistry.getInstance();
 
-	constructor(private readonly conf: OracleConfig = config().oracle) {}
+	/**
+	 * Caching validators under their Pulumi type reference, assuming definition
+	 * in the same document. E.g., the validator of a resource type is cached as
+	 * `#/resources/[resource type token]`.
+	 */
+	private readonly validatorCache: ReadonlyMap<string, Promise<Validator>>;
+
+	/**
+	 * Add entry to validator cache.
+	 * @param type Pulumi type reference, assuming definition in the same
+	 * document. E.g., the validator of a resource type is cached as
+	 * `#/resources/[resource type token]`.
+	 * @param validator Promise resolving with the validator to cache.
+	 * @throws If cache already contains a validator for the type.
+	 */
+	private readonly appendValidatorCache: (type: string, validator: Promise<Validator>) => void;
+
+	constructor(private readonly conf: OracleConfig = config().oracle) {
+		[this.validatorCache, this.appendValidatorCache] = createAppendOnlyMap();
+	}
 
 	private async generateValidator(resourceType: string): Promise<Validator> {
 		let resDef = await this.registry.getResource(resourceType);
@@ -283,11 +303,20 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 		return objTypeToValidator(objType, this.registry, this.conf, resourceType);
 	}
 
+	private getValidator(resourceType: string): Promise<Validator> {
+		const cachedValidator = this.validatorCache.get(`#/resources/${resourceType}`);
+		if (cachedValidator) return cachedValidator;
+		const newValidator = this.generateValidator(resourceType).catch((cause) => {
+			throw new Error('Failed to generate resource validator', { cause });
+		});
+		if (this.conf.cacheValidators)
+			this.appendValidatorCache(`#/resources/${resourceType}`, newValidator);
+		return newValidator;
+	}
+
 	public async asyncValidateResource(resource: ResourceArgs): Promise<TestResult> {
 		try {
-			const validator = await this.generateValidator(resource.type).catch((cause) => {
-				throw new Error('Failed to generate resource validator', { cause });
-			});
+			const validator = await this.getValidator(resource.type);
 			if (!validator(resource.inputs)) throw new Error('Invalid resource configuration');
 			return undefined;
 		} catch (e) {
