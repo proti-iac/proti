@@ -29,6 +29,13 @@ export type ArbitraryConfig = DeepReadonly<ReturnType<typeof defaultArbitraryCon
 
 export const defaultOracleConfig = () => ({
 	/**
+	 * Validator functions are supposed to be stateless. Thus, caching and
+	 * reusing them is supposed to be safe. If enabled, a validator function is
+	 * lazily generated once per used resource and type definition and reused
+	 * within and in subsequent test runs.
+	 */
+	cacheValidators: true,
+	/**
 	 * Fail on validating state for resource type that cannot be resolved. If
 	 * false, `defaultResourceDefinition` will be used as default.
 	 */

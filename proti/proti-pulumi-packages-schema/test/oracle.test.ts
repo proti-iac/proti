@@ -16,6 +16,7 @@ import {
 	namedTypeArb,
 	objectTypeDetailsArb,
 	primitiveTypeArb,
+	resourceDefinitionArb,
 	typeReferenceArb,
 	unionTypeArb,
 } from './pulumi-package-metaschema/arbitraries';
@@ -440,6 +441,48 @@ describe('Pulumi packages schema oracle', () => {
 			const predicate = (args: ResourceArgs) =>
 				expect(init({}, resDef).asyncValidateResource(args)).resolves.toThrowError();
 			return fc.assert(fc.asyncProperty(arb, predicate));
+		});
+
+		const recursiveResDefArb: fc.Arbitrary<[ResourceDefinition, string]> = fc
+			.tuple(resourceDefinitionArb(), fc.string())
+			.map(([resDef, resType]) => [
+				{
+					...resDef,
+					inputProperties: { [resType]: { $ref: `#/resources/${resType}` } },
+					requiredInputs: [],
+				},
+				resType,
+			]);
+		type OptNumber = number | undefined;
+		type CachingCase = DeepReadonly<
+			[string, Partial<OracleConfig>, boolean, boolean, OptNumber, OptNumber]
+		>;
+		it.each<CachingCase>([
+			['not cache validator', { cacheValidators: false }, true, true, 2, 2],
+		])('should %s', (a, c, sameTypeName1, sameTypeName2, rootResLookups, namedTypeLookups) => {
+			const predicate = async (
+				resArgs: ResourceArgs,
+				[resDef, resType]: [ResourceDefinition, string]
+			) => {
+				getResourceMock.mockReset().mockReturnValue(resDef);
+				resolveTypeRefMock.mockReset().mockReturnValue(resDef);
+				const oracle = new PulumiPackagesSchemaOracle({ ...conf, ...c });
+				await oracle.asyncValidateResource({
+					...resArgs,
+					type: `${resType}${sameTypeName1 ? '' : '_'}`,
+					inputs: { [resType]: {} },
+				});
+				await oracle.asyncValidateResource({
+					...resArgs,
+					type: `${resType}${sameTypeName2 ? '' : '_'}`,
+					inputs: { [resType]: {} },
+				});
+				if (rootResLookups !== undefined)
+					expect(getResourceMock).toBeCalledTimes(rootResLookups);
+				if (namedTypeLookups !== undefined)
+					expect(resolveTypeRefMock).toBeCalledTimes(namedTypeLookups);
+			};
+			return fc.assert(fc.asyncProperty(resourceArgsArb, recursiveResDefArb, predicate));
 		});
 	});
 });
