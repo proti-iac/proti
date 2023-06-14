@@ -12,7 +12,7 @@ import {
 } from '@proti/core';
 import { is } from 'typia';
 import { initModule } from './utils';
-import { SchemaRegistry } from './schema-registry';
+import { SchemaRegistry, type TypeRefResolver } from './schema-registry';
 import type {
 	ArrayType,
 	EnumTypeDefinition,
@@ -33,7 +33,7 @@ import { OracleConfig, config } from './config';
 type Validator<T = unknown, R extends T = T> = (value: T) => value is R;
 type TypeRefToValidator = (
 	typeRef: DeepReadonly<TypeReference>,
-	registry: SchemaRegistry,
+	typeRefs: TypeRefResolver,
 	conf: OracleConfig,
 	objectTypeToValidator: ObjTypeToValidator,
 	path: string
@@ -44,7 +44,7 @@ type PreConfTypeRefToValidator = (
 ) => ReturnType<TypeRefToValidator>;
 type ObjTypeToValidator = (
 	objTypeDetails: DeepReadonly<ObjectTypeDetails>,
-	registry: SchemaRegistry,
+	typeRefs: TypeRefResolver,
 	conf: OracleConfig,
 	path: string
 ) => Promise<Validator<unknown, Readonly<Record<string, unknown>>>>;
@@ -76,7 +76,7 @@ export const enumTypeDefToValidator = (
 
 const namedTypeToValidator = async (
 	namedType: DeepReadonly<NamedType>,
-	registry: SchemaRegistry,
+	typeRefs: TypeRefResolver,
 	conf: OracleConfig,
 	objectTypeToValidator: ObjTypeToValidator,
 	path: string
@@ -108,7 +108,7 @@ const namedTypeToValidator = async (
 		default:
 	}
 
-	let definition = await registry.resolveTypeRef(namedType.$ref);
+	let definition = await typeRefs(namedType.$ref);
 	if (definition === undefined) {
 		const errMsg = `${path} has unknown type reference to ${namedType.$ref}`;
 		if (conf.failOnMissingTypeReference) throw new Error(errMsg);
@@ -118,7 +118,7 @@ const namedTypeToValidator = async (
 	}
 	return is<EnumTypeDefinition>(definition)
 		? enumTypeDefToValidator(definition, `${path}$ref#enum:${namedType.$ref}`)
-		: objectTypeToValidator(definition, registry, conf, `${path}$ref#obj:${namedType.$ref}`);
+		: objectTypeToValidator(definition, typeRefs, conf, `${path}$ref#obj:${namedType.$ref}`);
 };
 
 const unionTypeToValidator = async (
@@ -205,11 +205,11 @@ const primitiveTypeToValidator = (
 	}
 };
 
-export const typeRefToValidator: TypeRefToValidator = (typeRef, registry, conf, objTypTV, path) => {
+export const typeRefToValidator: TypeRefToValidator = (typeRef, typeRefs, conf, objTypTV, path) => {
 	const preConfiguredTypeRefToValidator: PreConfTypeRefToValidator = (typeRefL, pathL) =>
-		typeRefToValidator(typeRefL, registry, conf, objTypTV, pathL);
+		typeRefToValidator(typeRefL, typeRefs, conf, objTypTV, pathL);
 	if (typeRef.$ref !== undefined)
-		return namedTypeToValidator(typeRef, registry, conf, objTypTV, path);
+		return namedTypeToValidator(typeRef, typeRefs, conf, objTypTV, path);
 	if (typeRef.oneOf !== undefined)
 		return unionTypeToValidator(typeRef, preConfiguredTypeRefToValidator, path);
 	switch (typeRef.type) {
@@ -224,7 +224,7 @@ export const typeRefToValidator: TypeRefToValidator = (typeRef, registry, conf, 
 
 export const objTypeToValidator: ObjTypeToValidator = async (
 	objTypeDetails,
-	registry,
+	typeRefs,
 	conf,
 	path
 ) => {
@@ -240,7 +240,7 @@ export const objTypeToValidator: ObjTypeToValidator = async (
 			const pathL = `${path}$prop:${property}`;
 			return [
 				property,
-				await typeRefToValidator(propDef, registry, conf, objTypeToValidator, pathL),
+				await typeRefToValidator(propDef, typeRefs, conf, objTypeToValidator, pathL),
 			];
 		}
 	);
@@ -300,7 +300,7 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 			properties: resDef.inputProperties,
 			required: resDef.requiredInputs,
 		};
-		return objTypeToValidator(objType, this.registry, this.conf, resourceType);
+		return objTypeToValidator(objType, this.registry.resolveTypeRef, this.conf, resourceType);
 	}
 
 	private getValidator(resourceType: string): Promise<Validator> {

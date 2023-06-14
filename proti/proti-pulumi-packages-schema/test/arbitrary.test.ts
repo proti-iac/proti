@@ -108,7 +108,8 @@ describe('type reference to arbitrary', () => {
 	) => {
 		const predicate = async (typeRefDef: DeepReadonly<TypeReference>) => {
 			const valuePredicate = (value: unknown) => valueCheck(value, typeRefDef);
-			const typeRefArb = await typeRefToArb(typeRefDef, registry, conf, objectTypeToArb, '');
+			const typeRefs = resolveTypeRefMock;
+			const typeRefArb = await typeRefToArb(typeRefDef, typeRefs, conf, objectTypeToArb, '');
 			fc.assert(fc.property(typeRefArb, valuePredicate), { numRuns: 1 });
 		};
 		return fc.assert(fc.asyncProperty(arb, predicate));
@@ -186,7 +187,8 @@ describe('type reference to arbitrary', () => {
 			) => {
 				resolveTypeRefMock.mockResolvedValue(enumTypeDef);
 				const typeRef = { ...namedType, $ref: `#${ref}` };
-				const typeRefArb = await typeRefToArb(typeRef, registry, conf, objectTypeToArb, '');
+				const typeRefs = resolveTypeRefMock;
+				const typeRefArb = await typeRefToArb(typeRef, typeRefs, conf, objectTypeToArb, '');
 				const enumValues = enumTypeDef.enum.map((e) => e.value);
 				const valuePredicate = (value: any) =>
 					expect(enumValues.includes(value)).toBe(true);
@@ -205,7 +207,8 @@ describe('type reference to arbitrary', () => {
 			) => {
 				resolveTypeRefMock.mockResolvedValue(objTypeDetails);
 				const typeRef = { ...namedType, $ref: `#${ref}` };
-				const typeRefArb = await typeRefToArb(typeRef, registry, conf, objectTypeToArb, '');
+				const typeRefs = resolveTypeRefMock;
+				const typeRefArb = await typeRefToArb(typeRef, typeRefs, conf, objectTypeToArb, '');
 				const valuePredicate = (value: any) => {
 					expect(typeof value).toBe('object');
 					const props = Object.keys(objTypeDetails.properties || {});
@@ -228,7 +231,7 @@ describe('type reference to arbitrary', () => {
 				const errMsg = /Failed to find type definition.*in/;
 				const c = { ...conf, failOnMissingTypeReference: true };
 				return expect(() =>
-					typeRefToArb(typeRef, registry, c, objectTypeToArb, '')
+					typeRefToArb(typeRef, resolveTypeRefMock, c, objectTypeToArb, '')
 				).rejects.toThrow(errMsg);
 			};
 			return fc.assert(fc.asyncProperty(namedTypeArb(), fc.string(), predicate));
@@ -248,7 +251,7 @@ describe('type reference to arbitrary', () => {
 					const c = { ...conf, defaultTypeReferenceDefinition };
 					const typeRefArb = await typeRefToArb(
 						typeRef,
-						registry,
+						resolveTypeRefMock,
 						c,
 						objectTypeToArb,
 						''
@@ -299,8 +302,9 @@ describe('property definition to arbitrary', () => {
 		'%s',
 		(_, propDefFilter, predicate) => {
 			const arb = propertyDefinitionArb().filter(propDefFilter);
+			const typeRefs = resolveTypeRefMock;
 			const pred = async (propSchema: DeepReadonly<PropertyDefinition>) =>
-				predicate(await propertyDefToArb(propSchema, registry, conf, objectTypeToArb))(
+				predicate(await propertyDefToArb(propSchema, typeRefs, conf, objectTypeToArb))(
 					propSchema
 				);
 			return fc.assert(fc.asyncProperty(arb, pred));
@@ -317,7 +321,7 @@ describe('object type details to arbitrary', () => {
 			const valuePredicate = (value: unknown) => valueCheck(value, objTypeDetails);
 			const objTypeDetailsArb = await objectTypeToArb(
 				objTypeDetails,
-				registry,
+				resolveTypeRefMock,
 				conf,
 				'*unspecified'
 			);
@@ -373,7 +377,7 @@ describe('object type details to arbitrary', () => {
 			}));
 		const predicate = (objTypeDetails: DeepReadonly<ObjectTypeDetails>) =>
 			expect(() =>
-				objectTypeToArb(objTypeDetails, registry, conf, '*unspecified*')
+				objectTypeToArb(objTypeDetails, resolveTypeRefMock, conf, '*unspecified*')
 			).rejects.toThrow(/Property ".*" required but not defined in /);
 		await fc.assert(fc.asyncProperty(arb, predicate));
 	});

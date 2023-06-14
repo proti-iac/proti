@@ -30,7 +30,6 @@ import type {
 	TypeReference,
 	UnionType,
 } from '../src/pulumi-package-metaschema';
-import { SchemaRegistry } from '../src/schema-registry';
 
 const getResourceMock = jest.fn();
 const resolveTypeRefMock = jest.fn();
@@ -42,7 +41,6 @@ jest.mock('../src/schema-registry', () => ({
 		}),
 	},
 }));
-const registry = SchemaRegistry.getInstance();
 const conf = defaultOracleConfig();
 
 describe('enum type definition to validator', () => {
@@ -72,7 +70,8 @@ describe('enum type definition to validator', () => {
 describe('type reference validator', () => {
 	const typeRefPredicate =
 		(valid: boolean) => async (typeDef: DeepReadonly<TypeReference>, value: unknown) => {
-			const validator = await typeRefToValidator(typeDef, registry, conf, objTypeToV, '');
+			const typeRefs = resolveTypeRefMock;
+			const validator = await typeRefToValidator(typeDef, typeRefs, conf, objTypeToV, '');
 			if (valid) expect(validator(value)).toBe(true);
 			else expect(() => validator(value)).toThrowError();
 		};
@@ -159,8 +158,9 @@ describe('type reference validator', () => {
 		const unresolvedNamedTypeArb = namedTypeArb().filter((type) => !types.includes(type.$ref));
 		it('should fail for unresolved reference', () => {
 			const c = { ...conf, failOnMissingTypeReference: true };
+			const typeRefs = resolveTypeRefMock;
 			const predicate = async (namedType: DeepReadonly<NamedType>) =>
-				expect(typeRefToValidator(namedType, registry, c, objTypeToV, '')).rejects.toThrow(
+				expect(typeRefToValidator(namedType, typeRefs, c, objTypeToV, '')).rejects.toThrow(
 					/has unknown type reference/
 				);
 			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, predicate));
@@ -177,7 +177,8 @@ describe('type reference validator', () => {
 			const nonEmptyObjArb = fc.object().filter((o) => Object.keys(o).length > 0);
 			const predicate = async (typeDef: DeepReadonly<TypeReference>, value: unknown) => {
 				const c = { ...conf, defaultTypeReferenceDefinition: {} };
-				const validator = await typeRefToValidator(typeDef, registry, c, objTypeToV, '');
+				const typeRefs = resolveTypeRefMock;
+				const validator = await typeRefToValidator(typeDef, typeRefs, c, objTypeToV, '');
 				expect(() => validator(value)).toThrowError();
 			};
 			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, nonEmptyObjArb, predicate));
@@ -300,8 +301,9 @@ describe('object type details validator', () => {
 		.map(([obj, objType]) => [obj, adjustObjType(obj, objType)]);
 
 	it('should validate valid objects', () => {
+		const typeRefs = resolveTypeRefMock;
 		const predicate = async ([obj, objType]: [unknown, DeepReadonly<ObjectTypeDetails>]) =>
-			expect((await objTypeToValidator(objType, registry, conf, ''))(obj)).toBe(true);
+			expect((await objTypeToValidator(objType, typeRefs, conf, ''))(obj)).toBe(true);
 		return fc.assert(fc.asyncProperty(arbs, predicate));
 	});
 
@@ -311,7 +313,7 @@ describe('object type details validator', () => {
 			.anything()
 			.filter((v) => typeof v !== 'object' || Array.isArray(v) || v === null);
 		const predicate = async (objType: DeepReadonly<ObjectTypeDetails>, value: unknown) => {
-			const validator = await objTypeToValidator(objType, registry, conf, '');
+			const validator = await objTypeToValidator(objType, resolveTypeRefMock, conf, '');
 			expect(() => validator(value)).toThrowError();
 		};
 		return fc.assert(fc.asyncProperty(objTypeArb, valArb, predicate));
@@ -326,7 +328,7 @@ describe('object type details validator', () => {
 			};
 			// eslint-disable-next-line no-param-reassign
 			delete obj.a;
-			const validator = await objTypeToValidator(type, registry, conf, '');
+			const validator = await objTypeToValidator(type, resolveTypeRefMock, conf, '');
 			expect(() => validator(obj)).toThrowError();
 		};
 		return fc.assert(fc.asyncProperty(arbs, predicate));
@@ -345,7 +347,7 @@ describe('object type details validator', () => {
 			if (Object.keys(objType.properties || {}).length === 0)
 				// eslint-disable-next-line no-param-reassign
 				obj.a = 'true';
-			const validator = await objTypeToValidator(type, registry, conf, '');
+			const validator = await objTypeToValidator(type, resolveTypeRefMock, conf, '');
 			expect(() => validator(obj)).toThrowError();
 		};
 		return fc.assert(fc.asyncProperty(arbs, predicate));

@@ -13,6 +13,10 @@ import {
 	TypeRef,
 } from './pulumi';
 
+export type TypeRefResolver = (
+	typeRef: TypeRef
+) => Promise<ResourceDefinition | TypeDefinition | undefined>;
+
 export class SchemaRegistry {
 	private static instance: SchemaRegistry;
 
@@ -218,9 +222,7 @@ export class SchemaRegistry {
 	 * @returns Resource or type definition for type reference or `undefined` if
 	 * type reference cannot be resolved and no definition can be found.
 	 */
-	public async resolveTypeRef(
-		typeRef: TypeRef
-	): Promise<ResourceDefinition | TypeDefinition | undefined> {
+	public readonly resolveTypeRef: TypeRefResolver = async (typeRef) => {
 		if (typeRef.includes('#')) {
 			const type = typeRef.slice(typeRef.indexOf('#') + 1);
 			const tryDecode = (s: string): string => {
@@ -235,7 +237,7 @@ export class SchemaRegistry {
 		}
 		this.log(`Cannot resolve type reference ${typeRef}`);
 		return undefined;
-	}
+	};
 
 	/**
 	 * Searches for package.json modules that have been loaded and tries to
