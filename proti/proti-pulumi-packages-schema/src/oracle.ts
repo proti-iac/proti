@@ -30,9 +30,24 @@ import { OracleConfig, config } from './config';
  * error messages they should throw on validation errors with a detailed message
  * instead of return false.
  */
-type Validator<T = unknown, R extends T = T> = (value: T) => value is R;
+export type Validator<T = unknown, R extends T = T> = (value: T) => value is R;
+/**
+ * Caching validators under their Pulumi type reference, assuming definition in
+ * the same document. E.g., the validator of a resource type is cached as
+ * `#/resources/[resource type token]`. Also includes type references with other
+ * formats as they are but strips everything before the first # character, if a
+ * # character is included.
+ */
+export type ValidatorCache = ReadonlyMap<string, Promise<Validator>>;
 export type NamedTypeToValidatorArgs = {
 	typeRefResolver: TypeRefResolver;
+	validatorCache: ValidatorCache;
+	appendValidatorCache: (typeRef: string, validator: Promise<Validator>) => void;
+	/**
+	 * If we generate a new validator, we want to exclue its type reference from
+	 * cache lookups to avoid deadlocks due to recursive wait.
+	 */
+	excludeFromValidatorCache: string[];
 	conf: OracleConfig;
 	objTypeToValidator: ObjTypeToValidator;
 };
@@ -108,17 +123,34 @@ const namedTypeToValidator = async (
 		default:
 	}
 
-	let definition = await args.typeRefResolver(namedType.$ref);
+	/** Normalized type reference without everything before first #, if a # is included */
+	const typeRef: string = namedType.$ref.includes('#')
+		? namedType.$ref.slice(namedType.$ref.indexOf('#'))
+		: namedType.$ref;
+	if (args.conf.cacheValidators && !args.excludeFromValidatorCache.includes(typeRef)) {
+		const cachedValidator = args.validatorCache.get(typeRef);
+		if (cachedValidator) return cachedValidator;
+	}
+	let definition = await args.typeRefResolver(typeRef);
+	let validator: Promise<Validator> | undefined;
 	if (definition === undefined) {
 		const errMsg = `${path} has unknown type reference to ${namedType.$ref}`;
 		if (args.conf.failOnMissingTypeReference) throw new Error(errMsg);
-		console.warn(`${errMsg}.  Using default type reference definition"`);
+		console.warn(`${errMsg}. Using default type reference definition"`);
 		definition = args.conf.defaultTypeReferenceDefinition;
-		if (definition === undefined) return anyValidator;
 	}
-	return is<EnumTypeDefinition>(definition)
-		? enumTypeDefToValidator(definition, `${path}$ref#enum:${namedType.$ref}`)
-		: args.objTypeToValidator(definition, args, `${path}$ref#obj:${namedType.$ref}`);
+	if (definition === undefined) validator = Promise.resolve(anyValidator);
+	else if (is<EnumTypeDefinition>(definition)) {
+		const syncValidator = enumTypeDefToValidator(definition, `${path}$ref#enum:${typeRef}`);
+		validator = Promise.resolve(syncValidator);
+	} else
+		validator = args.objTypeToValidator(
+			definition,
+			{ ...args, excludeFromValidatorCache: [...args.excludeFromValidatorCache, typeRef] },
+			`${path}$ref#obj:${typeOf}`
+		);
+	if (args.conf.cacheValidators) args.appendValidatorCache(typeRef, validator);
+	return validator;
 };
 
 const unionTypeToValidator = async (
@@ -264,9 +296,11 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 	/**
 	 * Caching validators under their Pulumi type reference, assuming definition
 	 * in the same document. E.g., the validator of a resource type is cached as
-	 * `#/resources/[resource type token]`.
+	 * `#/resources/[resource type token]`. Also includes type references with
+	 * other formats as they are but strips everything before the first #
+	 * character, if a # character is included.
 	 */
-	private readonly validatorCache: ReadonlyMap<string, Promise<Validator>>;
+	private readonly validatorCache: ValidatorCache;
 
 	/**
 	 * Add entry to validator cache.
@@ -295,11 +329,15 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 			properties: resDef.inputProperties,
 			required: resDef.requiredInputs,
 		};
-		return objTypeToValidator(
-			objType,
-			{ typeRefResolver: this.registry.resolveTypeRef, conf: this.conf, objTypeToValidator },
-			resourceType
-		);
+		const namedTypeArgs: NamedTypeToValidatorArgs = {
+			typeRefResolver: this.registry.resolveTypeRef,
+			validatorCache: this.validatorCache,
+			appendValidatorCache: this.appendValidatorCache,
+			excludeFromValidatorCache: [`#/resources/${resourceType}`],
+			conf: this.conf,
+			objTypeToValidator,
+		};
+		return objTypeToValidator(objType, namedTypeArgs, resourceType);
 	}
 
 	private getValidator(resourceType: string): Promise<Validator> {

@@ -7,6 +7,7 @@ import {
 	enumTypeDefToValidator,
 	objTypeToValidator,
 	typeRefToValidator,
+	type Validator,
 } from '../src/oracle';
 import { ResourceDefinition } from '../src/pulumi';
 import {
@@ -42,11 +43,16 @@ jest.mock('../src/schema-registry', () => ({
 	},
 }));
 const conf = defaultOracleConfig();
+const validatorCache: Map<string, Promise<Validator>> = new Map();
 const defaultNamedTypeArgs: NamedTypeToValidatorArgs = {
 	conf,
+	validatorCache,
+	appendValidatorCache: validatorCache.set.bind(validatorCache),
+	excludeFromValidatorCache: [],
 	typeRefResolver: resolveTypeRefMock,
 	objTypeToValidator,
 };
+beforeEach(() => validatorCache.clear());
 
 describe('enum type definition to validator', () => {
 	it('should validate enum values', () => {
@@ -467,7 +473,9 @@ describe('Pulumi packages schema oracle', () => {
 			[string, Partial<OracleConfig>, boolean, boolean, OptNumber, OptNumber]
 		>;
 		it.each<CachingCase>([
-			['cache resource validator', {}, false, false, 1, undefined],
+			['cache resource validator', {}, true, true, 1, undefined],
+			['cache named type validator', {}, false, false, undefined, 1],
+			['use validator cached from named types for root resources', {}, false, true, 1, 1],
 			['not cache validator', { cacheValidators: false }, true, true, 2, 2],
 		])('should %s', (a, c, sameTypeName1, sameTypeName2, rootResLookups, namedTypeLookups) => {
 			const predicate = async (
@@ -484,7 +492,7 @@ describe('Pulumi packages schema oracle', () => {
 				});
 				await oracle.asyncValidateResource({
 					...resArgs,
-					type: `${resType}${sameTypeName2 ? '' : '_'}`,
+					type: `${resType}${sameTypeName2 ? '' : '__'}`,
 					inputs: { [resType]: {} },
 				});
 				if (rootResLookups !== undefined)
