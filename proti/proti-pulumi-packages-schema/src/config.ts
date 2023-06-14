@@ -40,9 +40,16 @@ export const defaultOracleConfig = () => ({
 	 */
 	defaultResourceDefinition: undefined as ResourceDefinition | undefined,
 	/**
-	 * Fail if type reference in a named type cannot be resolved.
+	 * Fail if type reference in a named type cannot be resolved. If false,
+	 * `defaultTypeReferenceDefinition` will be used as default.
 	 */
 	failOnMissingTypeReference: false,
+	/**
+	 * Default definition used for unresolvable type references if
+	 * `failOnMissingTypeReference` is false. If `undefined`, any resource will
+	 * be validated.
+	 */
+	defaultTypeReferenceDefinition: undefined as ResourceDefinition | TypeDefinition | undefined,
 });
 export type OracleConfig = DeepReadonly<ReturnType<typeof defaultOracleConfig>>;
 

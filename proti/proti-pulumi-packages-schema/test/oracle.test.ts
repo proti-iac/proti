@@ -165,10 +165,21 @@ describe('type reference validator', () => {
 			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, predicate));
 		});
 
-		it('should allow any value for default unresolvable reference', () => {
+		it('should validate for default unresolvable reference', () => {
 			console.warn = () => {};
 			const predicate = typeRefPredicate(true);
 			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, fc.anything(), predicate));
+		});
+
+		it('should not validate for default unresolvable reference', () => {
+			console.warn = () => {};
+			const nonEmptyObjArb = fc.object().filter((o) => Object.keys(o).length > 0);
+			const predicate = async (typeDef: DeepReadonly<TypeReference>, value: unknown) => {
+				const c = { ...conf, defaultTypeReferenceDefinition: {} };
+				const validator = await typeRefToValidator(typeDef, registry, c, objTypeToV, '');
+				expect(() => validator(value)).toThrowError();
+			};
+			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, nonEmptyObjArb, predicate));
 		});
 	});
 

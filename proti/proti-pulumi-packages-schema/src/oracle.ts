@@ -51,6 +51,8 @@ type ObjTypeToValidator = (
 type Object = Readonly<Record<string, unknown>>;
 type JsTypeObject<T extends Types> = T extends 'object' ? Object : JsType<T>;
 
+const anyValidator = (value: unknown): value is unknown => true;
+
 const jsTypeValidator =
 	<T extends Types>(type: T, path: string): Validator<unknown, JsTypeObject<T>> =>
 	(value): value is JsTypeObject<T> => {
@@ -87,7 +89,6 @@ const namedTypeToValidator = async (
 		return true;
 	};
 	const isString = jsTypeValidator('string', path);
-	const any = (value: unknown): value is any => true;
 
 	// Type references have the format `[origin]#[type]`. `[origin]` is
 	// `pulumi.json` for built-in Pulumi types. For non built-in types we
@@ -100,18 +101,19 @@ const namedTypeToValidator = async (
 		case 'pulumi.json#/Asset':
 			return isString;
 		case 'pulumi.json#/Any':
-			return any;
+			return anyValidator;
 		case 'pulumi.json#/Json':
 			return (value: unknown): value is string => isString(value) && jsonValidator(value);
 		default:
 	}
 
-	const definition = await registry.resolveTypeRef(namedType.$ref);
+	let definition = await registry.resolveTypeRef(namedType.$ref);
 	if (definition === undefined) {
 		const errMsg = `${path} has unknown type reference to ${namedType.$ref}`;
 		if (conf.failOnMissingTypeReference) throw new Error(errMsg);
-		console.warn(`${errMsg}. Treating it as "pulumi.json#/Any"`);
-		return any;
+		console.warn(`${errMsg}.  Using default type reference definition"`);
+		definition = conf.defaultTypeReferenceDefinition;
+		if (definition === undefined) return anyValidator;
 	}
 	return is<EnumTypeDefinition>(definition)
 		? enumTypeDefToValidator(definition, `${path}$ref#enum:${namedType.$ref}`)
@@ -272,7 +274,7 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 			if (this.conf.failOnMissingResourceDefinition) throw new Error(errMsg);
 			console.warn(`${errMsg}. Using default resource definition`);
 			resDef = this.conf.defaultResourceDefinition;
-			if (resDef === undefined) return (value: unknown): value is unknown => true;
+			if (resDef === undefined) return anyValidator;
 		}
 		const objType = {
 			properties: resDef.inputProperties,
