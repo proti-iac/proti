@@ -178,3 +178,13 @@ export const mapValues = <V, W>(
 	map: (value: V, key: string) => W
 ): Readonly<Record<string, W>> =>
 	Object.fromEntries<W>(Object.entries(dictionary).map(([key, value]) => [key, map(value, key)]));
+
+export const asyncMapValues = async <V, W>(
+	dictionary: Readonly<Record<string, V>>,
+	map: (value: V, key: string) => Promise<W>
+): Promise<Readonly<Record<string, W>>> => {
+	const entries = Object.entries(dictionary).map(
+		async ([key, value]): Promise<[string, W]> => [key, await map(value, key)]
+	);
+	return Object.fromEntries<W>(await Promise.all(entries));
+};

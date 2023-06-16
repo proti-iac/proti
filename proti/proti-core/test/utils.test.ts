@@ -12,6 +12,7 @@ import {
 	createAppendOnlyMap,
 	type Dict,
 	mapValues,
+	asyncMapValues,
 } from '../src/utils';
 
 describe('deep partial', () => {
@@ -379,5 +380,41 @@ describe('map value', () => {
 			);
 		};
 		fc.assert(fc.property(dictArb, predicate));
+	});
+});
+
+describe('async map value', () => {
+	it('types correctly', () => {
+		const f = () => Promise.resolve(5);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const m: Promise<{ [_: string]: number }> = asyncMapValues({ a: 'b' }, f);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const n: Promise<{ [_: string]: any }> = asyncMapValues({ a: 'b' }, f);
+		// @ts-expect-error
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const o: Promise<{ [_: string]: string }> = asyncMapValues({ a: 'b' }, f);
+	});
+	const dictArb = fc.dictionary(fc.string(), fc.integer());
+
+	it('preserves keys', () => {
+		const predicate = async (dict: Record<string, number>, f: (_: number) => any) => {
+			const keys = Object.keys(dict);
+			const mapped = await asyncMapValues(dict, (value, key) => {
+				expect(keys.includes(key)).toBe(true);
+				return f(value);
+			});
+			expect(Object.keys(mapped)).toStrictEqual(keys);
+		};
+		return fc.assert(fc.asyncProperty(dictArb, fc.func(fc.anything()), predicate));
+	});
+
+	it('maps values', () => {
+		const predicate = async (dict: Record<string, number>) => {
+			const vals = Object.values(dict);
+			Object.values(
+				await asyncMapValues(dict, (n: number) => Promise.resolve(n * 2))
+			).forEach((n2, i) => expect(n2).toBe(vals[i] * 2));
+		};
+		return fc.assert(fc.asyncProperty(dictArb, predicate));
 	});
 });
