@@ -11,6 +11,7 @@ import {
 	typeOf,
 	createAppendOnlyMap,
 	type Dict,
+	mapValues,
 } from '../src/utils';
 
 describe('deep partial', () => {
@@ -343,5 +344,40 @@ describe('create append only map', () => {
 			expect(() => set(key, value)).toThrowError(/already has value for/);
 		};
 		fc.assert(fc.property(fc.anything(), fc.anything(), predicate));
+	});
+});
+
+describe('map value', () => {
+	it('types correctly', () => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const m: { [_: string]: number } = mapValues({ a: 'b' }, () => 5);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const n: { [_: string]: any } = mapValues({ a: 'b' }, () => 5);
+		// @ts-expect-error
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const o: { [_: string]: string } = mapValues({ a: 'b' }, () => 5);
+	});
+	const dictArb = fc.dictionary(fc.string(), fc.integer());
+
+	it('preserves keys', () => {
+		const predicate = (dict: Record<string, number>, f: (_: number) => any) => {
+			const keys = Object.keys(dict);
+			const mapped = mapValues(dict, (value, key) => {
+				expect(keys.includes(key)).toBe(true);
+				return f(value);
+			});
+			expect(Object.keys(mapped)).toStrictEqual(keys);
+		};
+		fc.assert(fc.property(dictArb, fc.func(fc.anything()), predicate));
+	});
+
+	it('maps values', () => {
+		const predicate = (dict: Record<string, number>) => {
+			const vals = Object.values(dict);
+			Object.values(mapValues(dict, (n: number) => n * 2)).forEach((n2, i) =>
+				expect(n2).toBe(vals[i] * 2)
+			);
+		};
+		fc.assert(fc.property(dictArb, predicate));
 	});
 });

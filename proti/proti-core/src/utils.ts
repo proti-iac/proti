@@ -172,3 +172,9 @@ export const createAppendOnlyMap = <K, V>(): [
 	};
 	return [map, append];
 };
+
+export const mapValues = <V, W>(
+	dictionary: Readonly<Record<string, V>>,
+	map: (value: V, key: string) => W
+): Readonly<Record<string, W>> =>
+	Object.fromEntries<W>(Object.entries(dictionary).map(([key, value]) => [key, map(value, key)]));
