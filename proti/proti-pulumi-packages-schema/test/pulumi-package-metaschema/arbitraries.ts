@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import {
+import type {
 	AliasDefinition,
 	ArrayType,
 	EnumTypeDefinition,
@@ -10,9 +10,10 @@ import {
 	PrimitiveType,
 	PropertyDefinition,
 	ResourceDefinition,
+	TypeDefinition,
 	TypeReference,
 	UnionType,
-} from '../../src/pulumi-package-metaschema';
+} from '../../src/pulumi';
 
 export const numberArb = (): fc.Arbitrary<number> =>
 	fc.oneof(fc.integer(), fc.float(), fc.double());
@@ -121,15 +122,15 @@ export const objectTypeDetailsArb = (): fc.Arbitrary<ObjectTypeDetails> => {
 			fc.uniqueArray(fc.nat(maxProps))
 		)
 		.map(([objectTypeDetailsFrame, properties, requiredPropertyIds]) => {
-			const objectTypeDetails: ObjectTypeDetails = {};
+			let [props, required]: [{} | undefined, string[] | undefined] = [undefined, undefined];
 			if (objectTypeDetailsFrame.properties !== undefined) {
-				objectTypeDetails.properties = properties;
+				props = properties;
 				if (objectTypeDetailsFrame.required !== undefined)
-					objectTypeDetails.required = Object.keys(properties).filter((_, i) =>
+					required = Object.keys(properties).filter((_, i) =>
 						requiredPropertyIds.includes(i)
 					);
 			}
-			return objectTypeDetails;
+			return { properties: props, required };
 		});
 };
 
@@ -149,6 +150,23 @@ export const enumTypeDefinitionArb = (): fc.Arbitrary<EnumTypeDefinition> =>
 		type: fc.constantFrom('boolean', 'integer', 'number', 'string'),
 		enum: fc.array(enumValueDefinitionArb(), { minLength: 1 }),
 	});
+
+export const typeDefinitionArb = (): fc.Arbitrary<TypeDefinition> => {
+	const typeDefArb = fc.record(
+		{
+			description: fc.string(),
+			language: fc.object(),
+			isOverlay: fc.boolean(),
+		},
+		{ requiredKeys: [] }
+	);
+	return fc
+		.tuple(fc.oneof(objectTypeDetailsArb(), enumTypeDefinitionArb()), typeDefArb)
+		.map(([augDef, typeDef]) => ({
+			...typeDef,
+			...augDef,
+		}));
+};
 
 export const aliasDefinitionArb = (): fc.Arbitrary<AliasDefinition> =>
 	fc.record({ name: fc.string(), project: fc.string(), type: fc.string() }, { requiredKeys: [] });

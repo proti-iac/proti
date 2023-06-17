@@ -1,7 +1,10 @@
 import { type DeepReadonly, asyncMapValues } from '@proti/core';
 import { runPulumiCmd } from '@pulumi/pulumi/automation';
 import type {
+	AliasDefinition as PulumiAliasDefinition,
 	ArrayType as PulumiArrayType,
+	EnumTypeDefinition as PulumiEnumTypeDefinition,
+	EnumValueDefinition as PulumiEnumValueDefinition,
 	MapType as PulumiMapType,
 	NamedType as PulumiNamedType,
 	ObjectTypeDetails as PulumiObjectTypeDetails,
@@ -38,7 +41,10 @@ declare module '@pulumi/pulumi/automation' {
 }
 export const runPulumi = runPulumiCmd;
 
+export type AliasDefinition = DeepReadonly<PulumiAliasDefinition>;
 export type ArrayType = DeepReadonly<PulumiArrayType>;
+export type EnumTypeDefinition = DeepReadonly<PulumiEnumTypeDefinition>;
+export type EnumValueDefinition = DeepReadonly<PulumiEnumValueDefinition>;
 export type MapType = DeepReadonly<PulumiMapType>;
 export type NamedType = DeepReadonly<PulumiNamedType>;
 export type ObjectTypeDetails = DeepReadonly<PulumiObjectTypeDetails>;
