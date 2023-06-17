@@ -63,12 +63,24 @@ export type BuiltInTypeUri = `pulumi.json#/${'Any' | 'Archive' | 'Asset' | 'Json
 export type Urn = Token;
 export type Origin = string;
 export type Uri = string;
+export type NormalizedUri = BuiltInTypeUri | Uri;
 export type NormalizedResourceUri = `#/resources/${Urn}`;
 export type ResourceUri = `${Origin}${NormalizedResourceUri}`;
 export type NormalizedTypeUri = `#/types/${Urn}`;
 export type TypeUri = `${Origin}${NormalizedTypeUri}`;
 export type RefUri = BuiltInTypeUri | ResourceUri | TypeUri;
 export type NormalizedRefUri = BuiltInTypeUri | NormalizedResourceUri | NormalizedTypeUri;
+
+export const builtInTypeUris: readonly BuiltInTypeUri[] = [
+	'pulumi.json#/Archive',
+	'pulumi.json#/Asset',
+	'pulumi.json#/Any',
+	'pulumi.json#/Json',
+];
+export const normalizeUri = (uri: Uri): Uri =>
+	builtInTypeUris.includes(uri as BuiltInTypeUri)
+		? uri
+		: uri.slice(Math.max(0, uri.indexOf('#')));
 
 export type BuiltInTypeTransform<T> = (type: BuiltInTypeUri, path: string) => T;
 export type UnresolvableUriTransform<T> = (type: Uri, path: string) => T;

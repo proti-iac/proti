@@ -2,13 +2,16 @@ import * as fc from 'fast-check';
 import type { CommandResult } from '@pulumi/pulumi/automation';
 import { mapValues } from '@proti/core';
 import {
-	type ObjectTypeDetails,
+	builtInTypeUris,
+	normalizeUri,
 	runPulumi,
 	transformNamedType,
 	transformObjectTypeDetails,
 	transformPropertyDefinition,
 	transformResourceDefinition,
 	transformTypeReference,
+	type BuiltInTypeUri,
+	type ObjectTypeDetails,
 	type ResourceDefinition,
 	type PropertyDefinition,
 	type TypeReference,
@@ -51,7 +54,7 @@ const stringify1 = (a: any) => stringify(a);
 const asyncStringify = (...v: any[]) => Promise.resolve(JSON.stringify(v));
 const asyncStringify1 = (a: any) => asyncStringify(a);
 const throws = () => {
-	throw new Error();
+	throw new Error('Testing error that should never be thrown');
 };
 const getResourceMock = jest.fn();
 const getTypeMock = jest.fn();
@@ -64,12 +67,27 @@ jest.mock('../src/schema-registry', () => ({
 	},
 }));
 const registry = SchemaRegistry.getInstance();
-const builtInTypes: readonly string[] = [
-	'pulumi.json#/Archive',
-	'pulumi.json#/Asset',
-	'pulumi.json#/Any',
-	'pulumi.json#/Json',
-];
+
+describe('normalize URI', () => {
+	it('should be idempotent', () => {
+		const predicate = (s: string) =>
+			expect(normalizeUri(normalizeUri(s))).toBe(normalizeUri(s));
+		fc.assert(fc.property(fc.string(), predicate));
+	});
+
+	it('should normalize', () => {
+		const predicate = (s: string) => {
+			const normUri = normalizeUri(s);
+			expect(
+				builtInTypeUris.includes(normUri as BuiltInTypeUri) ||
+					!normUri.includes('#') ||
+					normUri.length === 0 ||
+					normUri[0] === '#'
+			).toBe(true);
+		};
+		fc.assert(fc.property(fc.string(), predicate));
+	});
+});
 
 describe('transform namedType type', () => {
 	const arb = (refArb: fc.Arbitrary<string>): fc.Arbitrary<NamedType> =>
@@ -82,7 +100,7 @@ describe('transform namedType type', () => {
 			const r = stringify(namedType.$ref, `${path}$builtIn:${namedType.$ref}`);
 			return expect(e).resolves.toStrictEqual(r);
 		};
-		const ref = fc.constantFrom(...builtInTypes);
+		const ref = fc.constantFrom(...builtInTypeUris);
 		return fc.assert(fc.asyncProperty(arb(ref), fc.string(), predicate));
 	});
 
@@ -103,7 +121,7 @@ describe('transform namedType type', () => {
 			expect(mock).toBeCalledTimes(1);
 		};
 		const resourceRef = (s: string) =>
-			!s.includes(`#/${otherKind}/`) && !builtInTypes.some((t) => s.includes(t));
+			!s.includes(`#/${otherKind}/`) && !builtInTypeUris.some((t) => s.includes(t));
 		const ref = fc
 			.tuple(fc.string(), fc.integer({ max: 20 }))
 			.map(([s, i]) => `${s.slice(0, i)}#/${kind}/${s.slice(i)}`)
@@ -123,7 +141,7 @@ describe('transform namedType type', () => {
 		const ref = fc
 			.tuple(fc.constantFrom('#/resources/', '#/types/', ''), fc.string())
 			.map(([p, s]) => p + s)
-			.filter((s: string) => !builtInTypes.some((t) => s.includes(t)));
+			.filter((s: string) => !builtInTypeUris.some((t) => s.includes(t)));
 		return fc.assert(fc.asyncProperty(arb(ref), fc.string(), predicate));
 	});
 });
