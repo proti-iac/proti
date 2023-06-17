@@ -19,6 +19,7 @@ import type {
 	TypeReference,
 	UnionType,
 } from './pulumi-package-metaschema';
+import type { NormalizedResourceUri, NormalizedTypeUri } from './pulumi';
 
 type ObjectTypeToArb = (
 	definition: DeepReadonly<ObjectTypeDetails>,
@@ -78,7 +79,7 @@ const namedTypeToArb = async (
 			return fc.json();
 		default:
 	}
-	let definition = await typeRefs(namedType.$ref);
+	let definition = await typeRefs(namedType.$ref as NormalizedResourceUri | NormalizedTypeUri);
 	if (definition === undefined) {
 		const errMsg = `Failed to find type definition for ${namedType.$ref} in ${path}`;
 		if (conf.failOnMissingTypeReference) throw new Error(errMsg);

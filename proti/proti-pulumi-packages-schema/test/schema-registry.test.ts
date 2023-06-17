@@ -7,12 +7,13 @@ import path from 'path';
 import { stringify } from 'typia';
 import { config, SchemaRegistryConfig } from '../src/config';
 import {
-	PkgSchema,
-	ResourceType,
-	ResourceDefinition,
+	type PkgSchema,
+	type ResourceDefinition,
+	type ResourceUri,
 	runPulumi,
-	Type,
-	TypeDefinition,
+	type TypeDefinition,
+	type TypeUri,
+	type Urn,
 } from '../src/pulumi';
 import { SchemaRegistry } from '../src/schema-registry';
 
@@ -27,11 +28,11 @@ describe('schema registry', () => {
 	let cacheDir: string;
 
 	const resourceDefinition: ResourceDefinition = { isComponent: true };
-	const resourceType: ResourceType = 'aR';
+	const resourceType: Urn = 'aR';
 	const typeDefinition: TypeDefinition = {
 		properties: { type: { type: 'boolean', const: true } },
 	};
-	const type: Type = 'aT';
+	const type: Urn = 'aT';
 	const definitions: Definitions = [resourceDefinition, typeDefinition];
 	const pkgName: string = 'foo';
 	const pkgVersion: string = '1.2.3';
@@ -145,7 +146,7 @@ describe('schema registry', () => {
 			))();
 			await init(true, c, moduleLoader);
 		};
-		const getDefinitions = async (resType: ResourceType = resourceType, tType: Type = type) => [
+		const getDefinitions = async (resType: Urn = resourceType, tType: Urn = type) => [
 			await SchemaRegistry.getInstance().getResource(resType),
 			await SchemaRegistry.getInstance().getType(tType),
 		];
@@ -446,18 +447,20 @@ describe('schema registry', () => {
 		});
 
 		it('should not resolve not registered definitions', () => {
-			const pred = async (origin: string, typ: string, kind: string) => {
+			const pred = async (origin: string, typ: string, kind: 'types' | 'resources') => {
 				const instance = await initInstance();
 				expect(await instance.resolveTypeRef(`${origin}#/${kind}/${typ}`)).toBeUndefined();
 			};
-			const kindsArb = fc.constantFrom('resources', 'types');
+			const kindsArb = fc.constantFrom<'resources' | 'types'>('resources', 'types');
 			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), kindsArb, pred));
 		});
 
 		it('should not resolve any other reference', () => {
 			const pred = async (typeRef: string) => {
 				const instance = await initInstance();
-				expect(await instance.resolveTypeRef(typeRef)).toBeUndefined();
+				expect(
+					await instance.resolveTypeRef(typeRef as ResourceUri | TypeUri)
+				).toBeUndefined();
 			};
 			return fc.assert(fc.asyncProperty(fc.string(), pred));
 		});

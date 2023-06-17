@@ -1,6 +1,6 @@
 import { type TypeGuardError, assertEquals, equals, is } from 'typia';
 import { deepMerge, DeepPartial, DeepReadonly } from '@proti/core';
-import type { ResourceType, ResourceDefinition, Type, TypeDefinition } from './pulumi';
+import type { ResourceDefinition, TypeDefinition, Urn } from './pulumi';
 
 export const defaultArbitraryConfig = () => ({
 	/**
@@ -74,12 +74,12 @@ export const defaultSchemaRegistryConfig = () => ({
 	 * Resource definitions to load into the registry. Overrides cached schemas
 	 * and schema files.
 	 */
-	resources: {} as Readonly<Record<ResourceType, ResourceDefinition>>,
+	resources: {} as Readonly<Record<Urn, ResourceDefinition>>,
 	/**
 	 * Type definitions to load into the registry. Overrides cached schemas and
 	 * schema files.
 	 */
-	types: {} as Readonly<Record<Type, TypeDefinition>>,
+	types: {} as Readonly<Record<Urn, TypeDefinition>>,
 	/**
 	 * If true, try to download all schemas of loaded Pulumi resource packages
 	 * using `pulumi package get-schema` when a resource or type definition is

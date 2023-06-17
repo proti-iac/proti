@@ -4,17 +4,17 @@ import path from 'path';
 import { assertParse, is, stringify, TypeGuardError } from 'typia';
 import type { SchemaRegistryConfig } from './config';
 import {
-	PkgSchema,
-	ResourceDefinition,
-	ResourceType,
+	type PkgSchema,
+	type ResourceDefinition,
+	type ResourceUri,
 	runPulumi,
-	Type,
-	TypeDefinition,
-	TypeRef,
+	type TypeDefinition,
+	type TypeUri,
+	type Urn,
 } from './pulumi';
 
 export type TypeRefResolver = (
-	typeRef: TypeRef
+	typeRef: ResourceUri | TypeUri
 ) => Promise<ResourceDefinition | TypeDefinition | undefined>;
 
 export class SchemaRegistry {
@@ -34,9 +34,9 @@ export class SchemaRegistry {
 	 */
 	private readonly processedPkgJSONs: Set<string> = new Set();
 
-	private readonly resources = new Map<ResourceType, ResourceDefinition>();
+	private readonly resources = new Map<Urn, ResourceDefinition>();
 
-	private readonly types = new Map<Type, TypeDefinition>();
+	private readonly types = new Map<Urn, TypeDefinition>();
 
 	private constructor(
 		private readonly moduleLoader: ModuleLoader,
@@ -159,14 +159,14 @@ export class SchemaRegistry {
 	}
 
 	private registerDefinitions(
-		resources: Readonly<Record<ResourceType, ResourceDefinition>> = {},
-		types: Readonly<Record<Type, TypeDefinition>> = {}
+		resources: Readonly<Record<Urn, ResourceDefinition>> = {},
+		types: Readonly<Record<Urn, TypeDefinition>> = {}
 	): void {
 		Object.keys(resources).forEach((type) => this.registerResource(type, resources[type]));
 		Object.keys(types).forEach((type) => this.registerType(type, types[type]));
 	}
 
-	private registerResource(type: ResourceType, definition: ResourceDefinition): void {
+	private registerResource(type: Urn, definition: ResourceDefinition): void {
 		this.log(`Registering resource definition of ${type}`);
 		this.resources.set(type, definition);
 	}
@@ -179,11 +179,11 @@ export class SchemaRegistry {
 	 * @param type Resource type.
 	 * @returns Resource definition or `undefined` if definition not available.
 	 */
-	public async getResource(type: ResourceType): Promise<ResourceDefinition | undefined> {
+	public async getResource(type: Urn): Promise<ResourceDefinition | undefined> {
 		return this.getDefinition(type, this.resources);
 	}
 
-	private registerType(type: Type, definition: TypeDefinition): void {
+	private registerType(type: Urn, definition: TypeDefinition): void {
 		this.log(`Registering type definition of ${type}`);
 		this.types.set(type, definition);
 	}
@@ -195,7 +195,7 @@ export class SchemaRegistry {
 	 * @param type Type.
 	 * @returns Type definition or `undefined` if definition not available.
 	 */
-	public getType(type: Type): Promise<TypeDefinition | undefined> {
+	public getType(type: Urn): Promise<TypeDefinition | undefined> {
 		return this.getDefinition(type, this.types);
 	}
 

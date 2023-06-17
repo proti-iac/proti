@@ -24,6 +24,7 @@ import type {
 	UnionType,
 } from './pulumi-package-metaschema';
 import { OracleConfig, config } from './config';
+import type { NormalizedResourceUri, NormalizedTypeUri } from './pulumi';
 
 /**
  * Validators are type guards to get support from the type system. For better
@@ -124,14 +125,16 @@ const namedTypeToValidator = async (
 	}
 
 	/** Normalized type reference without everything before first #, if a # is included */
-	const typeRef: string = namedType.$ref.includes('#')
+	const typeRef = namedType.$ref.includes('#')
 		? namedType.$ref.slice(namedType.$ref.indexOf('#'))
 		: namedType.$ref;
 	if (args.conf.cacheValidators && !args.excludeFromValidatorCache.includes(typeRef)) {
 		const cachedValidator = args.validatorCache.get(typeRef);
 		if (cachedValidator) return cachedValidator;
 	}
-	let definition = await args.typeRefResolver(typeRef);
+	let definition = await args.typeRefResolver(
+		typeRef as NormalizedResourceUri | NormalizedTypeUri
+	);
 	let validator: Promise<Validator> | undefined;
 	if (definition === undefined) {
 		const errMsg = `${path} has unknown type reference to ${namedType.$ref}`;
@@ -147,7 +150,7 @@ const namedTypeToValidator = async (
 		validator = args.objTypeToValidator(
 			definition,
 			{ ...args, excludeFromValidatorCache: [...args.excludeFromValidatorCache, typeRef] },
-			`${path}$ref#obj:${typeOf}`
+			`${path}$ref#obj:${typeRef}`
 		);
 	if (args.conf.cacheValidators) args.appendValidatorCache(typeRef, validator);
 	return validator;
