@@ -1,5 +1,6 @@
 import { type DeepReadonly, asyncMapValues } from '@proti/core';
 import { runPulumiCmd } from '@pulumi/pulumi/automation';
+import { is } from 'typia';
 import type {
 	AliasDefinition as PulumiAliasDefinition,
 	ArrayType as PulumiArrayType,
@@ -17,6 +18,7 @@ import type {
 	TypeReference as PulumiTypeReference,
 	UnionType as PulumiUnionType,
 } from './pulumi-package-metaschema';
+import type { SchemaRegistry } from './schema-registry';
 
 // Pulumi hides the runPulumiCmd export using @internal. To use it here, we provide the type declaration manually.
 declare module '@pulumi/pulumi/automation' {
@@ -67,6 +69,35 @@ export type NormalizedTypeUri = `#/types/${Urn}`;
 export type TypeUri = `${Origin}${NormalizedTypeUri}`;
 export type RefUri = BuiltInTypeUri | ResourceUri | TypeUri;
 export type NormalizedRefUri = BuiltInTypeUri | NormalizedResourceUri | NormalizedTypeUri;
+
+export type BuiltInTypeTransform<T> = (type: BuiltInTypeUri, path: string) => T;
+export type UnresolvableUriTransform<T> = (type: Uri, path: string) => T;
+export type NamedTypeTransforms<T> = Readonly<{
+	builtInType: BuiltInTypeTransform<T>;
+	unresolvableUri: UnresolvableUriTransform<T>;
+}>;
+export const transformNamedType = async <T>(
+	namedType: NamedType,
+	transforms: NamedTypeTransforms<T>,
+	transformResDef: (resDef: ResourceDefinition, path: string) => Promise<T>,
+	transformTypeDef: (typeDef: TypeDefinition, path: string) => Promise<T>,
+	registry: SchemaRegistry,
+	path: string
+): Promise<T> => {
+	const uri = namedType.$ref;
+	if (is<BuiltInTypeUri>(uri)) return transforms.builtInType(uri, `${path}$builtIn:${uri}`);
+	if (is<ResourceUri>(uri)) {
+		const resUrn: Urn = uri.replace(/^.*?#\/resources\//, '');
+		const resDef = await registry.getResource(resUrn);
+		if (resDef !== undefined) return transformResDef(resDef, `${path}$resDef:${resUrn}`);
+	}
+	if (is<TypeUri>(uri)) {
+		const typeUrn: Urn = uri.replace(/^.*?#\/types\//, '');
+		const typeDef = await registry.getType(typeUrn);
+		if (typeDef !== undefined) return transformTypeDef(typeDef, `${path}$typeDef:${typeUrn}`);
+	}
+	return transforms.unresolvableUri(uri, `${path}$unresolvable`);
+};
 
 export type UnionTypeTransform<T> = (oneOf: T[], path: string) => T;
 export type UnionTypeTransforms<T> = Readonly<{ unionType: UnionTypeTransform<T> }>;
