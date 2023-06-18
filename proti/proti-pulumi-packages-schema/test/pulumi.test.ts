@@ -9,6 +9,7 @@ import {
 	transformObjectTypeDetails,
 	transformPropertyDefinition,
 	transformResourceDefinition,
+	transformTypeDefinition,
 	transformTypeReference,
 	type BuiltInTypeUri,
 	type NamedType,
@@ -339,6 +340,29 @@ describe('transform object type details', () => {
 			return expect(e).resolves.toStrictEqual(r);
 		};
 		return fc.assert(fc.asyncProperty(objectTypeDetailsArb(), fc.string(), predicate));
+	});
+});
+
+describe('transform type definition', () => {
+	it('should compose correctly', () => {
+		const predicate = (typeDef: TypeDefinition, path: string) => {
+			const t = typeDef?.type;
+			const r =
+				t === 'number' || t === 'boolean' || t === 'integer' || t === 'string'
+					? stringify(
+							typeDef.enum.map(({ value }) => value),
+							`${path}$enum`
+					  )
+					: stringify(typeDef, `${path}$object`);
+			const e = transformTypeDefinition(
+				typeDef,
+				{ enumType: asyncStringify },
+				asyncStringify,
+				path
+			);
+			return expect(e).resolves.toStrictEqual(r);
+		};
+		return fc.assert(fc.asyncProperty(typeDefinitionArb(), fc.string(), predicate));
 	});
 });
 

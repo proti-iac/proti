@@ -249,6 +249,24 @@ export const transformObjectTypeDetails = async <T>(
 	return transforms.objType(properties, objType.required || [], path);
 };
 
+export type EnumTypeDefinitionTransform<T> = (
+	values: EnumValueDefinition['value'][],
+	path: string
+) => Promise<T>;
+export type TypeDefinitionTransforms<T> = Readonly<{ enumType: EnumTypeDefinitionTransform<T> }>;
+export const transformTypeDefinition = async <T>(
+	typeDef: TypeDefinition,
+	transforms: TypeDefinitionTransforms<T>,
+	transfObjType: (objType: ObjectTypeDetails, path: string) => Promise<T>,
+	path: string
+): Promise<T> => {
+	if (is<EnumTypeDefinition>(typeDef)) {
+		const values = typeDef.enum.map(({ value }) => value);
+		return transforms.enumType(values, `${path}$enum`);
+	}
+	return transfObjType(typeDef, `${path}$object`);
+};
+
 export type ResourceDefinitionTransform<T> = (
 	inputProperties: Readonly<Record<string, T>>,
 	requiredInputs: readonly string[],
