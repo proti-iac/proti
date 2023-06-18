@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import type { CommandResult } from '@pulumi/pulumi/automation';
-import { mapValues } from '@proti/core';
+import { createAppendOnlyMap, mapValues } from '@proti/core';
 import {
 	builtInTypeUris,
 	normalizeUri,
@@ -11,11 +11,13 @@ import {
 	transformResourceDefinition,
 	transformTypeReference,
 	type BuiltInTypeUri,
+	type NamedType,
+	type NamedTypeTransforms,
+	type NormalizedUri,
 	type ObjectTypeDetails,
 	type ResourceDefinition,
 	type PropertyDefinition,
 	type TypeReference,
-	type NamedType,
 	type TypeDefinition,
 } from '../src/pulumi';
 import {
@@ -56,6 +58,8 @@ const asyncStringify1 = (a: any) => asyncStringify(a);
 const throws = () => {
 	throw new Error('Testing error that should never be thrown');
 };
+const asyncThrows = () => Promise.reject(new Error('Testing error that should never be thrown'));
+
 const getResourceMock = jest.fn();
 const getTypeMock = jest.fn();
 jest.mock('../src/schema-registry', () => ({
@@ -89,14 +93,34 @@ describe('normalize URI', () => {
 	});
 });
 
-describe('transform namedType type', () => {
+describe('transform named type', () => {
+	const noCache = <T>(
+		type: NamedType,
+		ts: NamedTypeTransforms<T>,
+		tRDef: (resDef: ResourceDefinition, us: readonly NormalizedUri[], p: string) => Promise<T>,
+		tTDef: (typeDef: TypeDefinition, uris: readonly NormalizedUri[], p: string) => Promise<T>,
+		path: string
+	) => transformNamedType(type, ts, tRDef, tTDef, registry, false, new Map(), () => {}, [], path);
 	const arb = (refArb: fc.Arbitrary<string>): fc.Arbitrary<NamedType> =>
 		fc.tuple(namedTypeArb(), refArb).map(([namedType, $ref]) => ({ ...namedType, $ref }));
+	const kArb = fc.oneof(fc.constantFrom('#/resources/', '#/types/'), fc.string());
+	const uriArb = fc
+		.tuple(
+			fc.oneof(
+				{ arbitrary: fc.constantFrom(...builtInTypeUris), weight: 1 },
+				{ arbitrary: kArb, weight: 9 }
+			),
+			fc.string(),
+			fc.integer({ max: 20 })
+		)
+		.map(([t, s, i]) =>
+			builtInTypeUris.includes(t as BuiltInTypeUri) ? t : `${s.slice(0, i)}${t}${s.slice(i)}`
+		);
 
 	it('should transform built-in type URI', () => {
 		const predicate = (namedType: NamedType, path: string) => {
-			const transforms = { builtInType: stringify, unresolvableUri: throws };
-			const e = transformNamedType(namedType, transforms, throws, throws, registry, path);
+			const transforms = { builtInType: asyncStringify, unresolvableUri: asyncThrows };
+			const e = noCache(namedType, transforms, throws, throws, path);
 			const r = stringify(namedType.$ref, `${path}$builtIn:${namedType.$ref}`);
 			return expect(e).resolves.toStrictEqual(r);
 		};
@@ -114,8 +138,8 @@ describe('transform namedType type', () => {
 			path: string
 		) => {
 			mock.mockReset().mockResolvedValue(def);
-			const ts = { builtInType: throws, unresolvableUri: throws };
-			const e = transformNamedType(type, ts, transResDef, transTypeDef, registry, path);
+			const ts = { builtInType: asyncThrows, unresolvableUri: asyncThrows };
+			const e = noCache(type, ts, transResDef, transTypeDef, path);
 			const r = stringify(def);
 			await expect(e).resolves.toStrictEqual(r);
 			expect(mock).toBeCalledTimes(1);
@@ -133,16 +157,62 @@ describe('transform namedType type', () => {
 		getResourceMock.mockResolvedValue(undefined);
 		getTypeMock.mockResolvedValue(undefined);
 		const predicate = (namedType: NamedType, path: string) => {
-			const transforms = { builtInType: throws, unresolvableUri: stringify };
-			const e = transformNamedType(namedType, transforms, throws, throws, registry, path);
-			const r = stringify(namedType.$ref, `${path}$unresolvable`);
+			const transforms = { builtInType: asyncThrows, unresolvableUri: asyncStringify };
+			const e = noCache(namedType, transforms, asyncThrows, asyncThrows, path);
+			const r = stringify(normalizeUri(namedType.$ref), `${path}$unresolvable`);
 			return expect(e).resolves.toStrictEqual(r);
 		};
-		const ref = fc
-			.tuple(fc.constantFrom('#/resources/', '#/types/', ''), fc.string())
-			.map(([p, s]) => p + s)
-			.filter((s: string) => !builtInTypeUris.some((t) => s.includes(t)));
+		const ref = uriArb.filter((s: string) => !builtInTypeUris.some((t) => s.includes(t)));
 		return fc.assert(fc.asyncProperty(arb(ref), fc.string(), predicate));
+	});
+
+	it.each([
+		['cache', true, true, false, true],
+		['not cache', false, false, false, false],
+		['not cache if excluded', true, true, true, false],
+		['not cache if first call is not caching', false, true, false, false],
+		['not cache if second call is not caching', true, false, false, false],
+	])('should %s', async (_, cache1, cache2, excluded, cached) => {
+		const predicate = async (type: NamedType, path: string) => {
+			getResourceMock.mockReset();
+			getTypeMock.mockReset();
+			const asm = jest.fn().mockImplementation(asyncStringify);
+			const ts = { builtInType: asm, unresolvableUri: asm };
+			const [cache, append] = createAppendOnlyMap<string, Promise<string>>();
+			const es = excluded ? [normalizeUri(type.$ref)] : [];
+			const subject = (cache_: boolean) =>
+				transformNamedType(type, ts, asm, asm, registry, cache_, cache, append, es, path);
+			const a = await subject(cache1);
+			const b = await subject(cache2);
+
+			// returned Ts and cache element are the same
+			expect(a).toBe(b);
+			if (cached) await expect(cache.values().next().value).resolves.toBe(a);
+
+			// type resolution and transforms have not been called too often
+			const resolveCalls = getResourceMock.mock.calls.length + getTypeMock.mock.calls.length;
+			const callNum = cached ? 1 : 2;
+			expect(resolveCalls).toBeLessThanOrEqual(callNum);
+			expect(asm.mock.calls.length).toBe(callNum);
+		};
+		return fc.assert(fc.asyncProperty(arb(uriArb), fc.string(), predicate));
+	});
+
+	it('should exclude type for cache lookups in recursion', () => {
+		const predicate = async (type: NamedType, path: string, es: readonly string[]) => {
+			getResourceMock.mockResolvedValue({});
+			getTypeMock.mockResolvedValue({});
+			const ts = { builtInType: asyncStringify, unresolvableUri: asyncStringify };
+			const asm = jest.fn().mockImplementation(asyncStringify);
+			const [cache, append] = createAppendOnlyMap<string, Promise<string>>();
+			await transformNamedType(type, ts, asm, asm, registry, true, cache, append, es, path);
+			asm.mock.calls.forEach(([, excludes]) =>
+				expect(excludes).toStrictEqual([...es, normalizeUri(type.$ref)])
+			);
+		};
+		return fc.assert(
+			fc.asyncProperty(arb(uriArb), fc.string(), fc.array(fc.string()), predicate)
+		);
 	});
 });
 

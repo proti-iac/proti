@@ -82,8 +82,8 @@ export const normalizeUri = (uri: Uri): Uri =>
 		? uri
 		: uri.slice(Math.max(0, uri.indexOf('#')));
 
-export type BuiltInTypeTransform<T> = (type: BuiltInTypeUri, path: string) => T;
-export type UnresolvableUriTransform<T> = (type: Uri, path: string) => T;
+export type BuiltInTypeTransform<T> = (type: BuiltInTypeUri, path: string) => Promise<T>;
+export type UnresolvableUriTransform<T> = (type: Uri, path: string) => Promise<T>;
 export type NamedTypeTransforms<T> = Readonly<{
 	builtInType: BuiltInTypeTransform<T>;
 	unresolvableUri: UnresolvableUriTransform<T>;
@@ -91,24 +91,55 @@ export type NamedTypeTransforms<T> = Readonly<{
 export const transformNamedType = async <T>(
 	namedType: NamedType,
 	transforms: NamedTypeTransforms<T>,
-	transformResDef: (resDef: ResourceDefinition, path: string) => Promise<T>,
-	transformTypeDef: (typeDef: TypeDefinition, path: string) => Promise<T>,
+	transformResDef: (
+		resDef: ResourceDefinition,
+		nonCacheUris: readonly NormalizedUri[],
+		path: string
+	) => Promise<T>,
+	transformTypeDef: (
+		typeDef: TypeDefinition,
+		nonCacheUris: readonly NormalizedUri[],
+		path: string
+	) => Promise<T>,
 	registry: SchemaRegistry,
+	caching: boolean,
+	cache: ReadonlyMap<NormalizedUri, Promise<T>>,
+	appendCache: (normalizeUri: Uri, t: Promise<T>) => void,
+	/**
+	 * We need to exclude type references from cache lookups to avoid endless
+	 * recursion.
+	 */
+	nonCacheUris: readonly NormalizedUri[],
 	path: string
 ): Promise<T> => {
-	const uri = namedType.$ref;
-	if (is<BuiltInTypeUri>(uri)) return transforms.builtInType(uri, `${path}$builtIn:${uri}`);
-	if (is<ResourceUri>(uri)) {
-		const resUrn: Urn = uri.replace(/^.*?#\/resources\//, '');
-		const resDef = await registry.getResource(resUrn);
-		if (resDef !== undefined) return transformResDef(resDef, `${path}$resDef:${resUrn}`);
+	const normUri = normalizeUri(namedType.$ref);
+	const generateT = async (): Promise<T> => {
+		if (is<BuiltInTypeUri>(normUri))
+			return transforms.builtInType(normUri, `${path}$builtIn:${normUri}`);
+		const newNonCacheUris = [...nonCacheUris, normUri];
+		if (is<ResourceUri>(normUri)) {
+			const resUrn: Urn = normUri.replace(/^#\/resources\//, '');
+			const resDef = await registry.getResource(resUrn);
+			if (resDef !== undefined)
+				return transformResDef(resDef, newNonCacheUris, `${path}$resDef:${resUrn}`);
+		}
+		if (is<TypeUri>(normUri)) {
+			const typeUrn: Urn = normUri.replace(/^#\/types\//, '');
+			const typeDef = await registry.getType(typeUrn);
+			if (typeDef !== undefined)
+				return transformTypeDef(typeDef, newNonCacheUris, `${path}$typeDef:${typeUrn}`);
+		}
+		return transforms.unresolvableUri(normUri, `${path}$unresolvable`);
+	};
+
+	const useCache = caching && !nonCacheUris.includes(normUri);
+	if (useCache) {
+		const cachedT = cache.get(normUri);
+		if (cachedT !== undefined) return cachedT;
 	}
-	if (is<TypeUri>(uri)) {
-		const typeUrn: Urn = uri.replace(/^.*?#\/types\//, '');
-		const typeDef = await registry.getType(typeUrn);
-		if (typeDef !== undefined) return transformTypeDef(typeDef, `${path}$typeDef:${typeUrn}`);
-	}
-	return transforms.unresolvableUri(uri, `${path}$unresolvable`);
+	const newT = generateT();
+	if (useCache) appendCache(normUri, newT);
+	return newT;
 };
 
 export type UnionTypeTransform<T> = (oneOf: T[], path: string) => T;
