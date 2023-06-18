@@ -231,10 +231,10 @@ describe('transform type reference', () => {
 		transformTypeReference(
 			typeRef,
 			{
-				arrayType: stringify,
-				mapType: stringify,
-				primitive: stringify,
-				unionType: stringify,
+				arrayType: asyncStringify,
+				mapType: asyncStringify,
+				primitive: asyncStringify,
+				unionType: asyncStringify,
 			},
 			asyncStringify,
 			path
@@ -293,7 +293,7 @@ describe('transform property definition', () => {
 			const r = stringify(propDef.const, `${path}$const`);
 			const e = transformPropertyDefinition(
 				propDef,
-				{ propDef: stringify, const: stringify },
+				{ propDef: asyncStringify, const: asyncStringify },
 				asyncStringify1,
 				path
 			);
@@ -312,7 +312,7 @@ describe('transform property definition', () => {
 			);
 			const e = transformPropertyDefinition(
 				propDef,
-				{ propDef: stringify, const: stringify1 },
+				{ propDef: asyncStringify, const: asyncStringify1 },
 				asyncStringify1,
 				path
 			);
@@ -332,7 +332,7 @@ describe('transform object type details', () => {
 			);
 			const e = transformObjectTypeDetails(
 				objType,
-				{ objType: stringify },
+				{ objType: asyncStringify },
 				asyncStringify1,
 				path
 			);
@@ -354,7 +354,7 @@ describe('transform resource definition', () => {
 			);
 			const e = transformResourceDefinition(
 				resDef,
-				{ resourceDef: stringify },
+				{ resourceDef: asyncStringify },
 				asyncStringify1,
 				path
 			);

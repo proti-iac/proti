@@ -142,7 +142,7 @@ export const transformNamedType = async <T>(
 	return newT;
 };
 
-export type UnionTypeTransform<T> = (oneOf: T[], path: string) => T;
+export type UnionTypeTransform<T> = (oneOf: T[], path: string) => Promise<T>;
 export type UnionTypeTransforms<T> = Readonly<{ unionType: UnionTypeTransform<T> }>;
 export const transformUnionType = async <T>(
 	unionType: UnionType,
@@ -156,7 +156,7 @@ export const transformUnionType = async <T>(
 	return transforms.unionType(await Promise.all(oneOf), `${path}`);
 };
 
-export type ArrayTypeTransform<T> = (items: T, path: string) => T;
+export type ArrayTypeTransform<T> = (items: T, path: string) => Promise<T>;
 export type ArrayTypeTransforms<T> = Readonly<{ arrayType: ArrayTypeTransform<T> }>;
 export const transformArrayType = async <T>(
 	arrayType: ArrayType,
@@ -168,7 +168,7 @@ export const transformArrayType = async <T>(
 	return transforms.arrayType(items, `${path}`);
 };
 
-export type MapTypeTransform<T> = (properties: T, path: string) => T;
+export type MapTypeTransform<T> = (properties: T, path: string) => Promise<T>;
 export type MapTypeTransformers<T> = Readonly<{ mapType: MapTypeTransform<T> }>;
 export const transformMapType = async <T>(
 	mapType: MapType,
@@ -181,7 +181,7 @@ export const transformMapType = async <T>(
 	return transforms.mapType(props, `${path}`);
 };
 
-export type PrimitiveTypeTransform<T> = (type: PrimitiveType['type'], path: string) => T;
+export type PrimitiveTypeTransform<T> = (type: PrimitiveType['type'], path: string) => Promise<T>;
 export type TypeReferenceTransforms<T> = UnionTypeTransforms<T> &
 	ArrayTypeTransforms<T> &
 	MapTypeTransformers<T> &
@@ -211,8 +211,8 @@ export type PropertyDefinitionTransform<T> = (
 	typeRef: T,
 	defaultT: T | undefined,
 	path: string
-) => T;
-export type ConstTransform<T> = (constant: boolean | number | string, path: string) => T;
+) => Promise<T>;
+export type ConstTransform<T> = (constant: boolean | number | string, path: string) => Promise<T>;
 export type PropertyDefinitionTransforms<T> = Readonly<{
 	propDef: PropertyDefinitionTransform<T>;
 	const: ConstTransform<T>;
@@ -227,7 +227,7 @@ export const transformPropertyDefinition = async <T>(
 	const defaultT =
 		propDef.default === undefined
 			? undefined
-			: transforms.const(propDef.default, `${path}$default`);
+			: await transforms.const(propDef.default, `${path}$default`);
 	return transforms.propDef(await transfTypeRef(propDef, path), defaultT, path);
 };
 
@@ -235,7 +235,7 @@ export type ObjectTypeDetailsTransform<T> = (
 	properties: Readonly<Record<string, T>>,
 	required: readonly string[],
 	path: string
-) => T;
+) => Promise<T>;
 export type ObjectTypeDetailsTransforms<T> = Readonly<{ objType: ObjectTypeDetailsTransform<T> }>;
 export const transformObjectTypeDetails = async <T>(
 	objType: ObjectTypeDetails,
@@ -255,7 +255,7 @@ export type ResourceDefinitionTransform<T> = (
 	properties: Readonly<Record<string, T>>,
 	required: readonly string[],
 	path: string
-) => T;
+) => Promise<T>;
 export type ResourceDefinitionTransforms<T> = Readonly<{
 	resourceDef: ResourceDefinitionTransform<T>;
 }>;
