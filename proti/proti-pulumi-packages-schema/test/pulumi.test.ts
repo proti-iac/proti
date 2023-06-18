@@ -80,6 +80,7 @@ const asyncThrows = () => Promise.reject(new Error('Testing error that should ne
 const transforms: Transforms<string> = {
 	builtInType: asyncThrows,
 	unresolvableUri: asyncThrows,
+	cycleBreaker: throws,
 	arrayType: asyncThrows,
 	mapType: asyncThrows,
 	primitive: asyncThrows,
@@ -95,7 +96,7 @@ const ntArgs: NamedTypeArgs<string> = {
 	caching: false,
 	cache: new Map(),
 	appendCache: () => {},
-	noCacheUris: [],
+	parentUris: [],
 };
 
 describe('normalize URI', () => {
@@ -196,26 +197,29 @@ describe('transform named type', () => {
 	});
 
 	it.each([
-		['cache', true, true, false, true],
-		['not cache', false, false, false, false],
-		['not cache if excluded', true, true, true, false],
-		['not cache if first call is not caching', false, true, false, false],
-		['not cache if second call is not caching', true, false, false, false],
-	])('should %s', async (_, cache1, cache2, excluded, cached) => {
+		['cache', true, true, true],
+		['not cache', false, false, false],
+		['not cache if first call is not caching', false, true, false],
+		['not cache if second call is not caching', true, false, false],
+	])('should %s', async (_, cache1, cache2, cached) => {
 		const predicate = async (type: NamedType, path: string) => {
 			getResourceMock.mockReset();
 			getTypeMock.mockReset();
 			const asm = jest.fn().mockImplementation(asyncStringify);
-			const ts = { ...transforms, builtInType: asm, unresolvableUri: asm };
+			const ts: Transforms<string> = {
+				...transforms,
+				cycleBreaker: stringify,
+				builtInType: asm,
+				unresolvableUri: asm,
+			};
 			const [cache, appendCache] = createAppendOnlyMap<string, Promise<string>>();
-			const es = excluded ? [normalizeUri(type.$ref)] : [];
 			const subject = (caching: boolean) => {
 				const ntArgsL: NamedTypeArgs<string> = {
 					registry,
 					caching,
 					cache,
 					appendCache,
-					noCacheUris: es,
+					parentUris: [],
 				};
 				return transformNamedType(type, ts, ntArgsL, path);
 			};
@@ -235,34 +239,30 @@ describe('transform named type', () => {
 		return fc.assert(fc.asyncProperty(arb(uriArb), fc.string(), predicate));
 	});
 
-	it('should exclude type for cache lookups in recursion', () => {
-		const predicate = async (type: NamedType, path: string, noCache: readonly string[]) => {
-			getResourceMock.mockResolvedValue({});
-			getTypeMock.mockResolvedValue({});
-			const ts = {
-				...transforms,
-				builtInType: asyncStringify,
-				unresolvableUri: asyncStringify,
-			};
+	it.each([
+		['should', true],
+		['should not', false],
+	])('%s insert cycle breaker for cyclic schemas', (_, hasParent) => {
+		const predicate = async (ref: string, path: string) => {
+			const namedType: NamedType = { $ref: ref };
 			const asm = jest.fn().mockImplementation(asyncStringify);
-			setTransfResDefMock(asm);
-			setTransfTypeDefMock(asm);
+			const ts: Transforms<string> = {
+				...transforms,
+				cycleBreaker: asm,
+			};
 			const [cache, appendCache] = createAppendOnlyMap<string, Promise<string>>();
+			appendCache(normalizeUri(ref), Promise.resolve('VAL'));
 			const ntArgsL: NamedTypeArgs<string> = {
 				registry,
 				caching: true,
 				cache,
 				appendCache,
-				noCacheUris: noCache,
+				parentUris: hasParent ? [normalizeUri(ref)] : [],
 			};
-			await transformNamedType(type, ts, ntArgsL, path);
-			asm.mock.calls.forEach(([, , { noCacheUris }]) =>
-				expect(noCacheUris).toStrictEqual([...noCache, normalizeUri(type.$ref)])
-			);
+			await transformNamedType(namedType, ts, ntArgsL, path);
+			expect(asm).toBeCalledTimes(hasParent ? 1 : 0);
 		};
-		return fc.assert(
-			fc.asyncProperty(arb(uriArb), fc.string(), fc.array(fc.string()), predicate)
-		);
+		return fc.assert(fc.asyncProperty(fc.string(), fc.string(), predicate));
 	});
 });
 

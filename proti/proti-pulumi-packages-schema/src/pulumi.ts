@@ -94,18 +94,25 @@ let transfTypeRef: TransformDef<TypeReference>;
 
 export type BuiltInTypeTransform<T> = (type: BuiltInTypeUri, path: string) => Promise<T>;
 export type UnresolvableUriTransform<T> = (type: Uri, path: string) => Promise<T>;
+export type CycleBreakerTransform<T> = (circle: Promise<T>) => T;
 export type NamedTypeArgs<T> = Readonly<{
 	registry: SchemaRegistry;
+	/**
+	 * Must be enabled to transform cyclic schemas. Otherwise tranforming a
+	 * cyclic schema results in an endless recursion.
+	 */
 	caching: boolean;
 	cache: ReadonlyMap<NormalizedUri, Promise<T>>;
 	appendCache: (normalizeUri: Uri, t: Promise<T>) => void;
 	/**
-	 * We need to exclude type references from cache lookups to avoid endless
-	 * recursion.
+	 * Tracking URIs of parent elements is necessary to prevent potential
+	 * deadlocks during transformations of cyclic schemas. We avoid deadlocks by
+	 * inserting a 'cycle breaker' for cache lookups of parent URIs (i.e.,
+	 * recursive lookups).
 	 */
-	noCacheUris: readonly NormalizedUri[];
+	parentUris: readonly NormalizedUri[];
 }>;
-export const transformNamedType: TransformDef<NamedType> = async <T>(
+export const transformNamedType = async <T>(
 	namedType: NamedType,
 	transforms: Transforms<T>,
 	args: NamedTypeArgs<T>,
@@ -115,35 +122,37 @@ export const transformNamedType: TransformDef<NamedType> = async <T>(
 	const generateT = async (): Promise<T> => {
 		if (is<BuiltInTypeUri>(normUri))
 			return transforms.builtInType(normUri, `${path}$builtIn:${normUri}`);
-		const noCacheUris = [...args.noCacheUris, normUri];
+		const newParents = [...args.parentUris, normUri];
 		if (is<ResourceUri>(normUri)) {
 			const resUrn: Urn = normUri.replace(/^#\/resources\//, '');
 			const resDef = await args.registry.getResource(resUrn);
 			const p = `${path}$resDef:${resUrn}`;
 			if (resDef !== undefined)
-				return transfResDef(resDef, transforms, { ...args, noCacheUris }, p);
+				return transfResDef(resDef, transforms, { ...args, parentUris: newParents }, p);
 		}
 		if (is<TypeUri>(normUri)) {
 			const typeUrn: Urn = normUri.replace(/^#\/types\//, '');
 			const typeDef = await args.registry.getType(typeUrn);
 			const p = `${path}$typeDef:${typeUrn}`;
 			if (typeDef !== undefined)
-				return transfTypeDef(typeDef, transforms, { ...args, noCacheUris }, p);
+				return transfTypeDef(typeDef, transforms, { ...args, parentUris: newParents }, p);
 		}
 		return transforms.unresolvableUri(normUri, `${path}$unresolvable`);
 	};
 
-	const useCache = args.caching && !args.noCacheUris.includes(normUri);
-	if (useCache) {
+	if (args.caching) {
 		const cachedT = args.cache.get(normUri);
-		if (cachedT !== undefined) return cachedT;
+		if (cachedT !== undefined) {
+			if (args.parentUris.includes(normUri)) return transforms.cycleBreaker(cachedT);
+			return cachedT;
+		}
 	}
 	const newT = generateT();
-	if (useCache) args.appendCache(normUri, newT);
+	if (args.caching) args.appendCache(normUri, newT);
 	return newT;
 };
 
-export type UnionTypeTransform<T> = (oneOf: T[], path: string) => Promise<T>;
+export type UnionTypeTransform<T> = (oneOf: readonly T[], path: string) => Promise<T>;
 export const transformUnionType: TransformDef<UnionType> = async <T>(
 	unionType: UnionType,
 	transforms: Transforms<T>,
@@ -296,6 +305,7 @@ export const setTransfResDefMock = (mock: any = transformResourceDefinition) => 
 export type Transforms<T> = Readonly<{
 	builtInType: BuiltInTypeTransform<T>;
 	unresolvableUri: UnresolvableUriTransform<T>;
+	cycleBreaker: CycleBreakerTransform<T>;
 	arrayType: ArrayTypeTransform<T>;
 	mapType: MapTypeTransform<T>;
 	primitive: PrimitiveTypeTransform<T>;
