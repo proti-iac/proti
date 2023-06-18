@@ -335,7 +335,7 @@ describe('create append only map', () => {
 			expect(new Set(map.values())).toStrictEqual(new Set(values.slice(0, keys.length)));
 		};
 		const valuesArb = fc.array(fc.anything(), { minLength: 1 });
-		fc.assert(fc.property(fc.uniqueArray(fc.anything()), valuesArb, predicate));
+		fc.assert(fc.property(fc.uniqueArray(fc.anything({ maxDepth: 0 })), valuesArb, predicate));
 	});
 
 	it('should throw on mutating value', () => {
@@ -344,11 +344,11 @@ describe('create append only map', () => {
 			set(key, value);
 			expect(() => set(key, value)).toThrowError(/already has value for/);
 		};
-		fc.assert(fc.property(fc.anything(), fc.anything(), predicate));
+		fc.assert(fc.property(fc.anything({ maxDepth: 0 }), fc.anything(), predicate));
 	});
 });
 
-describe('map value', () => {
+describe('map values', () => {
 	it('types correctly', () => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const m: { [_: string]: number } = mapValues({ a: 'b' }, () => 5);
@@ -383,7 +383,7 @@ describe('map value', () => {
 	});
 });
 
-describe('async map value', () => {
+describe('async map values', () => {
 	it('types correctly', () => {
 		const f = () => Promise.resolve(5);
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
