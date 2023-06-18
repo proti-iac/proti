@@ -82,130 +82,125 @@ export const normalizeUri = (uri: Uri): Uri =>
 		? uri
 		: uri.slice(Math.max(0, uri.indexOf('#')));
 
+type TransformDef<D> = <T>(
+	resDef: D,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
+	path: string
+) => Promise<T>;
+let transfResDef: TransformDef<ResourceDefinition>;
+let transfTypeDef: TransformDef<TypeDefinition>;
+let transfTypeRef: TransformDef<TypeReference>;
+
 export type BuiltInTypeTransform<T> = (type: BuiltInTypeUri, path: string) => Promise<T>;
 export type UnresolvableUriTransform<T> = (type: Uri, path: string) => Promise<T>;
-export type NamedTypeTransforms<T> = Readonly<{
-	builtInType: BuiltInTypeTransform<T>;
-	unresolvableUri: UnresolvableUriTransform<T>;
-}>;
-export const transformNamedType = async <T>(
-	namedType: NamedType,
-	transforms: NamedTypeTransforms<T>,
-	transformResDef: (
-		resDef: ResourceDefinition,
-		nonCacheUris: readonly NormalizedUri[],
-		path: string
-	) => Promise<T>,
-	transformTypeDef: (
-		typeDef: TypeDefinition,
-		nonCacheUris: readonly NormalizedUri[],
-		path: string
-	) => Promise<T>,
-	registry: SchemaRegistry,
-	caching: boolean,
-	cache: ReadonlyMap<NormalizedUri, Promise<T>>,
-	appendCache: (normalizeUri: Uri, t: Promise<T>) => void,
+export type NamedTypeArgs<T> = Readonly<{
+	registry: SchemaRegistry;
+	caching: boolean;
+	cache: ReadonlyMap<NormalizedUri, Promise<T>>;
+	appendCache: (normalizeUri: Uri, t: Promise<T>) => void;
 	/**
 	 * We need to exclude type references from cache lookups to avoid endless
 	 * recursion.
 	 */
-	nonCacheUris: readonly NormalizedUri[],
+	noCacheUris: readonly NormalizedUri[];
+}>;
+export const transformNamedType: TransformDef<NamedType> = async <T>(
+	namedType: NamedType,
+	transforms: Transforms<T>,
+	args: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
 	const normUri = normalizeUri(namedType.$ref);
 	const generateT = async (): Promise<T> => {
 		if (is<BuiltInTypeUri>(normUri))
 			return transforms.builtInType(normUri, `${path}$builtIn:${normUri}`);
-		const newNonCacheUris = [...nonCacheUris, normUri];
+		const noCacheUris = [...args.noCacheUris, normUri];
 		if (is<ResourceUri>(normUri)) {
 			const resUrn: Urn = normUri.replace(/^#\/resources\//, '');
-			const resDef = await registry.getResource(resUrn);
+			const resDef = await args.registry.getResource(resUrn);
+			const p = `${path}$resDef:${resUrn}`;
 			if (resDef !== undefined)
-				return transformResDef(resDef, newNonCacheUris, `${path}$resDef:${resUrn}`);
+				return transfResDef(resDef, transforms, { ...args, noCacheUris }, p);
 		}
 		if (is<TypeUri>(normUri)) {
 			const typeUrn: Urn = normUri.replace(/^#\/types\//, '');
-			const typeDef = await registry.getType(typeUrn);
+			const typeDef = await args.registry.getType(typeUrn);
+			const p = `${path}$typeDef:${typeUrn}`;
 			if (typeDef !== undefined)
-				return transformTypeDef(typeDef, newNonCacheUris, `${path}$typeDef:${typeUrn}`);
+				return transfTypeDef(typeDef, transforms, { ...args, noCacheUris }, p);
 		}
 		return transforms.unresolvableUri(normUri, `${path}$unresolvable`);
 	};
 
-	const useCache = caching && !nonCacheUris.includes(normUri);
+	const useCache = args.caching && !args.noCacheUris.includes(normUri);
 	if (useCache) {
-		const cachedT = cache.get(normUri);
+		const cachedT = args.cache.get(normUri);
 		if (cachedT !== undefined) return cachedT;
 	}
 	const newT = generateT();
-	if (useCache) appendCache(normUri, newT);
+	if (useCache) args.appendCache(normUri, newT);
 	return newT;
 };
 
 export type UnionTypeTransform<T> = (oneOf: T[], path: string) => Promise<T>;
-export type UnionTypeTransforms<T> = Readonly<{ unionType: UnionTypeTransform<T> }>;
-export const transformUnionType = async <T>(
+export const transformUnionType: TransformDef<UnionType> = async <T>(
 	unionType: UnionType,
-	transforms: UnionTypeTransforms<T>,
-	transfTypeRef: (typeRef: TypeReference, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
 	const oneOf = unionType.oneOf.map((type: TypeReference, i: number) =>
-		transfTypeRef(type, `${path}$oneOf:${i}`)
+		transfTypeRef(type, transforms, ntArgs, `${path}$oneOf:${i}`)
 	);
 	return transforms.unionType(await Promise.all(oneOf), `${path}`);
 };
 
 export type ArrayTypeTransform<T> = (items: T, path: string) => Promise<T>;
-export type ArrayTypeTransforms<T> = Readonly<{ arrayType: ArrayTypeTransform<T> }>;
-export const transformArrayType = async <T>(
+export const transformArrayType: TransformDef<ArrayType> = async <T>(
 	arrayType: ArrayType,
-	transforms: ArrayTypeTransforms<T>,
-	transfTypeRef: (typeRef: TypeReference, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
-	const items = await transfTypeRef(arrayType.items, `${path}$items`);
+	const items = await transfTypeRef(arrayType.items, transforms, ntArgs, `${path}$items`);
 	return transforms.arrayType(items, `${path}`);
 };
 
 export type MapTypeTransform<T> = (properties: T, path: string) => Promise<T>;
-export type MapTypeTransformers<T> = Readonly<{ mapType: MapTypeTransform<T> }>;
-export const transformMapType = async <T>(
+export const transformMapType: TransformDef<MapType> = async <T>(
 	mapType: MapType,
-	transforms: MapTypeTransformers<T>,
-	transfTypeRef: (typeRef: TypeReference, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
 	const propsTypeRef: TypeReference = mapType.additionalProperties || { type: 'string' };
-	const props = await transfTypeRef(propsTypeRef, `${path}$additionalProperties`);
+	const p = `${path}$additionalProperties`;
+	const props = await transfTypeRef(propsTypeRef, transforms, ntArgs, p);
 	return transforms.mapType(props, `${path}`);
 };
 
 export type PrimitiveTypeTransform<T> = (type: PrimitiveType['type'], path: string) => Promise<T>;
-export type TypeReferenceTransforms<T> = UnionTypeTransforms<T> &
-	ArrayTypeTransforms<T> &
-	MapTypeTransformers<T> &
-	Readonly<{ primitive: PrimitiveTypeTransform<T> }>;
-export const transformTypeReference = async <T>(
+transfTypeRef = async <T>(
 	typeRef: TypeReference,
-	transforms: TypeReferenceTransforms<T>,
-	transfNamedType: (namedType: NamedType, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
-	const recursion = (typeRefL: TypeReference, pathL: string): Promise<T> =>
-		transformTypeReference(typeRefL, transforms, transfNamedType, pathL);
-	if (typeRef.$ref !== undefined) return transfNamedType(typeRef, `${path}$namedType`);
+	if (typeRef.$ref !== undefined)
+		return transformNamedType(typeRef, transforms, ntArgs, `${path}$namedType`);
 	if (typeRef.oneOf !== undefined)
-		return transformUnionType(typeRef, transforms, recursion, `${path}$unionType`);
+		return transformUnionType(typeRef, transforms, ntArgs, `${path}$unionType`);
 	switch (typeRef.type) {
 		case 'array':
-			return transformArrayType(typeRef, transforms, recursion, `${path}$arrayType`);
+			return transformArrayType(typeRef, transforms, ntArgs, `${path}$arrayType`);
 		case 'object':
-			return transformMapType(typeRef, transforms, recursion, `${path}$mapType`);
+			return transformMapType(typeRef, transforms, ntArgs, `${path}$mapType`);
 		default:
 			return transforms.primitive(typeRef.type, `${path}$primitive:${typeRef.type}`);
 	}
 };
+export const transformTypeReference = transfTypeRef;
 
 export type PropertyDefinitionTransform<T> = (
 	typeRef: T,
@@ -213,14 +208,10 @@ export type PropertyDefinitionTransform<T> = (
 	path: string
 ) => Promise<T>;
 export type ConstTransform<T> = (constant: boolean | number | string, path: string) => Promise<T>;
-export type PropertyDefinitionTransforms<T> = Readonly<{
-	propDef: PropertyDefinitionTransform<T>;
-	const: ConstTransform<T>;
-}>;
-export const transformPropertyDefinition = async <T>(
+export const transformPropertyDefinition: TransformDef<PropertyDefinition> = async <T>(
 	propDef: PropertyDefinition,
-	transforms: PropertyDefinitionTransforms<T>,
-	transfTypeRef: (typeRef: TypeReference, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
 	if (propDef.const !== undefined) return transforms.const(propDef.const, `${path}$const`);
@@ -228,7 +219,8 @@ export const transformPropertyDefinition = async <T>(
 		propDef.default === undefined
 			? undefined
 			: await transforms.const(propDef.default, `${path}$default`);
-	return transforms.propDef(await transfTypeRef(propDef, path), defaultT, path);
+	const typeRef = await transformTypeReference(propDef, transforms, ntArgs, path);
+	return transforms.propDef(typeRef, defaultT, path);
 };
 
 export type ObjectTypeDetailsTransform<T> = (
@@ -236,15 +228,14 @@ export type ObjectTypeDetailsTransform<T> = (
 	required: readonly string[],
 	path: string
 ) => Promise<T>;
-export type ObjectTypeDetailsTransforms<T> = Readonly<{ objType: ObjectTypeDetailsTransform<T> }>;
-export const transformObjectTypeDetails = async <T>(
+export const transformObjectTypeDetails: TransformDef<ObjectTypeDetails> = async <T>(
 	objType: ObjectTypeDetails,
-	transforms: ObjectTypeDetailsTransforms<T>,
-	transfPropDef: (propDef: PropertyDefinition, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
 	const properties = await asyncMapValues(objType.properties || {}, (propDef, prop) =>
-		transfPropDef(propDef, `${path}$prop:${prop}`)
+		transformPropertyDefinition(propDef, transforms, ntArgs, `${path}$prop:${prop}`)
 	);
 	return transforms.objType(properties, objType.required || [], path);
 };
@@ -253,18 +244,21 @@ export type EnumTypeDefinitionTransform<T> = (
 	values: EnumValueDefinition['value'][],
 	path: string
 ) => Promise<T>;
-export type TypeDefinitionTransforms<T> = Readonly<{ enumType: EnumTypeDefinitionTransform<T> }>;
-export const transformTypeDefinition = async <T>(
+transfTypeDef = async <T>(
 	typeDef: TypeDefinition,
-	transforms: TypeDefinitionTransforms<T>,
-	transfObjType: (objType: ObjectTypeDetails, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
 	if (is<EnumTypeDefinition>(typeDef)) {
 		const values = typeDef.enum.map(({ value }) => value);
 		return transforms.enumType(values, `${path}$enum`);
 	}
-	return transfObjType(typeDef, `${path}$object`);
+	return transformObjectTypeDetails(typeDef, transforms, ntArgs, `${path}$object`);
+};
+export const transformTypeDefinition = transfTypeDef;
+export const setTransfTypeDefMock = (mock: any = transformTypeDefinition) => {
+	transfTypeDef = mock;
 };
 
 export type ResourceDefinitionTransform<T> = (
@@ -274,20 +268,17 @@ export type ResourceDefinitionTransform<T> = (
 	required: readonly string[],
 	path: string
 ) => Promise<T>;
-export type ResourceDefinitionTransforms<T> = Readonly<{
-	resourceDef: ResourceDefinitionTransform<T>;
-}>;
-export const transformResourceDefinition = async <T>(
+transfResDef = async <T>(
 	resDef: ResourceDefinition,
-	transforms: ResourceDefinitionTransforms<T>,
-	transfPropDef: (propDef: PropertyDefinition, path: string) => Promise<T>,
+	transforms: Transforms<T>,
+	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
 	const inputProperties = await asyncMapValues(resDef.inputProperties || {}, (propDef, prop) =>
-		transfPropDef(propDef, `${path}$inputProp:${prop}`)
+		transformPropertyDefinition(propDef, transforms, ntArgs, `${path}$inputProp:${prop}`)
 	);
 	const properties = await asyncMapValues(resDef.properties || {}, (propDef, prop) =>
-		transfPropDef(propDef, `${path}$prop:${prop}`)
+		transformPropertyDefinition(propDef, transforms, ntArgs, `${path}$prop:${prop}`)
 	);
 	return transforms.resourceDef(
 		inputProperties,
@@ -297,3 +288,21 @@ export const transformResourceDefinition = async <T>(
 		path
 	);
 };
+export const transformResourceDefinition = transfResDef;
+export const setTransfResDefMock = (mock: any = transformResourceDefinition) => {
+	transfResDef = mock;
+};
+
+export type Transforms<T> = Readonly<{
+	builtInType: BuiltInTypeTransform<T>;
+	unresolvableUri: UnresolvableUriTransform<T>;
+	arrayType: ArrayTypeTransform<T>;
+	mapType: MapTypeTransform<T>;
+	primitive: PrimitiveTypeTransform<T>;
+	unionType: UnionTypeTransform<T>;
+	resourceDef: ResourceDefinitionTransform<T>;
+	propDef: PropertyDefinitionTransform<T>;
+	const: ConstTransform<T>;
+	objType: ObjectTypeDetailsTransform<T>;
+	enumType: EnumTypeDefinitionTransform<T>;
+}>;

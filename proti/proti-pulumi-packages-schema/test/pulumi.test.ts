@@ -5,6 +5,8 @@ import {
 	builtInTypeUris,
 	normalizeUri,
 	runPulumi,
+	setTransfResDefMock,
+	setTransfTypeDefMock,
 	transformNamedType,
 	transformObjectTypeDetails,
 	transformPropertyDefinition,
@@ -13,11 +15,11 @@ import {
 	transformTypeReference,
 	type BuiltInTypeUri,
 	type NamedType,
-	type NamedTypeTransforms,
-	type NormalizedUri,
+	type NamedTypeArgs,
 	type ObjectTypeDetails,
 	type ResourceDefinition,
 	type PropertyDefinition,
+	type Transforms,
 	type TypeReference,
 	type TypeDefinition,
 } from '../src/pulumi';
@@ -33,6 +35,8 @@ import {
 	unionTypeArb,
 } from './pulumi-package-metaschema/arbitraries';
 import { SchemaRegistry } from '../src/schema-registry';
+
+import * as pulumi from '../src/pulumi';
 
 describe('run pulumi', () => {
 	it('should err', () =>
@@ -52,15 +56,6 @@ describe('run pulumi', () => {
 		}));
 });
 
-const stringify = (...v: any[]) => JSON.stringify(v);
-const stringify1 = (a: any) => stringify(a);
-const asyncStringify = (...v: any[]) => Promise.resolve(JSON.stringify(v));
-const asyncStringify1 = (a: any) => asyncStringify(a);
-const throws = () => {
-	throw new Error('Testing error that should never be thrown');
-};
-const asyncThrows = () => Promise.reject(new Error('Testing error that should never be thrown'));
-
 const getResourceMock = jest.fn();
 const getTypeMock = jest.fn();
 jest.mock('../src/schema-registry', () => ({
@@ -72,6 +67,36 @@ jest.mock('../src/schema-registry', () => ({
 	},
 }));
 const registry = SchemaRegistry.getInstance();
+
+const stringify = (...v: any[]) => JSON.stringify(v);
+const stringify1 = (a: any) => stringify(a);
+const asyncStringify = (...v: any[]) => Promise.resolve(JSON.stringify(v));
+const asyncStringify1 = (a: any) => asyncStringify(a);
+const asyncStringify14 = (a: any, _: any, __: any, d: any) => asyncStringify(a, d);
+const throws = () => {
+	throw new Error('Testing error that should never be thrown');
+};
+const asyncThrows = () => Promise.reject(new Error('Testing error that should never be thrown'));
+const transforms: Transforms<string> = {
+	builtInType: asyncThrows,
+	unresolvableUri: asyncThrows,
+	arrayType: asyncThrows,
+	mapType: asyncThrows,
+	primitive: asyncThrows,
+	unionType: asyncThrows,
+	resourceDef: asyncThrows,
+	propDef: asyncThrows,
+	const: asyncThrows,
+	objType: asyncThrows,
+	enumType: asyncThrows,
+};
+const ntArgs: NamedTypeArgs<string> = {
+	registry,
+	caching: false,
+	cache: new Map(),
+	appendCache: () => {},
+	noCacheUris: [],
+};
 
 describe('normalize URI', () => {
 	it('should be idempotent', () => {
@@ -95,13 +120,10 @@ describe('normalize URI', () => {
 });
 
 describe('transform named type', () => {
-	const noCache = <T>(
-		type: NamedType,
-		ts: NamedTypeTransforms<T>,
-		tRDef: (resDef: ResourceDefinition, us: readonly NormalizedUri[], p: string) => Promise<T>,
-		tTDef: (typeDef: TypeDefinition, uris: readonly NormalizedUri[], p: string) => Promise<T>,
-		path: string
-	) => transformNamedType(type, ts, tRDef, tTDef, registry, false, new Map(), () => {}, [], path);
+	afterEach(() => {
+		setTransfTypeDefMock();
+		setTransfResDefMock();
+	});
 	const arb = (refArb: fc.Arbitrary<string>): fc.Arbitrary<NamedType> =>
 		fc.tuple(namedTypeArb(), refArb).map(([namedType, $ref]) => ({ ...namedType, $ref }));
 	const kArb = fc.oneof(fc.constantFrom('#/resources/', '#/types/'), fc.string());
@@ -120,8 +142,8 @@ describe('transform named type', () => {
 
 	it('should transform built-in type URI', () => {
 		const predicate = (namedType: NamedType, path: string) => {
-			const transforms = { builtInType: asyncStringify, unresolvableUri: asyncThrows };
-			const e = noCache(namedType, transforms, throws, throws, path);
+			const ts = { ...transforms, builtInType: asyncStringify, unresolvableUri: asyncThrows };
+			const e = transformNamedType(namedType, ts, ntArgs, path);
 			const r = stringify(namedType.$ref, `${path}$builtIn:${namedType.$ref}`);
 			return expect(e).resolves.toStrictEqual(r);
 		};
@@ -138,9 +160,15 @@ describe('transform named type', () => {
 			def: ResourceDefinition | TypeDefinition,
 			path: string
 		) => {
+			setTransfResDefMock(transResDef);
+			setTransfTypeDefMock(transTypeDef);
 			mock.mockReset().mockResolvedValue(def);
-			const ts = { builtInType: asyncThrows, unresolvableUri: asyncThrows };
-			const e = noCache(type, ts, transResDef, transTypeDef, path);
+			const ts: Transforms<string> = {
+				...transforms,
+				builtInType: asyncThrows,
+				unresolvableUri: asyncThrows,
+			};
+			const e = transformNamedType(type, ts, ntArgs, path);
 			const r = stringify(def);
 			await expect(e).resolves.toStrictEqual(r);
 			expect(mock).toBeCalledTimes(1);
@@ -158,8 +186,8 @@ describe('transform named type', () => {
 		getResourceMock.mockResolvedValue(undefined);
 		getTypeMock.mockResolvedValue(undefined);
 		const predicate = (namedType: NamedType, path: string) => {
-			const transforms = { builtInType: asyncThrows, unresolvableUri: asyncStringify };
-			const e = noCache(namedType, transforms, asyncThrows, asyncThrows, path);
+			const ts = { ...transforms, builtInType: asyncThrows, unresolvableUri: asyncStringify };
+			const e = transformNamedType(namedType, ts, ntArgs, path);
 			const r = stringify(normalizeUri(namedType.$ref), `${path}$unresolvable`);
 			return expect(e).resolves.toStrictEqual(r);
 		};
@@ -178,11 +206,19 @@ describe('transform named type', () => {
 			getResourceMock.mockReset();
 			getTypeMock.mockReset();
 			const asm = jest.fn().mockImplementation(asyncStringify);
-			const ts = { builtInType: asm, unresolvableUri: asm };
-			const [cache, append] = createAppendOnlyMap<string, Promise<string>>();
+			const ts = { ...transforms, builtInType: asm, unresolvableUri: asm };
+			const [cache, appendCache] = createAppendOnlyMap<string, Promise<string>>();
 			const es = excluded ? [normalizeUri(type.$ref)] : [];
-			const subject = (cache_: boolean) =>
-				transformNamedType(type, ts, asm, asm, registry, cache_, cache, append, es, path);
+			const subject = (caching: boolean) => {
+				const ntArgsL: NamedTypeArgs<string> = {
+					registry,
+					caching,
+					cache,
+					appendCache,
+					noCacheUris: es,
+				};
+				return transformNamedType(type, ts, ntArgsL, path);
+			};
 			const a = await subject(cache1);
 			const b = await subject(cache2);
 
@@ -200,15 +236,28 @@ describe('transform named type', () => {
 	});
 
 	it('should exclude type for cache lookups in recursion', () => {
-		const predicate = async (type: NamedType, path: string, es: readonly string[]) => {
+		const predicate = async (type: NamedType, path: string, noCache: readonly string[]) => {
 			getResourceMock.mockResolvedValue({});
 			getTypeMock.mockResolvedValue({});
-			const ts = { builtInType: asyncStringify, unresolvableUri: asyncStringify };
+			const ts = {
+				...transforms,
+				builtInType: asyncStringify,
+				unresolvableUri: asyncStringify,
+			};
 			const asm = jest.fn().mockImplementation(asyncStringify);
-			const [cache, append] = createAppendOnlyMap<string, Promise<string>>();
-			await transformNamedType(type, ts, asm, asm, registry, true, cache, append, es, path);
-			asm.mock.calls.forEach(([, excludes]) =>
-				expect(excludes).toStrictEqual([...es, normalizeUri(type.$ref)])
+			setTransfResDefMock(asm);
+			setTransfTypeDefMock(asm);
+			const [cache, appendCache] = createAppendOnlyMap<string, Promise<string>>();
+			const ntArgsL: NamedTypeArgs<string> = {
+				registry,
+				caching: true,
+				cache,
+				appendCache,
+				noCacheUris: noCache,
+			};
+			await transformNamedType(type, ts, ntArgsL, path);
+			asm.mock.calls.forEach(([, , { noCacheUris }]) =>
+				expect(noCacheUris).toStrictEqual([...noCache, normalizeUri(type.$ref)])
 			);
 		};
 		return fc.assert(
@@ -228,18 +277,22 @@ describe('transform map type', () => {
 });
 
 describe('transform type reference', () => {
-	const subject = (typeRef: TypeReference, path: string) =>
-		transformTypeReference(
-			typeRef,
-			{
-				arrayType: asyncStringify,
-				mapType: asyncStringify,
-				primitive: asyncStringify,
-				unionType: asyncStringify,
-			},
-			asyncStringify,
-			path
-		);
+	let spy: any;
+	beforeAll(() => {
+		spy = jest.spyOn(pulumi, 'transformNamedType').mockImplementation(asyncStringify14);
+	});
+	afterAll(() => spy.mockRestore());
+	const subject = (typeRef: TypeReference, path: string) => {
+		const ts = {
+			...transforms,
+			arrayType: asyncStringify,
+			mapType: asyncStringify,
+			primitive: asyncStringify,
+			unionType: asyncStringify,
+		};
+		return transformTypeReference(typeRef, ts, ntArgs, path);
+	};
+
 	it('should transform named type', () => {
 		const predicate = (typeRef: TypeReference, path: string) => {
 			const e = subject(typeRef, path);
@@ -247,6 +300,7 @@ describe('transform type reference', () => {
 		};
 		return fc.assert(fc.asyncProperty(namedTypeArb(), fc.string(), predicate));
 	});
+
 	it('should transform union type', () => {
 		const predicate = (typeRef: TypeReference, path: string) => {
 			const r = typeRef.oneOf!.map((oneOf, i) =>
@@ -259,6 +313,7 @@ describe('transform type reference', () => {
 			fc.asyncProperty(unionTypeArb(primitiveTypeArb()), fc.string(), predicate)
 		);
 	});
+
 	it('should transform array type', () => {
 		const predicate = (typeRef: TypeReference, path: string) => {
 			const r = stringify(
@@ -272,6 +327,7 @@ describe('transform type reference', () => {
 			fc.asyncProperty(arrayTypeArb(primitiveTypeArb()), fc.string(), predicate)
 		);
 	});
+
 	it('should transform map type', () => {
 		const predicate = (typeRef: TypeReference, path: string) => {
 			const propType = typeRef.additionalProperties?.type || 'string';
@@ -288,16 +344,17 @@ describe('transform type reference', () => {
 });
 
 describe('transform property definition', () => {
+	let spy: any;
+	beforeAll(() => {
+		spy = jest.spyOn(pulumi, 'transformTypeReference').mockImplementation(asyncStringify1);
+	});
+	afterAll(() => spy.mockRestore());
 	it('should use const if set', () => {
 		const arb = propertyDefinitionArb().filter((propDef) => propDef.const !== undefined);
 		const predicate = (propDef: PropertyDefinition, path: string) => {
 			const r = stringify(propDef.const, `${path}$const`);
-			const e = transformPropertyDefinition(
-				propDef,
-				{ propDef: asyncStringify, const: asyncStringify },
-				asyncStringify1,
-				path
-			);
+			const ts = { ...transforms, propDef: asyncStringify, const: asyncStringify };
+			const e = transformPropertyDefinition(propDef, ts, ntArgs, path);
 			return expect(e).resolves.toStrictEqual(r);
 		};
 		return fc.assert(fc.asyncProperty(arb, fc.string(), predicate));
@@ -311,12 +368,8 @@ describe('transform property definition', () => {
 				propDef.default === undefined ? undefined : stringify(propDef.default),
 				path
 			);
-			const e = transformPropertyDefinition(
-				propDef,
-				{ propDef: asyncStringify, const: asyncStringify1 },
-				asyncStringify1,
-				path
-			);
+			const ts = { ...transforms, propDef: asyncStringify, const: asyncStringify1 };
+			const e = transformPropertyDefinition(propDef, ts, ntArgs, path);
 			return expect(e).resolves.toStrictEqual(r);
 		};
 		return fc.assert(fc.asyncProperty(arb, fc.string(), predicate));
@@ -324,6 +377,11 @@ describe('transform property definition', () => {
 });
 
 describe('transform object type details', () => {
+	let spy: any;
+	beforeAll(() => {
+		spy = jest.spyOn(pulumi, 'transformPropertyDefinition').mockImplementation(asyncStringify1);
+	});
+	afterAll(() => spy.mockRestore());
 	it('should compose correctly', () => {
 		const predicate = (objType: ObjectTypeDetails, path: string) => {
 			const r = stringify(
@@ -331,12 +389,8 @@ describe('transform object type details', () => {
 				objType.required || [],
 				path
 			);
-			const e = transformObjectTypeDetails(
-				objType,
-				{ objType: asyncStringify },
-				asyncStringify1,
-				path
-			);
+			const ts = { ...transforms, objType: asyncStringify };
+			const e = transformObjectTypeDetails(objType, ts, ntArgs, path);
 			return expect(e).resolves.toStrictEqual(r);
 		};
 		return fc.assert(fc.asyncProperty(objectTypeDetailsArb(), fc.string(), predicate));
@@ -344,6 +398,11 @@ describe('transform object type details', () => {
 });
 
 describe('transform type definition', () => {
+	let spy: any;
+	beforeAll(() => {
+		spy = jest.spyOn(pulumi, 'transformObjectTypeDetails').mockImplementation(asyncStringify14);
+	});
+	afterAll(() => spy.mockRestore());
 	it('should compose correctly', () => {
 		const predicate = (typeDef: TypeDefinition, path: string) => {
 			const t = typeDef?.type;
@@ -354,12 +413,8 @@ describe('transform type definition', () => {
 							`${path}$enum`
 					  )
 					: stringify(typeDef, `${path}$object`);
-			const e = transformTypeDefinition(
-				typeDef,
-				{ enumType: asyncStringify },
-				asyncStringify,
-				path
-			);
+			const ts = { ...transforms, enumType: asyncStringify };
+			const e = transformTypeDefinition(typeDef, ts, ntArgs, path);
 			return expect(e).resolves.toStrictEqual(r);
 		};
 		return fc.assert(fc.asyncProperty(typeDefinitionArb(), fc.string(), predicate));
@@ -367,6 +422,11 @@ describe('transform type definition', () => {
 });
 
 describe('transform resource definition', () => {
+	let spy: any;
+	beforeAll(() => {
+		spy = jest.spyOn(pulumi, 'transformPropertyDefinition').mockImplementation(asyncStringify1);
+	});
+	afterAll(() => spy.mockRestore());
 	it('should compose correctly', () => {
 		const predicate = (resDef: ResourceDefinition, path: string) => {
 			const r = stringify(
@@ -376,12 +436,8 @@ describe('transform resource definition', () => {
 				resDef.required || [],
 				path
 			);
-			const e = transformResourceDefinition(
-				resDef,
-				{ resourceDef: asyncStringify },
-				asyncStringify1,
-				path
-			);
+			const ts = { ...transforms, resourceDef: asyncStringify };
+			const e = transformResourceDefinition(resDef, ts, ntArgs, path);
 			return expect(e).resolves.toStrictEqual(r);
 		};
 		return fc.assert(fc.asyncProperty(resourceDefinitionArb(), fc.string(), predicate));
