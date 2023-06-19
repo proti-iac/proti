@@ -302,7 +302,7 @@ export const setTransfResDefMock = (mock: any = transformResourceDefinition) => 
 	transfResDef = mock;
 };
 
-export type Transforms<T> = Readonly<{
+export type MutableTransforms<T> = {
 	builtInType: BuiltInTypeTransform<T>;
 	unresolvableUri: UnresolvableUriTransform<T>;
 	cycleBreaker: CycleBreakerTransform<T>;
@@ -315,4 +315,5 @@ export type Transforms<T> = Readonly<{
 	const: ConstTransform<T>;
 	objType: ObjectTypeDetailsTransform<T>;
 	enumType: EnumTypeDefinitionTransform<T>;
-}>;
+};
+export type Transforms<T> = Readonly<MutableTransforms<T>>;

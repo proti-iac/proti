@@ -31,8 +31,9 @@ export const defaultOracleConfig = () => ({
 	/**
 	 * Validator functions are supposed to be stateless. Thus, caching and
 	 * reusing them is supposed to be safe. If enabled, a validator function is
-	 * lazily generated once per used resource and type definition and reused
-	 * within and in subsequent test runs.
+	 * generated once per used resource and type definition and reused
+	 * afterwards. Must be enabled to support circular resource and type
+	 * definitions, which otherwise cause an infinite recursion.
 	 */
 	cacheValidators: true,
 	/**

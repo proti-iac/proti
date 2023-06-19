@@ -1,36 +1,31 @@
 import * as fc from 'fast-check';
-import type { DeepReadonly, ResourceArgs } from '@proti/core';
+import type { ResourceArgs } from '@proti/core';
 import { type OracleConfig, defaultOracleConfig } from '../src/config';
 import {
-	type NamedTypeToValidatorArgs,
+	anyValidator,
+	arrayTypeValidator,
+	builtInTypeValidator,
+	constValidator,
+	cycleBreakerValidator,
+	enumTypeDefinitionValidator,
+	mapTypeValidator,
+	objectTypeDetailsValidator,
+	primitiveTypeValidator,
 	PulumiPackagesSchemaOracle,
-	enumTypeDefToValidator,
-	objTypeToValidator,
-	typeRefToValidator,
+	unionTypeValidator,
+	unresolvableUriValidator,
 	type Validator,
 } from '../src/oracle';
-import { ResourceDefinition } from '../src/pulumi';
 import {
-	arrayTypeArb,
-	enumTypeDefinitionArb,
-	mapTypeArb,
-	namedTypeArb,
-	objectTypeDetailsArb,
-	primitiveTypeArb,
-	resourceDefinitionArb,
-	typeReferenceArb,
-	unionTypeArb,
-} from './pulumi-package-metaschema/arbitraries';
-import type {
-	ArrayType,
-	EnumTypeDefinition,
-	MapType,
-	NamedType,
-	ObjectTypeDetails,
-	PrimitiveType,
-	TypeReference,
-	UnionType,
-} from '../src/pulumi-package-metaschema';
+	type BuiltInTypeUri,
+	type NamedTypeArgs,
+	type PrimitiveType,
+	type ResourceDefinition,
+	type Transforms,
+	builtInTypeUris,
+} from '../src/pulumi';
+import { resourceDefinitionArb } from './pulumi-package-metaschema/arbitraries';
+import { TypeDefinition } from '../src/pulumi-package-metaschema';
 
 const getResourceMock = jest.fn();
 const resolveTypeRefMock = jest.fn();
@@ -43,327 +38,310 @@ jest.mock('../src/schema-registry', () => ({
 	},
 }));
 const conf = defaultOracleConfig();
-const validatorCache: Map<string, Promise<Validator>> = new Map();
-const defaultNamedTypeArgs: NamedTypeToValidatorArgs = {
-	conf,
-	validatorCache,
-	appendValidatorCache: validatorCache.set.bind(validatorCache),
-	excludeFromValidatorCache: [],
-	typeRefResolver: resolveTypeRefMock,
-	objTypeToValidator,
+const neverValidator = (v: unknown): v is unknown => {
+	throw new Error('Never valid');
 };
-beforeEach(() => validatorCache.clear());
+const falseValidator = (v: unknown): v is unknown => false;
 
-describe('enum type definition to validator', () => {
-	it('should validate enum values', () => {
-		const arb: fc.Arbitrary<[DeepReadonly<EnumTypeDefinition>, unknown]> = fc
-			.tuple(enumTypeDefinitionArb(), fc.array(fc.string()), fc.string())
-			.map(([enumType, values, value]) => {
-				const vals = new Set([value, ...values]);
-				const enumVals = [...vals].map((v: string) => ({ value: v }));
-				return [{ ...enumType, enum: enumVals }, value];
-			});
-		const predicate = ([enumType, value]: [DeepReadonly<EnumTypeDefinition>, unknown]) =>
-			expect(enumTypeDefToValidator(enumType, '')(value)).toBe(true);
-		fc.assert(fc.property(arb, predicate));
-	});
-
-	it('should not validate non-enum values', () => {
-		const arb: fc.Arbitrary<[DeepReadonly<EnumTypeDefinition>, unknown]> = fc
-			.tuple(enumTypeDefinitionArb(), fc.string())
-			.filter(([enumType, value]) => enumType.enum.every((v) => v.value !== value));
-		const predicate = ([enumType, value]: [DeepReadonly<EnumTypeDefinition>, unknown]) =>
-			expect(() => enumTypeDefToValidator(enumType, '')(value)).toThrowError();
-		fc.assert(fc.property(arb, predicate));
+describe('built-in type validator', () => {
+	const isJson = (s: string) => {
+		try {
+			JSON.parse(s);
+			return true;
+		} catch (e) {
+			return false;
+		}
+	};
+	const cases = [
+		[
+			'json',
+			fc.json(),
+			['pulumi.json#/Any', 'pulumi.json#/Archive', 'pulumi.json#/Asset', 'pulumi.json#/Json'],
+		],
+		[
+			'string',
+			fc.string().filter((s) => !isJson(s)),
+			['pulumi.json#/Archive', 'pulumi.json#/Asset', 'pulumi.json#/Any'],
+		],
+		['any', fc.anything().filter((v) => typeof v !== 'string'), ['pulumi.json#/Any']],
+	] as ReadonlyArray<readonly [string, fc.Arbitrary<unknown>, ReadonlyArray<string>]>;
+	it.each(
+		builtInTypeUris.flatMap((uri): [BuiltInTypeUri, string, string, fc.Arbitrary<unknown>][] =>
+			cases.map(([test, arb, validTypes]) => {
+				const label = `${validTypes.includes(uri) ? '' : 'not '}validate`;
+				return [uri, label, test, arb];
+			})
+		)
+	)('%s validator should %s %s', (uri, validate, _, arb) => {
+		const predicate = async (val: unknown) => {
+			const validator = await builtInTypeValidator(uri, '');
+			if (validate.includes('not')) expect(() => validator(val)).toThrow();
+			else expect(validator(val)).toBe(true);
+		};
+		return fc.assert(fc.asyncProperty(arb, predicate));
 	});
 });
 
-describe('type reference validator', () => {
-	const typeRefPredicate =
-		(valid: boolean) => async (typeDef: DeepReadonly<TypeReference>, value: unknown) => {
-			const validator = await typeRefToValidator(typeDef, defaultNamedTypeArgs, '');
-			if (valid) expect(validator(value)).toBe(true);
-			else expect(() => validator(value)).toThrowError();
+describe('unresolvable URI validator', () => {
+	const ts = {} as Transforms<Validator>;
+	const ntArgs = {} as NamedTypeArgs<Validator>;
+
+	it('should fail for unresolved reference', () => {
+		const c = { ...conf, failOnMissingTypeReference: true };
+		const predicate = async (uri: string, path: string) => {
+			expect(() => unresolvableUriValidator(c, ts, ntArgs)(uri, path)).rejects.toThrow(
+				/has unknown type reference/
+			);
 		};
+		return fc.assert(fc.asyncProperty(fc.string(), fc.string(), predicate));
+	});
 
-	describe('named type', () => {
-		beforeAll(() =>
-			resolveTypeRefMock.mockImplementation((type) => {
-				const enumType: EnumTypeDefinition = {
-					type: 'integer',
-					enum: [{ value: 1 }, { value: 2 }],
-				};
-				const objType: ObjectTypeDetails = {
-					properties: { a: { type: 'string' } },
-					required: ['a'],
-				};
-				if (type === 'enum') return enumType;
-				if (type === 'object') return objType;
-				return undefined;
-			})
-		);
+	it('should validate for default undefined', () => {
+		console.warn = () => {};
+		const predicate = async (uri: string, path: string, value: any) => {
+			const validator = await unresolvableUriValidator(conf, ts, ntArgs)(uri, path);
+			expect(validator(value)).toBe(true);
+		};
+		return fc.assert(fc.asyncProperty(fc.string(), fc.string(), fc.anything(), predicate));
+	});
 
-		const types: ReadonlyArray<string> = [
-			// Built-in
-			'pulumi.json#/Archive',
-			'pulumi.json#/Asset',
-			'pulumi.json#/Any',
-			'pulumi.json#/Json',
-			// Object
-			'object',
-			// Enum
-			'enum',
-		];
-		type Case = readonly [string, fc.Arbitrary<unknown>, ReadonlyArray<string>];
-		const cases: ReadonlyArray<Case> = [
-			[
-				'string',
-				fc.string().filter((s) => {
-					try {
-						JSON.parse(s);
-						return false;
-					} catch (e) {
-						return true;
-					}
-				}),
-				['pulumi.json#/Archive', 'pulumi.json#/Asset', 'pulumi.json#/Any'],
-			],
-			[
-				'json',
-				fc.json(),
-				[
-					'pulumi.json#/Archive',
-					'pulumi.json#/Asset',
-					'pulumi.json#/Any',
-					'pulumi.json#/Json',
-				],
-			],
-			['float', fc.float().filter((f) => !Number.isInteger(f)), ['pulumi.json#/Any']],
-			['1 or 2', fc.oneof(fc.constant(1), fc.constant(2)), ['pulumi.json#/Any', 'enum']],
-			['a-object', fc.record({ a: fc.string() }), ['pulumi.json#/Any', 'object']],
-			[
-				'non-a-object',
-				fc.dictionary(
-					fc.string().filter((v) => v !== 'a'),
-					fc.string()
-				),
-				['pulumi.json#/Any'],
-			],
-		];
-		const mapCases =
-			(type: string) =>
-			([valueType, arb, validTypes]: Case): [string, string, string, fc.Arbitrary<unknown>] =>
-				[type, `${validTypes.includes(type) ? '' : 'not '}validate`, valueType, arb];
-		it.each(types.flatMap((type) => cases.map(mapCases(type))))(
-			'%s named type should %s %s',
-			($ref, validate, valueType, arb) => {
-				const typeArb = namedTypeArb().map(
-					(type): DeepReadonly<NamedType> => ({ ...type, $ref })
-				);
-				const predicate = typeRefPredicate(validate === 'validate');
-				return fc.assert(fc.asyncProperty(typeArb, arb, predicate));
-			}
-		);
-
-		const unresolvedNamedTypeArb = namedTypeArb().filter((type) => !types.includes(type.$ref));
-		it('should fail for unresolved reference', () => {
-			const namedTypeArgs: NamedTypeToValidatorArgs = {
-				...defaultNamedTypeArgs,
-				conf: { ...conf, failOnMissingTypeReference: true },
-			};
-			const predicate = async (namedType: DeepReadonly<NamedType>) =>
-				expect(typeRefToValidator(namedType, namedTypeArgs, '')).rejects.toThrow(
-					/has unknown type reference/
-				);
-			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, predicate));
-		});
-
-		it('should validate for default unresolvable reference', () => {
+	it.each([['resource definition', true, false, resourceDefinitionArb()]])(
+		'should validate for default resource definition',
+		(_, isResDef, isTypeDef, arb) => {
 			console.warn = () => {};
-			const predicate = typeRefPredicate(true);
-			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, fc.anything(), predicate));
-		});
+			const tss: Transforms<Validator> = {
+				arrayType: async () => anyValidator,
+				builtInType: async () => anyValidator,
+				cycleBreaker: () => anyValidator,
+				const: async () => anyValidator,
+				enumType: async () => anyValidator,
+				mapType: async () => anyValidator,
+				objType: async () => anyValidator,
+				resourceDef: async () => anyValidator,
+				primitive: async () => anyValidator,
+				propDef: async () => anyValidator,
+				unionType: async () => anyValidator,
+				unresolvableUri: async () => anyValidator,
+			};
+			const predicate = async (
+				uri: string,
+				path: string,
+				def: ResourceDefinition | TypeDefinition,
+				value: any
+			) => {
+				const c = { ...conf, defaultTypeReferenceDefinition: def };
+				const validator = await unresolvableUriValidator(c, tss, ntArgs)(uri, path);
+				expect(validator(value)).toBe(true);
+			};
+			return fc.assert(
+				fc.asyncProperty(fc.string(), fc.string(), arb, fc.anything(), predicate)
+			);
+		}
+	);
+});
 
-		it('should not validate for default unresolvable reference', () => {
-			console.warn = () => {};
-			const nonEmptyObjArb = fc.object().filter((o) => Object.keys(o).length > 0);
-			const namedTypeArgs = {
-				...defaultNamedTypeArgs,
-				conf: { ...conf, defaultTypeReferenceDefinition: {} },
-			};
-			const predicate = async (typeDef: DeepReadonly<TypeReference>, value: unknown) => {
-				const validator = await typeRefToValidator(typeDef, namedTypeArgs, '');
-				expect(() => validator(value)).toThrowError();
-			};
-			return fc.assert(fc.asyncProperty(unresolvedNamedTypeArb, nonEmptyObjArb, predicate));
-		});
+describe('cycle breaker validator', () => {
+	it('should throw error before validator is availablie', () => {
+		const predicate = (val: unknown) =>
+			expect(() => cycleBreakerValidator(new Promise(() => {}))(val)).toThrow(
+				/not initialized/
+			);
+		fc.assert(fc.property(fc.anything(), predicate));
 	});
 
-	describe('union type', () => {
-		const unionArb = unionTypeArb(typeReferenceArb()).map(
-			(unionType): DeepReadonly<UnionType> => ({
-				...unionType,
-				oneOf: [{ type: 'string' }, { type: 'boolean' }],
+	it('should validate after validator is available', () => {
+		const predicate = async (val: unknown) => {
+			const validator = cycleBreakerValidator(Promise.resolve(anyValidator));
+			await Promise.resolve(); // Wait a tick to let cycle breaker init
+			expect(validator(val)).toBe(true);
+		};
+		return fc.assert(fc.asyncProperty(fc.anything(), predicate));
+	});
+});
+
+describe('array type validator', () => {
+	it('should validate valid array', () => {
+		const predicate = async (arr: unknown) =>
+			expect((await arrayTypeValidator(anyValidator, ''))(arr)).toBe(true);
+		return fc.assert(fc.asyncProperty(fc.array(fc.anything()), predicate));
+	});
+
+	it('should not validate invalid items', () => {
+		const predicate = async (arr: unknown[]) =>
+			expect(async () =>
+				(await arrayTypeValidator(neverValidator, ''))([...arr, ''])
+			).rejects.toThrow();
+		return fc.assert(fc.asyncProperty(fc.array(fc.anything()), predicate));
+	});
+
+	it('should not validate non-array', () => {
+		const predicate = async (value: unknown) =>
+			expect(async () =>
+				(await arrayTypeValidator(anyValidator, ''))(value)
+			).rejects.toThrow();
+		return fc.assert(fc.asyncProperty(fc.anything({ maxDepth: 0 }), predicate));
+	});
+});
+
+describe('map type validator', () => {
+	it('should validate valid object', () => {
+		const predicate = async (obj: unknown) =>
+			expect((await mapTypeValidator(anyValidator, ''))(obj)).toBe(true);
+		return fc.assert(fc.asyncProperty(fc.object(), predicate));
+	});
+
+	it('should not validate invalid properties', () => {
+		const predicate = async (obj: object) =>
+			expect(async () =>
+				(await mapTypeValidator(neverValidator, ''))({ ...obj, a: true })
+			).rejects.toThrow();
+		return fc.assert(fc.asyncProperty(fc.object(), predicate));
+	});
+
+	it('should not validate non-object', () => {
+		const predicate = async (value: unknown) =>
+			expect(async () => (await mapTypeValidator(anyValidator, ''))(value)).rejects.toThrow();
+		return fc.assert(fc.asyncProperty(fc.anything({ maxDepth: 0 }), predicate));
+	});
+});
+
+describe('primitive type', () => {
+	const primitiveTypes: PrimitiveType['type'][] = ['boolean', 'integer', 'number', 'string'];
+	const rawCases = [
+		['boolean', fc.boolean(), ['boolean']],
+		['integer', fc.integer(), ['integer', 'number']],
+		['float', fc.float().filter((f) => !Number.isInteger(f)), ['number']],
+		['string', fc.string(), ['string']],
+		['undefined', fc.constant(undefined), []],
+		['object', fc.object(), []],
+	] as ReadonlyArray<readonly [string, fc.Arbitrary<unknown>, ReadonlyArray<string>]>;
+	const cases = primitiveTypes.flatMap(
+		(validatorType): [PrimitiveType['type'], string, string, fc.Arbitrary<unknown>][] =>
+			rawCases.map(([valueType, arb, validTypes]) => {
+				const label = `${validTypes.includes(validatorType) ? '' : 'not '}validate`;
+				return [validatorType, label, valueType, arb];
 			})
-		);
-		it('should validate string and boolean values', () => {
-			const valueArb = fc.oneof(fc.string(), fc.boolean());
-			return fc.assert(fc.asyncProperty(unionArb, valueArb, typeRefPredicate(true)));
-		});
+	);
+	it.each(cases)('%s validator should %s %s', (type, validate, valueType, arb) => {
+		const predicate = async (val: unknown) => {
+			const validator = await primitiveTypeValidator(type, '');
+			if (validate.includes('not')) expect(() => validator(val)).toThrow();
+			else expect(validator(val)).toBe(true);
+		};
+		return fc.assert(fc.asyncProperty(arb, predicate));
+	});
+});
 
-		it('should not validate non-string-or-boolean values', () => {
-			const valueArb = fc
-				.anything()
-				.filter((v) => typeof v !== 'string' && typeof v !== 'boolean');
-			return fc.assert(fc.asyncProperty(unionArb, valueArb, typeRefPredicate(false)));
-		});
+describe('union type validator', () => {
+	it('should validate if at least one validator validates', () => {
+		const arb = fc.array(fc.constantFrom(anyValidator, neverValidator, falseValidator));
+		const predicate = async (validators: readonly Validator[], value: unknown) =>
+			expect((await unionTypeValidator([...validators, anyValidator], ''))(value)).toBe(true);
+		return fc.assert(fc.asyncProperty(arb, fc.anything(), predicate));
 	});
 
-	describe('array type', () => {
-		const stringArrayArb = arrayTypeArb(typeReferenceArb()).map(
-			(arrType): DeepReadonly<ArrayType> => ({ ...arrType, items: { type: 'string' } })
-		);
+	it('should not validate no validator validates', () => {
+		const arb = fc.array(fc.constantFrom(neverValidator, falseValidator));
+		const predicate = async (validators: readonly Validator[], value: unknown) =>
+			expect(async () => (await unionTypeValidator(validators, ''))(value)).rejects.toThrow(
+				/is not any of the/
+			);
+		return fc.assert(fc.asyncProperty(arb, fc.anything(), predicate));
+	});
+});
 
-		it('should validate string arrays', () => {
-			const predicate = typeRefPredicate(true);
-			return fc.assert(fc.asyncProperty(stringArrayArb, fc.array(fc.string()), predicate));
-		});
-
-		it('should not validate non-string-array values', () => {
-			const valArb = fc
-				.anything()
-				.filter((v) => !Array.isArray(v) || v.some((i) => typeof i !== 'string'));
-			return fc.assert(fc.asyncProperty(stringArrayArb, valArb, typeRefPredicate(false)));
-		});
+describe('const validator', () => {
+	it('should validate const', () => {
+		const predicate = async (constant: any) =>
+			expect((await constValidator(constant, ''))(constant)).toBe(true);
+		return fc.assert(fc.asyncProperty(fc.anything(), predicate));
 	});
 
-	describe('map type', () => {
-		const typeArb = mapTypeArb(typeReferenceArb());
-		const numberMapArb = typeArb.map(
-			(m): DeepReadonly<MapType> => ({ ...m, additionalProperties: { type: 'number' } })
-		);
-		const stringMapArb = typeArb.map(
-			(m): DeepReadonly<MapType> => ({ ...m, additionalProperties: undefined })
-		);
-
-		it('should validate number map types', () => {
-			const valArb = fc.dictionary(fc.string(), fc.float());
-			return fc.assert(fc.asyncProperty(numberMapArb, valArb, typeRefPredicate(true)));
-		});
-
-		it('should validate default type map types', () => {
-			const valArb = fc.dictionary(fc.string(), fc.string());
-			return fc.assert(fc.asyncProperty(stringMapArb, valArb, typeRefPredicate(true)));
-		});
-
-		it('should not validate non-string-string-map values', () => {
-			const valArb = fc
-				.anything()
-				.filter(
-					(v) =>
-						typeof v !== 'object' ||
-						Object.values(v || {}).some((i) => typeof i !== 'string')
-				);
-			return fc.assert(fc.asyncProperty(stringMapArb, valArb, typeRefPredicate(false)));
-		});
-	});
-
-	describe('primitive type', () => {
-		const primitiveTypes: PrimitiveType['type'][] = ['boolean', 'integer', 'number', 'string'];
-		type RawCase = readonly [string, fc.Arbitrary<unknown>, ReadonlyArray<string>];
-		const cases: ReadonlyArray<RawCase> = [
-			['boolean', fc.boolean(), ['boolean']],
-			['integer', fc.integer(), ['integer', 'number']],
-			['float', fc.float().filter((f) => !Number.isInteger(f)), ['number']],
-			['string', fc.string(), ['string']],
-			['undefined', fc.constant(undefined), []],
-			['object', fc.object(), []],
-		];
-		type Case = DeepReadonly<[PrimitiveType['type'], string, string, fc.Arbitrary<unknown>]>;
-		const mapCase =
-			(validatorType: PrimitiveType['type']) =>
-			([valueType, arb, validTypes]: RawCase): Case =>
-				[
-					validatorType,
-					`${validTypes.includes(validatorType) ? '' : 'not '}validate`,
-					valueType,
-					arb,
-				];
-		it.each(primitiveTypes.flatMap((validatorType) => cases.map(mapCase(validatorType))))(
-			'%s validator should %s %s',
-			(type, validate, valueType, arb) => {
-				const typeArb = primitiveTypeArb().map(
-					(primType): DeepReadonly<PrimitiveType> => ({ ...primType, type })
-				);
-				const predicate = typeRefPredicate(validate === 'validate');
-				return fc.assert(fc.asyncProperty(typeArb, arb, predicate));
-			}
-		);
+	it('should not validate non-const values', () => {
+		const arb = fc.tuple(fc.anything(), fc.anything()).filter(([a, b]) => a !== b);
+		const predicate = async ([constant, val]: [any, any]) =>
+			expect(async () => (await constValidator(constant, ''))(val)).rejects.toThrow(/is not/);
+		return fc.assert(fc.asyncProperty(arb, predicate));
 	});
 });
 
 describe('object type details validator', () => {
-	const adjustObjType = (obj: object, objType: DeepReadonly<ObjectTypeDetails>) => ({
-		...objType,
-		properties: Object.fromEntries(
-			Object.keys(obj).map((k) => [k, { type: 'string' }])
-		) as Record<string, TypeReference>,
-		required: Object.keys(obj),
-	});
-	const arbs: fc.Arbitrary<[unknown, DeepReadonly<ObjectTypeDetails>]> = fc
-		.tuple(fc.dictionary(fc.string(), fc.string()), objectTypeDetailsArb())
-		.map(([obj, objType]) => [obj, adjustObjType(obj, objType)]);
+	type Arb = [
+		Readonly<Record<string, unknown>>,
+		Readonly<Record<string, Validator>>,
+		readonly string[]
+	];
+	const arb: fc.Arbitrary<Arb> = fc
+		.uniqueArray(fc.string())
+		.map((ss) => [
+			Object.fromEntries(ss.map((s) => [s, true])),
+			Object.fromEntries(ss.map((s) => [s, anyValidator])),
+			[],
+		]);
 
 	it('should validate valid objects', () => {
-		const predicate = async ([obj, objType]: [unknown, DeepReadonly<ObjectTypeDetails>]) =>
-			expect((await objTypeToValidator(objType, defaultNamedTypeArgs, ''))(obj)).toBe(true);
-		return fc.assert(fc.asyncProperty(arbs, predicate));
+		const predicate = async ([obj, propValidators, required]: Arb) => {
+			const validator = await objectTypeDetailsValidator(propValidators, required, '');
+			expect(validator(obj)).toBe(true);
+		};
+		return fc.assert(fc.asyncProperty(arb, predicate));
 	});
 
 	it('should not validate if value is no object', () => {
-		const objTypeArb = objectTypeDetailsArb();
-		const valArb = fc
-			.anything()
-			.filter((v) => typeof v !== 'object' || Array.isArray(v) || v === null);
-		const predicate = async (objType: DeepReadonly<ObjectTypeDetails>, value: unknown) => {
-			const validator = await objTypeToValidator(objType, defaultNamedTypeArgs, '');
+		const valArb = fc.anything({ maxDepth: 0 });
+		const predicate = async ([, propValidators, required]: Arb, value: unknown) => {
+			const validator = await objectTypeDetailsValidator(propValidators, required, '');
 			expect(() => validator(value)).toThrowError();
 		};
-		return fc.assert(fc.asyncProperty(objTypeArb, valArb, predicate));
+		return fc.assert(fc.asyncProperty(arb, valArb, predicate));
 	});
 
 	it('should not validate if required properties are missing', () => {
-		const predicate = async ([obj, objType]: [any, DeepReadonly<ObjectTypeDetails>]) => {
-			const type: DeepReadonly<ObjectTypeDetails> = {
-				...objType,
-				properties: { ...objType.properties, a: { type: 'string' } },
-				required: ['a'],
-			};
+		const predicate = async ([obj, propValidators]: Arb) => {
 			// eslint-disable-next-line no-param-reassign
-			delete obj.a;
-			const validator = await objTypeToValidator(type, defaultNamedTypeArgs, '');
-			expect(() => validator(obj)).toThrowError();
+			delete (obj as any).a;
+			const validator = await objectTypeDetailsValidator(
+				{ ...propValidators, a: anyValidator },
+				['a'],
+				''
+			);
+			expect(() => validator(obj)).toThrow(/misses required property/);
 		};
-		return fc.assert(fc.asyncProperty(arbs, predicate));
+		return fc.assert(fc.asyncProperty(arb, predicate));
 	});
 
 	it('should not validate if object has non-defined properties', () => {
-		const predicate = async ([obj, objType]: [any, DeepReadonly<ObjectTypeDetails>]) => {
-			const type: DeepReadonly<ObjectTypeDetails> = {
-				...objType,
-				properties: Object.fromEntries(
-					Object.keys(objType.properties || {})
-						.slice(0, -1)
-						.map((k) => [k, objType.properties![k]])
-				) as Record<string, TypeReference>,
-			};
-			if (Object.keys(objType.properties || {}).length === 0)
-				// eslint-disable-next-line no-param-reassign
-				obj.a = 'true';
-			const validator = await objTypeToValidator(type, defaultNamedTypeArgs, '');
-			expect(() => validator(obj)).toThrowError();
+		const predicate = async ([obj, propValidators, required]: Arb) => {
+			const validators = Object.fromEntries<Validator>(
+				Object.keys(propValidators)
+					.slice(0, -1)
+					.filter((k) => k !== 'a')
+					.map((k) => [k, propValidators[k]])
+			);
+			const validator = await objectTypeDetailsValidator(validators, required, '');
+			expect(() => validator({ ...obj, a: 'true' })).toThrow(/has unknown property/);
 		};
-		return fc.assert(fc.asyncProperty(arbs, predicate));
+		return fc.assert(fc.asyncProperty(arb, predicate));
+	});
+});
+
+describe('enum type definition validator', () => {
+	const enumValsArb = fc.uniqueArray(fc.anything({ maxDepth: 0 }), { minLength: 1 });
+
+	it('should validate enum values', () => {
+		const predicate = async (values: any[], i: number) => {
+			const validator = await enumTypeDefinitionValidator(values, '');
+			expect(validator(values[i % values.length])).toBe(true);
+		};
+		return fc.assert(fc.asyncProperty(enumValsArb, fc.nat(), predicate));
+	});
+
+	it('should not validate non-enum values', () => {
+		const predicate = async (values: any[]) => {
+			const validator = await enumTypeDefinitionValidator(values.slice(1), '');
+			expect(() => validator(values[0])).toThrow(/is not in enum/);
+		};
+		return fc.assert(fc.asyncProperty(enumValsArb, predicate));
 	});
 });
 
@@ -433,7 +411,7 @@ describe('Pulumi packages schema oracle', () => {
 			return fc.assert(fc.asyncProperty(withInputsArb, predicate));
 		});
 
-		it.each<DeepReadonly<[string, ResourceDefinition, unknown]>>([
+		it.each<readonly [string, ResourceDefinition, unknown]>([
 			['empty', {}, {}],
 			['a-resource', resDefAb, { a: 1 }],
 			['a-b-resource', resDefAb, { a: 1, b: [] }],
@@ -445,7 +423,7 @@ describe('Pulumi packages schema oracle', () => {
 			return fc.assert(fc.asyncProperty(arb, predicate));
 		});
 
-		it.each<DeepReadonly<[string, ResourceDefinition, unknown]>>([
+		it.each<readonly [string, ResourceDefinition, unknown]>([
 			['empty', {}, ''],
 			['a-resource', resDefAb, {}],
 			['a-resource', resDefAb, { a: 'a' }],
@@ -468,37 +446,28 @@ describe('Pulumi packages schema oracle', () => {
 				},
 				resType,
 			]);
-		type OptNumber = number | undefined;
-		type CachingCase = DeepReadonly<
-			[string, Partial<OracleConfig>, boolean, boolean, OptNumber, OptNumber]
-		>;
-		it.each<CachingCase>([
-			['cache resource validator', {}, true, true, 1, undefined],
-			['cache named type validator', {}, false, false, undefined, 1],
-			['use validator cached from named types for root resources', {}, false, true, 1, 1],
-			['not cache validator', { cacheValidators: false }, true, true, 2, 2],
-		])('should %s', (a, c, sameTypeName1, sameTypeName2, rootResLookups, namedTypeLookups) => {
+		it.each<[string, Partial<OracleConfig>, boolean, boolean, number]>([
+			['cache resource validator', {}, true, true, 1],
+			['cache named type validator', {}, false, false, 3],
+			['use validator cached from named types for root resources', {}, false, true, 2],
+		])('should %s', (a, c, sameTypeName1, sameTypeName2, resLookups) => {
 			const predicate = async (
 				resArgs: ResourceArgs,
 				[resDef, resType]: [ResourceDefinition, string]
 			) => {
 				getResourceMock.mockReset().mockReturnValue(resDef);
-				resolveTypeRefMock.mockReset().mockReturnValue(resDef);
 				const oracle = new PulumiPackagesSchemaOracle({ ...conf, ...c });
-				await oracle.asyncValidateResource({
-					...resArgs,
-					type: `${resType}${sameTypeName1 ? '' : '_'}`,
-					inputs: { [resType]: {} },
-				});
-				await oracle.asyncValidateResource({
-					...resArgs,
-					type: `${resType}${sameTypeName2 ? '' : '__'}`,
-					inputs: { [resType]: {} },
-				});
-				if (rootResLookups !== undefined)
-					expect(getResourceMock).toBeCalledTimes(rootResLookups);
-				if (namedTypeLookups !== undefined)
-					expect(resolveTypeRefMock).toBeCalledTimes(namedTypeLookups);
+				const subject = (type: string) =>
+					expect(
+						oracle.asyncValidateResource({
+							...resArgs,
+							type,
+							inputs: { [resType]: {} },
+						})
+					).resolves.toBeUndefined();
+				await subject(`${resType}${sameTypeName1 ? '' : '_'}`);
+				await subject(`${resType}${sameTypeName2 ? '' : '__'}`);
+				expect(getResourceMock).toBeCalledTimes(resLookups);
 			};
 			return fc.assert(fc.asyncProperty(resourceArgsArb, recursiveResDefArb, predicate));
 		});
