@@ -34,6 +34,7 @@ const config: Config = {
 			),
 			testMatch: jestDefaults.testMatch.map((m) => `${resolve(packet)}/${m}`),
 			...packetConfig,
+			setupFiles: [resolve('fast-check.setup.ts')],
 		};
 	}),
 };
