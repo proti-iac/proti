@@ -60,16 +60,28 @@ export type TypeReference = DeepReadonly<PulumiTypeReference>;
 export type UnionType = DeepReadonly<PulumiUnionType>;
 
 export type BuiltInTypeUri = `pulumi.json#/${'Any' | 'Archive' | 'Asset' | 'Json'}`;
-export type Urn = Token;
 export type Origin = string;
+
+/** Pulumi unified resource name. May be URL encoded. */
+export type EncodedUrn = Token;
+/** URI that may be URL encoded. */
+export type EncodedUri = string;
+
+/** Pulumi unified resource name. */
+export type Urn = Token;
+/** Decoded URI. */
 export type Uri = string;
+export type ResourceUri = `${Origin}#/resources/${Urn}`;
+export type TypeUri = `${Origin}#/types/${Urn}`;
+
+/**
+ * Decoded full URI of built-in type (e.g., `pulumi.json#/Any`) or URI without
+ * origin, i.e., without everything before the first `#` character, if a `#`
+ * character is included (e.g., `#/resources/abc` or `abc`).
+ */
 export type NormalizedUri = BuiltInTypeUri | Uri;
 export type NormalizedResourceUri = `#/resources/${Urn}`;
-export type ResourceUri = `${Origin}${NormalizedResourceUri}`;
 export type NormalizedTypeUri = `#/types/${Urn}`;
-export type TypeUri = `${Origin}${NormalizedTypeUri}`;
-export type RefUri = BuiltInTypeUri | ResourceUri | TypeUri;
-export type NormalizedRefUri = BuiltInTypeUri | NormalizedResourceUri | NormalizedTypeUri;
 
 export const builtInTypeUris: readonly BuiltInTypeUri[] = [
 	'pulumi.json#/Archive',
@@ -77,8 +89,16 @@ export const builtInTypeUris: readonly BuiltInTypeUri[] = [
 	'pulumi.json#/Any',
 	'pulumi.json#/Json',
 ];
-export const normalizeUri = (uri: Uri): Uri =>
-	builtInTypeUris.includes(uri as BuiltInTypeUri)
+
+export const decodeUri = (uri: EncodedUri): Uri => {
+	try {
+		return decodeURIComponent(uri);
+	} catch (e) {
+		return uri;
+	}
+};
+export const normalizeUri = (uri: Uri): NormalizedUri =>
+	(builtInTypeUris as readonly string[]).includes(uri)
 		? uri
 		: uri.slice(Math.max(0, uri.indexOf('#')));
 
@@ -93,7 +113,7 @@ let transfTypeDef: TransformDef<TypeDefinition>;
 let transfTypeRef: TransformDef<TypeReference>;
 
 export type BuiltInTypeTransform<T> = (type: BuiltInTypeUri, path: string) => Promise<T>;
-export type UnresolvableUriTransform<T> = (type: Uri, path: string) => Promise<T>;
+export type UnresolvableUriTransform<T> = (type: NormalizedUri, path: string) => Promise<T>;
 export type CycleBreakerTransform<T> = (circle: Promise<T>) => T;
 export type NamedTypeArgs<T> = Readonly<{
 	registry: SchemaRegistry;
@@ -103,7 +123,7 @@ export type NamedTypeArgs<T> = Readonly<{
 	 */
 	caching: boolean;
 	cache: ReadonlyMap<NormalizedUri, Promise<T>>;
-	appendCache: (normalizeUri: Uri, t: Promise<T>) => void;
+	appendCache: (normalizedUri: NormalizedUri, t: Promise<T>) => void;
 	/**
 	 * Tracking URIs of parent elements is necessary to prevent potential
 	 * deadlocks during transformations of cyclic schemas. We avoid deadlocks by
@@ -118,19 +138,19 @@ export const transformNamedType = async <T>(
 	args: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
-	const normUri = normalizeUri(namedType.$ref);
+	const normUri = normalizeUri(decodeUri(namedType.$ref));
 	const generateT = async (): Promise<T> => {
 		if (is<BuiltInTypeUri>(normUri))
 			return transforms.builtInType(normUri, `${path}$builtIn:${normUri}`);
 		const newParents = [...args.parentUris, normUri];
-		if (is<ResourceUri>(normUri)) {
+		if (is<NormalizedResourceUri>(normUri)) {
 			const resUrn: Urn = normUri.replace(/^#\/resources\//, '');
 			const resDef = await args.registry.getResource(resUrn);
 			const p = `${path}$resDef:${resUrn}`;
 			if (resDef !== undefined)
 				return transfResDef(resDef, transforms, { ...args, parentUris: newParents }, p);
 		}
-		if (is<TypeUri>(normUri)) {
+		if (is<NormalizedTypeUri>(normUri)) {
 			const typeUrn: Urn = normUri.replace(/^#\/types\//, '');
 			const typeDef = await args.registry.getType(typeUrn);
 			const p = `${path}$typeDef:${typeUrn}`;

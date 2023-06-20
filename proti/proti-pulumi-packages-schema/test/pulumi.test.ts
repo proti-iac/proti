@@ -3,6 +3,7 @@ import type { CommandResult } from '@pulumi/pulumi/automation';
 import { createAppendOnlyMap, mapValues } from '@proti/core';
 import {
 	builtInTypeUris,
+	decodeUri,
 	normalizeUri,
 	runPulumi,
 	setTransfResDefMock,
@@ -14,8 +15,10 @@ import {
 	transformTypeDefinition,
 	transformTypeReference,
 	type BuiltInTypeUri,
+	type EncodedUri,
 	type NamedType,
 	type NamedTypeArgs,
+	type NormalizedUri,
 	type ObjectTypeDetails,
 	type ResourceDefinition,
 	type PropertyDefinition,
@@ -177,8 +180,12 @@ describe('transform named type', () => {
 		const resourceRef = (s: string) =>
 			!s.includes(`#/${otherKind}/`) && !builtInTypeUris.some((t) => s.includes(t));
 		const ref = fc
-			.tuple(fc.string(), fc.integer({ max: 20 }))
-			.map(([s, i]) => `${s.slice(0, i)}#/${kind}/${s.slice(i)}`)
+			.tuple(fc.string(), fc.integer({ max: 20 }), fc.boolean())
+			.map(([s, i, encode]) => {
+				const pref = s.slice(0, i).replace(/#/g, '');
+				const suff = encode ? encodeURIComponent(s.slice(i)) : s.slice(i);
+				return `${pref}#/${kind}/${suff}`;
+			})
 			.filter(resourceRef);
 		return fc.assert(fc.asyncProperty(arb(ref), kindArb, fc.string(), predicate));
 	});
@@ -189,7 +196,7 @@ describe('transform named type', () => {
 		const predicate = (namedType: NamedType, path: string) => {
 			const ts = { ...transforms, builtInType: asyncThrows, unresolvableUri: asyncStringify };
 			const e = transformNamedType(namedType, ts, ntArgs, path);
-			const r = stringify(normalizeUri(namedType.$ref), `${path}$unresolvable`);
+			const r = stringify(normalizeUri(decodeUri(namedType.$ref)), `${path}$unresolvable`);
 			return expect(e).resolves.toStrictEqual(r);
 		};
 		const ref = uriArb.filter((s: string) => !builtInTypeUris.some((t) => s.includes(t)));
@@ -243,21 +250,21 @@ describe('transform named type', () => {
 		['should', true],
 		['should not', false],
 	])('%s insert cycle breaker for cyclic schemas', (_, hasParent) => {
-		const predicate = async (ref: string, path: string) => {
+		const predicate = async (ref: EncodedUri, path: string) => {
 			const namedType: NamedType = { $ref: ref };
 			const asm = jest.fn().mockImplementation(asyncStringify);
 			const ts: Transforms<string> = {
 				...transforms,
 				cycleBreaker: asm,
 			};
-			const [cache, appendCache] = createAppendOnlyMap<string, Promise<string>>();
-			appendCache(normalizeUri(ref), Promise.resolve('VAL'));
+			const [cache, appendCache] = createAppendOnlyMap<NormalizedUri, Promise<string>>();
+			appendCache(normalizeUri(decodeUri(ref)), Promise.resolve('VAL'));
 			const ntArgsL: NamedTypeArgs<string> = {
 				registry,
 				caching: true,
 				cache,
 				appendCache,
-				parentUris: hasParent ? [normalizeUri(ref)] : [],
+				parentUris: hasParent ? [normalizeUri(decodeUri(ref))] : [],
 			};
 			await transformNamedType(namedType, ts, ntArgsL, path);
 			expect(asm).toBeCalledTimes(hasParent ? 1 : 0);

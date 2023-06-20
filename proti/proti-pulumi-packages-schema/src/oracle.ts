@@ -22,6 +22,7 @@ import {
 	type MapTypeTransform,
 	type MutableTransforms,
 	type NamedTypeArgs,
+	type NormalizedUri,
 	type ObjectTypeDetails,
 	type ObjectTypeDetailsTransform,
 	type PrimitiveTypeTransform,
@@ -42,13 +43,9 @@ import {
  */
 export type Validator<T = unknown, R extends T = T> = (value: T) => value is R;
 /**
- * Caching validators under their Pulumi type reference, assuming definition in
- * the same document. E.g., the validator of a resource type is cached as
- * `#/resources/[resource type token]`. Also includes type references with other
- * formats as they are but strips everything before the first # character, if a
- * # character is included.
+ * Caching validators under their normalized Pulumi type reference URI,
  */
-export type ValidatorCache = ReadonlyMap<string, Promise<Validator>>;
+export type ValidatorCache = ReadonlyMap<NormalizedUri, Promise<Validator>>;
 
 type Object = Readonly<Record<string, unknown>>;
 type JsTypeObject<T extends Types> = T extends 'object' ? Object : JsType<T>;

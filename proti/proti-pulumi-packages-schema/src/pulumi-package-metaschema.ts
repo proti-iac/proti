@@ -9,6 +9,8 @@
  * the central package schema definition.
  */
 
+import type { EncodedUri } from './pulumi';
+
 /**
  * A description of the schema for a Pulumi Package
  */
@@ -228,7 +230,7 @@ export type NamedType = {
 	 * "/provider/vX.Y.Z/schema.json" or "pulumi.json" or
 	 * "http[s]://example.com/provider/vX.Y.Z/schema.json"
 	 */
-	$ref: string;
+	$ref: EncodedUri;
 	additionalProperties?: never;
 	items?: never;
 	oneOf?: never;
