@@ -26,9 +26,9 @@ import {
 	type ObjectTypeDetailsTransform,
 	type PrimitiveTypeTransform,
 	type PropertyDefinitionTransform,
-	type ResourceDefinition,
 	type ResourceDefinitionTransform,
 	type Transforms,
+	type TypeDefinition,
 	type UnionTypeTransform,
 	type UnresolvableUriTransform,
 	type Urn,
@@ -48,7 +48,7 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 		.join('\n');
 };
 
-type Arbitrary<T = unknown> = fc.Arbitrary<T>;
+export type Arbitrary<T = unknown> = fc.Arbitrary<T>;
 
 /**
  * Caching arbitraries under their normalized Pulumi type reference URI.
@@ -74,9 +74,9 @@ export const unresolvableUriArbitrary =
 		console.warn(`${errMsg}. Using default type reference definition"`);
 		const definition = conf.defaultTypeReferenceDefinition;
 		if (definition === undefined) return fc.constant(undefined);
-		if (is<ResourceDefinition>(definition))
-			return transformResourceDefinition(definition, transforms, ntArgs, path);
-		return transformTypeDefinition(definition, transforms, ntArgs, path);
+		if (is<TypeDefinition>(definition))
+			return transformTypeDefinition(definition, transforms, ntArgs, path);
+		return transformResourceDefinition(definition, transforms, ntArgs, path);
 	};
 
 export const cycleBreakerArbitrary: CycleBreakerTransform<Arbitrary> = (asyncArb) =>
@@ -130,7 +130,7 @@ export const propertyDefinitionArbitrary: PropertyDefinitionTransform<Arbitrary>
 	defaultArbitrary === undefined
 		? typeArbitrary
 		: fc.oneof(
-				{ arbitrary: fc.constant(defaultArbitrary), weight: 1 },
+				{ arbitrary: defaultArbitrary, weight: 1 },
 				{ arbitrary: typeArbitrary, weight: 4 }
 		  );
 
