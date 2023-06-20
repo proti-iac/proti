@@ -24,7 +24,7 @@ import {
 	type Transforms,
 	builtInTypeUris,
 } from '../src/pulumi';
-import { resourceDefinitionArb } from './pulumi-package-metaschema/arbitraries';
+import { resourceDefinitionArb, typeDefinitionArb } from './pulumi-package-metaschema/arbitraries';
 import { TypeDefinition } from '../src/pulumi-package-metaschema';
 
 const getResourceMock = jest.fn();
@@ -105,39 +105,37 @@ describe('unresolvable URI validator', () => {
 		return fc.assert(fc.asyncProperty(fc.string(), fc.string(), fc.anything(), predicate));
 	});
 
-	it.each([['resource definition', true, false, resourceDefinitionArb()]])(
-		'should validate for default resource definition',
-		(_, isResDef, isTypeDef, arb) => {
-			console.warn = () => {};
-			const tss: Transforms<Validator> = {
-				arrayType: async () => anyValidator,
-				builtInType: async () => anyValidator,
-				cycleBreaker: () => anyValidator,
-				const: async () => anyValidator,
-				enumType: async () => anyValidator,
-				mapType: async () => anyValidator,
-				objType: async () => anyValidator,
-				resourceDef: async () => anyValidator,
-				primitive: async () => anyValidator,
-				propDef: async () => anyValidator,
-				unionType: async () => anyValidator,
-				unresolvableUri: async () => anyValidator,
-			};
-			const predicate = async (
-				uri: string,
-				path: string,
-				def: ResourceDefinition | TypeDefinition,
-				value: any
-			) => {
-				const c = { ...conf, defaultTypeReferenceDefinition: def };
-				const validator = await unresolvableUriValidator(c, tss, ntArgs)(uri, path);
-				expect(validator(value)).toBe(true);
-			};
-			return fc.assert(
-				fc.asyncProperty(fc.string(), fc.string(), arb, fc.anything(), predicate)
-			);
-		}
-	);
+	it.each([
+		['resource definition', resourceDefinitionArb()],
+		['type definition', typeDefinitionArb()],
+	])('should validate for default type reference definition: %s', (_, arb) => {
+		console.warn = () => {};
+		const tss: Transforms<Validator> = {
+			arrayType: async () => anyValidator,
+			builtInType: async () => anyValidator,
+			cycleBreaker: () => anyValidator,
+			const: async () => anyValidator,
+			enumType: async () => anyValidator,
+			mapType: async () => anyValidator,
+			objType: async () => anyValidator,
+			resourceDef: async () => anyValidator,
+			primitive: async () => anyValidator,
+			propDef: async () => anyValidator,
+			unionType: async () => anyValidator,
+			unresolvableUri: async () => anyValidator,
+		};
+		const predicate = async (
+			uri: string,
+			path: string,
+			def: ResourceDefinition | TypeDefinition,
+			value: any
+		) => {
+			const c = { ...conf, defaultTypeReferenceDefinition: def };
+			const validator = await unresolvableUriValidator(c, tss, ntArgs)(uri, path);
+			expect(validator(value)).toBe(true);
+		};
+		return fc.assert(fc.asyncProperty(fc.string(), fc.string(), arb, fc.anything(), predicate));
+	});
 });
 
 describe('cycle breaker validator', () => {
@@ -441,7 +439,9 @@ describe('Pulumi packages schema oracle', () => {
 			.map(([resDef, resType]) => [
 				{
 					...resDef,
-					inputProperties: { [resType]: { $ref: `#/resources/${resType}` } },
+					inputProperties: {
+						[resType]: { $ref: `#/resources/${encodeURIComponent(resType)}` },
+					},
 					requiredInputs: [],
 				},
 				resType,
