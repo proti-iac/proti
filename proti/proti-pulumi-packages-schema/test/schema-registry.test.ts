@@ -1,5 +1,4 @@
 import type { ModuleLoader } from '@proti/core';
-import * as fc from 'fast-check';
 import { promises as fs } from 'fs';
 import type { CommandResult } from '@pulumi/pulumi/automation';
 import os from 'os';
@@ -9,10 +8,8 @@ import { config, SchemaRegistryConfig } from '../src/config';
 import {
 	type PkgSchema,
 	type ResourceDefinition,
-	type ResourceUri,
 	runPulumi,
 	type TypeDefinition,
-	type TypeUri,
 	type Urn,
 } from '../src/pulumi';
 import { SchemaRegistry } from '../src/schema-registry';
@@ -414,55 +411,6 @@ describe('schema registry', () => {
 					await fs.rm(fullCacheDir, { recursive: true });
 				});
 			});
-		});
-	});
-
-	describe('resolving type reference', () => {
-		const initInstance = async (c: Partial<SchemaRegistryConfig> = {}) => {
-			await init(true, { downloadSchemas: false, ...c });
-			return SchemaRegistry.getInstance();
-		};
-		const noPoundStringArb = fc.string().map((s) => s.replaceAll('#', ''));
-
-		it('should resolve registered resource definition', () => {
-			const pred = async (origin: string, typ: string) => {
-				const instance = await initInstance({ resources: { [typ]: resourceDefinition } });
-				const expct = expect(
-					await instance.resolveTypeRef(`${origin}#/resources/${encodeURIComponent(typ)}`)
-				);
-				expct.toStrictEqual(resourceDefinition);
-			};
-			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), pred));
-		});
-
-		it('should resolve registered type definition', () => {
-			const pred = async (origin: string, typ: string) => {
-				const instance = await initInstance({ types: { [typ]: typeDefinition } });
-				const expct = expect(
-					await instance.resolveTypeRef(`${origin}#/types/${encodeURIComponent(typ)}`)
-				);
-				expct.toStrictEqual(typeDefinition);
-			};
-			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), pred));
-		});
-
-		it('should not resolve not registered definitions', () => {
-			const pred = async (origin: string, typ: string, kind: 'types' | 'resources') => {
-				const instance = await initInstance();
-				expect(await instance.resolveTypeRef(`${origin}#/${kind}/${typ}`)).toBeUndefined();
-			};
-			const kindsArb = fc.constantFrom<'resources' | 'types'>('resources', 'types');
-			return fc.assert(fc.asyncProperty(noPoundStringArb, fc.string(), kindsArb, pred));
-		});
-
-		it('should not resolve any other reference', () => {
-			const pred = async (typeRef: string) => {
-				const instance = await initInstance();
-				expect(
-					await instance.resolveTypeRef(typeRef as ResourceUri | TypeUri)
-				).toBeUndefined();
-			};
-			return fc.assert(fc.asyncProperty(fc.string(), pred));
 		});
 	});
 });

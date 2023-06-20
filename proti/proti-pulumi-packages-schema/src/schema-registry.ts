@@ -6,16 +6,10 @@ import type { SchemaRegistryConfig } from './config';
 import {
 	type PkgSchema,
 	type ResourceDefinition,
-	type ResourceUri,
 	runPulumi,
 	type TypeDefinition,
-	type TypeUri,
 	type Urn,
 } from './pulumi';
-
-export type TypeRefResolver = (
-	typeRef: ResourceUri | TypeUri
-) => Promise<ResourceDefinition | TypeDefinition | undefined>;
 
 export class SchemaRegistry {
 	private static instance: SchemaRegistry;
@@ -210,34 +204,6 @@ export class SchemaRegistry {
 		}
 		return definition;
 	}
-
-	/**
-	 * Tries to resolve a type reference for built-in, resource and type
-	 * definitions. Assumes references of the format `[origin]#[type]`. This
-	 * method ignores the value of [origin]. If [type] has the format
-	 * `/types/[token]`, it looks for a type definition [token] in the registry.
-	 * If [type] has the format `/resources/[token]`, it looks for a resource
-	 * definition [token] in the registry. Pulumi url encodes [token].
-	 * @param typeRef Type reference to resolve.
-	 * @returns Resource or type definition for type reference or `undefined` if
-	 * type reference cannot be resolved and no definition can be found.
-	 */
-	public readonly resolveTypeRef: TypeRefResolver = async (typeRef) => {
-		if (typeRef.includes('#')) {
-			const type = typeRef.slice(typeRef.indexOf('#') + 1);
-			const tryDecode = (s: string): string => {
-				try {
-					return decodeURIComponent(s);
-				} catch (e) {
-					return s;
-				}
-			};
-			if (type.startsWith('/types/')) return this.getType(tryDecode(type.slice(7)));
-			if (type.startsWith('/resources/')) return this.getResource(tryDecode(type.slice(11)));
-		}
-		this.log(`Cannot resolve type reference ${typeRef}`);
-		return undefined;
-	};
 
 	/**
 	 * Searches for package.json modules that have been loaded and tries to
