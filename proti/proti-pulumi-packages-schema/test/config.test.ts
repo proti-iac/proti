@@ -70,6 +70,12 @@ describe('config', () => {
 					required: ['a'],
 				},
 			},
+			oracle: {
+				defaultTypeReferenceDefinition: {
+					properties: { a: { type: 'string' } },
+					required: ['a'],
+				},
+			},
 		},
 		{
 			arbitrary: {
@@ -78,6 +84,7 @@ describe('config', () => {
 			},
 		},
 		{ oracle: {} },
+		{ oracle: { defaultResourceDefinition: { a: true, b: 2 } } },
 		{ oracle: { failOnMissingResourceDefinition: false } },
 	] as DeepPartial<Config>[])('should merge partial config %s', (partialConfig) => {
 		const check = <T>(conf: T, partialConf: DeepPartial<T>): void =>

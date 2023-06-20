@@ -119,6 +119,8 @@ export const config = (partialConfig: unknown = {}, ignoreCache: boolean = false
 				[
 					'.plugins.pulumi-packages-schema.arbitrary.defaultResourceState',
 					'.plugins.pulumi-packages-schema.arbitrary.defaultTypeReferenceDefinition',
+					'.plugins.pulumi-packages-schema.oracle.defaultResourceDefinition',
+					'.plugins.pulumi-packages-schema.oracle.defaultTypeReferenceDefinition',
 					'.plugins.pulumi-packages-schema.registry.resources',
 					'.plugins.pulumi-packages-schema.registry.types',
 				],
