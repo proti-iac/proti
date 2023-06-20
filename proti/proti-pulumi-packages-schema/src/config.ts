@@ -4,17 +4,26 @@ import type { ResourceDefinition, TypeDefinition, Urn } from './pulumi';
 
 export const defaultArbitraryConfig = () => ({
 	/**
+	 * Arbitraries are supposed to be stateless. Thus, caching and reusing
+	 * arbitraries generated for resource and type definitions is supposed to be
+	 * safe. If enabled, an arbitrary is generated once per used resource and
+	 * type definition and reused afterwards. Must be enabled to support
+	 * circular resource and type definitions, which otherwise cause an infinite
+	 * recursion.
+	 */
+	cacheArbitraries: true,
+	/**
 	 * Fail on generating state for resource type that cannot be retrieved. If
 	 * false, return `defaultResourceState`.
 	 */
 	failOnMissingResourceDefinition: true,
 	/**
-	 * Default state to generate for missing resource types if
-	 * `failOnMissingResourceDefinition` is `false`.
+	 * Default definition used for unresolvable resource definitions if
+	 * `failOnMissingResourceDefinition` is false.
 	 */
-	defaultResourceState: {} as any,
+	defaultResourceDefinition: {} as ResourceDefinition,
 	/**
-	 * Fail if type reference in a namd type cannot be resolved. If false,
+	 * Fail if type reference in a named type cannot be resolved. If false,
 	 * `defaultTypeReferenceDefinition` will be used as default.
 	 */
 	failOnMissingTypeReference: false,
@@ -117,7 +126,7 @@ export const config = (partialConfig: unknown = {}, ignoreCache: boolean = false
 				defaultConfig(),
 				assertEquals<DeepPartial<Config>>(partialConfig),
 				[
-					'.plugins.pulumi-packages-schema.arbitrary.defaultResourceState',
+					'.plugins.pulumi-packages-schema.arbitrary.defaultResourceDefinition',
 					'.plugins.pulumi-packages-schema.arbitrary.defaultTypeReferenceDefinition',
 					'.plugins.pulumi-packages-schema.oracle.defaultResourceDefinition',
 					'.plugins.pulumi-packages-schema.oracle.defaultTypeReferenceDefinition',

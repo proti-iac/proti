@@ -6,35 +6,35 @@ import {
 	type ResourceArgs,
 	type ResourceOutput,
 	type TestModuleInitFn,
+	createAppendOnlyMap,
 } from '@proti/core';
 import { is, stringify } from 'typia';
 import { initModule } from './utils';
-import { SchemaRegistry, type TypeRefResolver } from './schema-registry';
+import { SchemaRegistry } from './schema-registry';
 import { type ArbitraryConfig, config } from './config';
-import type {
-	EnumTypeDefinition,
-	NamedType,
-	ObjectTypeDetails,
-	PropertyDefinition,
-	TypeReference,
-	UnionType,
-} from './pulumi-package-metaschema';
-import type { NormalizedResourceUri, NormalizedTypeUri } from './pulumi';
-
-type ObjectTypeToArb = (
-	definition: DeepReadonly<ObjectTypeDetails>,
-	typeRefs: TypeRefResolver,
-	conf: ArbitraryConfig,
-	errContext: string
-) => Promise<fc.Arbitrary<Readonly<Record<string, unknown>>>>;
-
-type TypeRefToArb = (
-	typeRef: DeepReadonly<TypeReference>,
-	typeRefs: TypeRefResolver,
-	conf: ArbitraryConfig,
-	objTypeArb: ObjectTypeToArb,
-	path: string
-) => Promise<fc.Arbitrary<unknown>>;
+import {
+	type ArrayTypeTransform,
+	type BuiltInTypeTransform,
+	type ConstTransform,
+	type CycleBreakerTransform,
+	type EnumTypeDefinitionTransform,
+	type MapTypeTransform,
+	type MutableTransforms,
+	type NamedTypeArgs,
+	type NormalizedUri,
+	type NormalizedResourceUri,
+	type ObjectTypeDetailsTransform,
+	type PrimitiveTypeTransform,
+	type PropertyDefinitionTransform,
+	type ResourceDefinition,
+	type ResourceDefinitionTransform,
+	type Transforms,
+	type UnionTypeTransform,
+	type UnresolvableUriTransform,
+	type Urn,
+	transformResourceDefinition,
+	transformTypeDefinition,
+} from './pulumi';
 
 export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
 	const numLength = trace.length.toString().length;
@@ -48,142 +48,109 @@ export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>
 		.join('\n');
 };
 
-export const enumTypeDefToArb = (
-	definition: DeepReadonly<EnumTypeDefinition>,
-	path: string = '*unspecified*'
-): fc.Arbitrary<unknown> => {
-	if (definition.enum.length <= 0) throw Error(`Enum type definition has no values in ${path}`);
-	return fc.constantFrom(...definition.enum.map((e) => e.value));
+type Arbitrary<T = unknown> = fc.Arbitrary<T>;
+
+/**
+ * Caching arbitraries under their normalized Pulumi type reference URI.
+ */
+export type ArbitraryCache = ReadonlyMap<NormalizedUri, Promise<Arbitrary>>;
+
+export const builtInTypeArbitrary: BuiltInTypeTransform<Arbitrary> = async (type, path) => {
+	if (type === 'pulumi.json#/Archive' || type === 'pulumi.json#/Asset') return fc.string();
+	if (type === 'pulumi.json#/Any') return fc.anything();
+	if (type === 'pulumi.json#/Json') return fc.json();
+	throw new Error(`${path} has unknown built-in type ${type}`);
 };
 
-const namedTypeToArb = async (
-	namedType: DeepReadonly<NamedType>,
-	typeRefs: TypeRefResolver,
-	conf: ArbitraryConfig,
-	objTypeArb: ObjectTypeToArb,
-	path: string = '*unspecified*'
-): Promise<fc.Arbitrary<unknown>> => {
-	// Type references have the format `[origin]#[type]`. `[origin]` is
-	// `pulumi.json` for built-in Pulumi types. For non built-in types we
-	// rely on the schema registry to find a type definition.
-
-	// Built-in Pulumi types
-	switch (namedType.$ref) {
-		case 'pulumi.json#/Archive':
-			return fc.string();
-		case 'pulumi.json#/Asset':
-			return fc.string();
-		case 'pulumi.json#/Any':
-			return fc.anything();
-		case 'pulumi.json#/Json':
-			return fc.json();
-		default:
-	}
-	let definition = await typeRefs(namedType.$ref as NormalizedResourceUri | NormalizedTypeUri);
-	if (definition === undefined) {
-		const errMsg = `Failed to find type definition for ${namedType.$ref} in ${path}`;
+export const unresolvableUriArbitrary =
+	(
+		conf: ArbitraryConfig,
+		transforms: Transforms<Arbitrary>,
+		ntArgs: NamedTypeArgs<Arbitrary>
+	): UnresolvableUriTransform<Arbitrary> =>
+	async (uri, path) => {
+		const errMsg = `${path} has unknown type reference to ${uri}`;
 		if (conf.failOnMissingTypeReference) throw new Error(errMsg);
-		console.warn(`${errMsg}. Returning default type reference definition`);
-		definition = conf.defaultTypeReferenceDefinition;
+		console.warn(`${errMsg}. Using default type reference definition"`);
+		const definition = conf.defaultTypeReferenceDefinition;
 		if (definition === undefined) return fc.constant(undefined);
-	}
-	const objErrContext = () => `${path}$ref#obj:${namedType.$ref}`;
-	return is<EnumTypeDefinition>(definition)
-		? enumTypeDefToArb(definition, `${path}$ref#enum:${namedType.$ref}`)
-		: objTypeArb(definition, typeRefs, conf, objErrContext());
+		if (is<ResourceDefinition>(definition))
+			return transformResourceDefinition(definition, transforms, ntArgs, path);
+		return transformTypeDefinition(definition, transforms, ntArgs, path);
+	};
+
+export const cycleBreakerArbitrary: CycleBreakerTransform<Arbitrary> = (asyncArb) =>
+	new (class extends fc.Arbitrary<unknown> {
+		private arbitrary: Arbitrary | undefined;
+
+		constructor() {
+			super();
+			asyncArb.then((val) => {
+				this.arbitrary = val;
+			});
+		}
+
+		generate(mrng: fc.Random, biasFactor: number | undefined): fc.Value<unknown> {
+			if (!this.arbitrary) throw new Error('Cycle breaker arbitrary not initialized yet');
+			return this.arbitrary.generate(mrng, biasFactor);
+		}
+
+		canShrinkWithoutContext(value: unknown): value is unknown {
+			if (!this.arbitrary) throw new Error('Cycle breaker arbitrary not initialized yet');
+			return this.arbitrary.canShrinkWithoutContext(value);
+		}
+
+		shrink(value: unknown, context: unknown): fc.Stream<fc.Value<unknown>> {
+			if (!this.arbitrary) throw new Error('Cycle breaker arbitrary not initialized yet');
+			return this.arbitrary.shrink(value, context);
+		}
+	})();
+
+export const arrayTypeArbitrary: ArrayTypeTransform<Arbitrary> = async (itemsArbitrary) =>
+	fc.array(itemsArbitrary);
+
+export const mapTypeArbitrary: MapTypeTransform<Arbitrary> = async (propertiesArbitrary) =>
+	fc.dictionary(fc.string(), propertiesArbitrary);
+
+export const primitiveTypeArbitrary: PrimitiveTypeTransform<Arbitrary> = async (type, path) => {
+	if (type === 'boolean') return fc.boolean();
+	if (type === 'integer') return fc.integer();
+	if (type === 'number') return fc.oneof(fc.integer(), fc.float(), fc.double());
+	if (type === 'string') return fc.string();
+	throw new Error(`${path} has unknown primitive type ${type}`);
 };
 
-const unionTypeToArb = async (
-	unionType: DeepReadonly<UnionType>,
-	typeRefs: TypeRefResolver,
-	conf: ArbitraryConfig,
-	objTypeArb: ObjectTypeToArb,
-	typeRefToArb: TypeRefToArb,
-	path: string = '*unspecified*'
-): Promise<fc.Arbitrary<unknown>> => {
-	const typeArbs = unionType.oneOf.map((oneOfSchema: DeepReadonly<TypeReference>, i: number) => {
-		const oneOfPath = `${path}$oneOf:${i}`;
-		return typeRefToArb(oneOfSchema, typeRefs, conf, objTypeArb, oneOfPath);
-	});
-	return fc.oneof(...(await Promise.all(typeArbs)));
-};
+export const unionTypeArbitrary: UnionTypeTransform<Arbitrary> = async (oneOfArbitraries) =>
+	fc.oneof(...oneOfArbitraries);
 
-export const typeRefToArb: TypeRefToArb = async (
-	typeRefDef,
-	typeRefs,
-	conf,
-	objectTypeToArb,
-	path = '*unspecified*'
-) => {
-	if (typeRefDef.$ref !== undefined)
-		return namedTypeToArb(typeRefDef, typeRefs, conf, objectTypeToArb, path);
-	if (typeRefDef.oneOf !== undefined)
-		return unionTypeToArb(typeRefDef, typeRefs, conf, objectTypeToArb, typeRefToArb, path);
+export const propertyDefinitionArbitrary: PropertyDefinitionTransform<Arbitrary> = async (
+	typeArbitrary,
+	defaultArbitrary
+) =>
+	defaultArbitrary === undefined
+		? typeArbitrary
+		: fc.oneof(
+				{ arbitrary: fc.constant(defaultArbitrary), weight: 1 },
+				{ arbitrary: typeArbitrary, weight: 4 }
+		  );
 
-	const { type } = typeRefDef;
-	const typeRefArb = (typeRef: DeepReadonly<TypeReference>, err: string) =>
-		typeRefToArb(typeRef, typeRefs, conf, objectTypeToArb, `${path}${err}`);
-	switch (type) {
-		case 'array': // ArrayType
-			return fc.array(await typeRefArb(typeRefDef.items, `items`));
-		case 'object': // MapType
-			return fc.dictionary(
-				fc.string(),
-				typeRefDef.additionalProperties === undefined
-					? fc.string()
-					: await typeRefArb(typeRefDef.additionalProperties, `additionalProperties`)
-			);
-		case 'boolean': // PrimitiveType
-			return fc.boolean();
-		case 'integer': // PrimitiveType
-			return fc.integer();
-		case 'number': // PrimitiveType
-			return fc.oneof(fc.integer(), fc.float(), fc.double());
-		case 'string': // PrimitiveType
-			return fc.string();
-		default:
-			throw new Error(`Found not implemented schema type "${type}" in ${path}`);
-	}
-};
+export const constArbitrary: ConstTransform<Arbitrary> = async (constant) => fc.constant(constant);
 
-export const propertyDefToArb = async (
-	definition: DeepReadonly<PropertyDefinition>,
-	typeRefs: TypeRefResolver,
-	conf: ArbitraryConfig,
-	objTypeArb: ObjectTypeToArb,
-	path: string = '*unspecified*'
-): Promise<fc.Arbitrary<unknown>> => {
-	if (definition.const !== undefined) return fc.constant(definition.const);
-	const propTypeArb = await typeRefToArb(definition, typeRefs, conf, objTypeArb, path);
-	if (definition.default !== undefined)
-		return fc.oneof(fc.constant(definition.default), propTypeArb);
-	return propTypeArb;
-};
+export const objectTypeDetailsArbitrary: ObjectTypeDetailsTransform<Arbitrary> = async (
+	propertyArbitraries,
+	required
+) => fc.record(propertyArbitraries, { requiredKeys: [...required] });
 
-export const objectTypeToArb: ObjectTypeToArb = async (
-	definition,
-	typeRefs,
-	conf,
-	path = '*unspecified*'
-) => {
-	const props = Object.keys(definition.properties || {});
-	const propArbs = props.map(async (prop): Promise<[string, fc.Arbitrary<unknown>]> => {
-		const propSchema = definition.properties![prop];
-		const propErrMsgContext = `${path}$property:${prop}`;
-		return [
-			prop,
-			await propertyDefToArb(propSchema, typeRefs, conf, objectTypeToArb, propErrMsgContext),
-		];
-	});
-	const requiredKeys = [...(definition.required || [])];
-	requiredKeys
-		.filter((requiredProp) => !props.includes(requiredProp))
-		.forEach((requiredProp) => {
-			const errMsg = `Property "${requiredProp}" required but not defined in ${path}`;
-			throw new Error(errMsg);
-		});
-	return fc.record(Object.fromEntries(await Promise.all(propArbs)), { requiredKeys });
-};
+export const resourceDefinitionArbitrary: ResourceDefinitionTransform<Arbitrary> = (
+	inputPropertyArbitraries,
+	requiredInputs,
+	propertyArbitraries,
+	required,
+	path
+) => objectTypeDetailsArbitrary(propertyArbitraries, required, path);
+
+export const enumTypeDefinitionArbitrary: EnumTypeDefinitionTransform<Arbitrary> = async (values) =>
+	fc.constantFrom(...values);
 
 export class PulumiPackagesSchemaGenerator implements Generator {
 	private static generatorIdCounter: number = 0;
@@ -197,6 +164,11 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 	constructor(
 		private readonly conf: ArbitraryConfig,
 		private readonly registry: SchemaRegistry,
+		private readonly arbitraryCache: ArbitraryCache,
+		private readonly appendArbitraryCache: (
+			type: NormalizedUri,
+			arbitrary: Promise<Arbitrary>
+		) => void,
 		private readonly mrng: fc.Random,
 		private readonly biasFactor: number | undefined
 	) {
@@ -204,24 +176,55 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 		[this.trace, this.appendTrace] = createAppendOnlyArray<ResourceOutput>();
 	}
 
-	private async generateResourceState(resourceType: string): Promise<ResourceOutput['state']> {
-		const resDef = await this.registry.getResource(resourceType);
-		const errContext = `resourceDefinition:${resourceType}`;
+	private async generateArbitrary(resourceType: Urn): Promise<Arbitrary> {
+		let resDef = await this.registry.getResource(resourceType);
 		if (resDef === undefined) {
-			const errMsg = `Failed to find resource definition of ${errContext}`;
+			const errMsg = `Failed to find resource definition of ${resourceType}`;
 			if (this.conf.failOnMissingResourceDefinition) throw new Error(errMsg);
-			console.warn(`${errMsg}. Returning default resource state`);
-			return this.conf.defaultResourceState;
+			console.warn(`${errMsg}. Using default resource definition`);
+			resDef = this.conf.defaultResourceDefinition;
 		}
-		const typeRefs: TypeRefResolver = this.registry.resolveTypeRef;
-		const resourceArb = await objectTypeToArb(resDef, typeRefs, this.conf, errContext);
-		return resourceArb.generate(this.mrng, this.biasFactor).value;
+		const ntArgs: NamedTypeArgs<Arbitrary> = {
+			caching: this.conf.cacheArbitraries,
+			cache: this.arbitraryCache,
+			appendCache: this.appendArbitraryCache,
+			parentUris: [`#/resources/${resourceType}` as NormalizedResourceUri],
+			registry: this.registry,
+		};
+		const mutTransforms: Partial<MutableTransforms<Arbitrary>> = {
+			builtInType: builtInTypeArbitrary,
+			cycleBreaker: cycleBreakerArbitrary,
+			arrayType: arrayTypeArbitrary,
+			mapType: mapTypeArbitrary,
+			primitive: primitiveTypeArbitrary,
+			unionType: unionTypeArbitrary,
+			resourceDef: resourceDefinitionArbitrary,
+			propDef: propertyDefinitionArbitrary,
+			const: constArbitrary,
+			objType: objectTypeDetailsArbitrary,
+			enumType: enumTypeDefinitionArbitrary,
+		};
+		const transforms = mutTransforms as Transforms<Arbitrary>;
+		mutTransforms.unresolvableUri = unresolvableUriArbitrary(this.conf, transforms, ntArgs);
+		return transformResourceDefinition(resDef, transforms, ntArgs, resourceType);
+	}
+
+	private async getArbitrary(resourceType: Urn): Promise<ResourceOutput['state']> {
+		const cachedArbitrary = this.arbitraryCache.get(`#/resources/${resourceType}`);
+		if (cachedArbitrary) return cachedArbitrary;
+		const newArbitrary = this.generateArbitrary(resourceType).catch((cause) => {
+			throw new Error('Failed to generate resource arbitrary', { cause });
+		});
+		if (this.conf.cacheArbitraries)
+			this.appendArbitraryCache(`#/resources/${resourceType}`, newArbitrary);
+		return newArbitrary;
 	}
 
 	async generateResourceOutput(resource: ResourceArgs): Promise<ResourceOutput> {
+		const resourceArb = await this.getArbitrary(resource.type);
 		const output: ResourceOutput = {
 			id: resource.urn,
-			state: await this.generateResourceState(resource.type),
+			state: resourceArb.generate(this.mrng, this.biasFactor).value,
 		};
 		this.appendTrace(output);
 		return output;
@@ -238,14 +241,33 @@ export type PulumiPackagesSchemaArbitraryContext = {};
 export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<Generator> {
 	private readonly registry: SchemaRegistry = SchemaRegistry.getInstance();
 
+	/**
+	 * Caching arbitraries under their normalized Pulumi type reference URI.
+	 */
+	private readonly arbitraryCache: ArbitraryCache;
+
+	/**
+	 * Add entry to arbitrary cache.
+	 * @param type Normalized Pulumi type reference URI.
+	 * @param arbitrary Promise resolving with the arbitrary to cache.
+	 * @throws If cache already contains a arbitrary for the type.
+	 */
+	private readonly appendArbitraryCache: (
+		type: NormalizedUri,
+		arbitrary: Promise<Arbitrary>
+	) => void;
+
 	constructor(private readonly conf: ArbitraryConfig = config().arbitrary) {
 		super();
+		[this.arbitraryCache, this.appendArbitraryCache] = createAppendOnlyMap();
 	}
 
 	generate(mrng: fc.Random, biasFactor: number | undefined): fc.Value<Generator> {
 		const generator = new PulumiPackagesSchemaGenerator(
 			this.conf,
 			this.registry,
+			this.arbitraryCache,
+			this.appendArbitraryCache,
 			mrng,
 			biasFactor
 		);

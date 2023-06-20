@@ -59,7 +59,7 @@ describe('config', () => {
 			},
 		},
 		{ arbitrary: {} },
-		{ arbitrary: { defaultResourceState: { a: true, b: 2 } } },
+		{ arbitrary: { defaultResourceDefinition: { a: true, b: 2 } } },
 		{
 			arbitrary: {
 				defaultTypeReferenceDefinition: {
