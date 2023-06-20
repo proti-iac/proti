@@ -27,18 +27,18 @@
     "jest-resolve-dependencies": "^29.5.0",
     "jest-snapshot": "^29.5.0",
     "js-yaml": "^4.1.0",
-    "typia": "^4.0.5"
+    "ts-patch": "3.0.0",
+    "typia": "^4.1.0"
   },
   "devDependencies": {
     "@jest/types": "^29.5.0",
-    "@pulumi/pulumi": "^3.70.0",
+    "@pulumi/pulumi": "^3.72.2",
     "@types/jest": "^29.5.2",
     "@types/js-yaml": "^4.0.5",
-    "@types/node": "^18.16.17",
+    "@types/node": "^18.16.18",
     "jest-haste-map": "^29.5.0",
     "jest-resolve": "^29.5.0",
     "jest-runtime": "^29.5.0",
-    "ts-patch": "3.0.0-beta3",
     "typescript": "^5.1.3"
   }
 }

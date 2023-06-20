@@ -17,11 +17,11 @@
     "prepack": "yarn g:prepack"
   },
   "dependencies": {
-    "ts-morph": "^18.0.0",
+    "ts-morph": "^19.0.0",
     "typescript": "^5.1.3"
   },
   "devDependencies": {
     "@types/jest": "^29.5.2",
-    "@types/node": "^18.16.17"
+    "@types/node": "^18.16.18"
   }
 }

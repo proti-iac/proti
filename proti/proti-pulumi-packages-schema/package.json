@@ -25,15 +25,15 @@
   },
   "dependencies": {
     "@proti/core": "workspace:^",
-    "@pulumi/pulumi": "^3.70.0",
+    "@pulumi/pulumi": "^3.72.2",
     "fast-check": "^3.10.0",
-    "typia": "^4.0.5"
+    "ts-patch": "3.0.0",
+    "typia": "^4.1.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.2",
-    "@types/node": "^18.16.17",
+    "@types/node": "^18.16.18",
     "pure-rand": "^6.0.2",
-    "ts-patch": "3.0.0-beta3",
     "typescript": "^5.1.3"
   }
 }
