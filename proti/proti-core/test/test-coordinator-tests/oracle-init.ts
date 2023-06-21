@@ -1,13 +1,32 @@
-import type { ResourceOracle, TestResult } from '../../src/oracle';
+/* eslint-disable class-methods-use-this */
+import type {
+	AsyncDeploymentOracle,
+	AsyncResourceOracle,
+	DeploymentOracle,
+	ResourceOracle,
+} from '../../src/oracle';
 import type { TestModuleConfig, TestModuleInitFn } from '../../src/test-coordinator';
 
-class Oracle implements ResourceOracle {
+class Oracle
+	implements
+		ResourceOracle<{}>,
+		AsyncResourceOracle<{}>,
+		DeploymentOracle<{}>,
+		AsyncDeploymentOracle<{}>
+{
 	name = 'Test';
 
 	description = 'Test';
 
-	// eslint-disable-next-line class-methods-use-this
-	validateResource = (): TestResult => undefined;
+	newRunState = () => ({});
+
+	validateResource = () => undefined;
+
+	asyncValidateResource = async () => undefined;
+
+	validateDeployment = () => undefined;
+
+	asyncValidateDeployment = async () => undefined;
 }
 
 export default Oracle;

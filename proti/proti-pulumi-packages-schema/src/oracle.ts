@@ -215,7 +215,7 @@ export const enumTypeDefinitionValidator: EnumTypeDefinitionTransform<Validator>
 		return true;
 	};
 
-export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
+export class PulumiPackagesSchemaOracle implements AsyncResourceOracle<undefined> {
 	name = 'Pulumi Packages Schema Types';
 
 	description =
@@ -245,6 +245,9 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle {
 	constructor(private readonly conf: OracleConfig = config().oracle) {
 		[this.validatorCache, this.appendValidatorCache] = createAppendOnlyMap();
 	}
+
+	// eslint-disable-next-line class-methods-use-this
+	newRunState = () => undefined;
 
 	private async generateValidator(resourceType: string): Promise<Validator> {
 		let resDef = await this.registry.getResource(resourceType);

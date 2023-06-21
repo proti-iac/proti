@@ -18,18 +18,16 @@ import {
 	Oracle,
 	OracleMetadata,
 	TestResult,
+	AbstractOracle,
 } from './oracle';
 import { createAppendOnlyArray, DeepReadonly } from './utils';
 
-type OracleClass = DeepReadonly<{
-	Ctor: { new (): Oracle };
-	isResourceOracle: boolean;
-	isAsyncResourceOracle: boolean;
-	isDeploymentOracle: boolean;
-	isAsyncDeploymentOracle: boolean;
-	delayedInstantiation: boolean;
-}>;
-type OracleClasses = ReadonlyArray<OracleClass>;
+type Oracles = {
+	resource: ResourceOracle<unknown>[];
+	asyncResource: AsyncResourceOracle<unknown>[];
+	deployment: DeploymentOracle<unknown>[];
+	asyncDeployment: AsyncDeploymentOracle<unknown>[];
+};
 
 type Fail = DeepReadonly<{
 	oracle: OracleMetadata;
@@ -46,15 +44,13 @@ export type TestModuleConfig = Readonly<{
 }>;
 export type TestModuleInitFn = (config: TestModuleConfig) => Promise<void>;
 
+type OracleWithState<O extends AbstractOracle<S>, S = unknown> = readonly [O, S];
+type UnpackArray<T> = T extends (infer U)[] ? U : never;
+
 export class TestRunCoordinator {
 	private readonly oracles: DeepReadonly<{
-		resource: ResourceOracle[];
-		asyncResource: AsyncResourceOracle[];
-		deployment: DeploymentOracle[];
-		asyncDeployment: AsyncDeploymentOracle[];
+		[K in keyof Oracles]: readonly OracleWithState<UnpackArray<Oracles[K]>>[];
 	}>;
-
-	private readonly delayedInstantiation: OracleClasses;
 
 	public readonly fails: ReadonlyArray<Fail>;
 
@@ -73,16 +69,18 @@ export class TestRunCoordinator {
 
 	public readonly isDone: Promise<void>;
 
-	constructor(private readonly generator: Generator, oracleClasses: OracleClasses) {
+	constructor(private readonly generator: Generator, oracles: DeepReadonly<Oracles>) {
 		[this.fails, this.appendFail] = createAppendOnlyArray<Fail>();
 		[this.pendingTests, this.appendPendingTest] = createAppendOnlyArray<Promise<TestResult>>();
-		const delayedInstantiation: OracleClass[] = [];
-		const directInstantiation = oracleClasses.filter((oracleClass) => {
-			if (oracleClass.delayedInstantiation) delayedInstantiation.push(oracleClass);
-			return !oracleClass.delayedInstantiation;
-		});
-		this.delayedInstantiation = delayedInstantiation;
-		this.oracles = this.initOracles(directInstantiation);
+		const toOracleWithState = <O extends AbstractOracle<S>, S>(
+			oracle: O
+		): OracleWithState<O, S> => [oracle, oracle.newRunState()];
+		this.oracles = {
+			resource: oracles.resource.map(toOracleWithState),
+			asyncResource: oracles.asyncResource.map(toOracleWithState),
+			deployment: oracles.deployment.map(toOracleWithState),
+			asyncDeployment: oracles.asyncDeployment.map(toOracleWithState),
+		};
 		this.isDone = new Promise((resolve) => {
 			this.complete = () => {
 				this.done = true;
@@ -91,26 +89,7 @@ export class TestRunCoordinator {
 		});
 	}
 
-	private initOracles(testClasses: OracleClasses): typeof this.oracles {
-		const oracles = {
-			resource: [] as ResourceOracle[],
-			asyncResource: [] as AsyncResourceOracle[],
-			deployment: [] as DeploymentOracle[],
-			asyncDeployment: [] as AsyncDeploymentOracle[],
-		};
-		testClasses.forEach((oracle) => {
-			const test = new oracle.Ctor();
-			if (oracle.isResourceOracle) oracles.resource.push(test as ResourceOracle);
-			if (oracle.isAsyncResourceOracle)
-				oracles.asyncResource.push(test as AsyncResourceOracle);
-			if (oracle.isDeploymentOracle) oracles.deployment.push(test as DeploymentOracle);
-			if (oracle.isAsyncDeploymentOracle)
-				oracles.asyncDeployment.push(test as AsyncDeploymentOracle);
-		});
-		return oracles;
-	}
-
-	private handleAsyncResolut(
+	private handleAsyncResult(
 		test: OracleMetadata,
 		asyncResult: Promise<TestResult>,
 		resource?: ResourceArgs,
@@ -139,32 +118,28 @@ export class TestRunCoordinator {
 
 	public validateResource(resource: ResourceArgs): void {
 		if (this.done) return;
-		this.oracles.asyncResource.forEach((oracle) => {
+		this.oracles.asyncResource.forEach(([oracle, state]) => {
 			if (this.done) return;
-			this.handleAsyncResolut(oracle, oracle.asyncValidateResource(resource), resource);
+			this.handleAsyncResult(oracle, oracle.asyncValidateResource(resource, state), resource);
 		});
-		this.oracles.resource.forEach((oracle) => {
+		this.oracles.resource.forEach(([oracle, state]) => {
 			if (this.done) return;
-			this.handleResult(oracle, oracle.validateResource(resource), resource);
+			this.handleResult(oracle, oracle.validateResource(resource, state), resource);
 		});
 	}
 
 	public validateDeployment(deployment: DeploymentOracleArgs): void {
 		if (this.done) return;
-		this.initOracles(this.delayedInstantiation);
 
-		this.oracles.asyncDeployment.forEach((oracle) => {
+		this.oracles.asyncDeployment.forEach(([oracle, state]) => {
 			if (this.done) return;
-			this.handleAsyncResolut(
-				oracle,
-				oracle.asyncValidateDeployment(deployment),
-				undefined,
-				deployment
-			);
+			const result = oracle.asyncValidateDeployment(deployment, state);
+			this.handleAsyncResult(oracle, result, undefined, deployment);
 		});
-		this.oracles.deployment.forEach((oracle) => {
+		this.oracles.deployment.forEach(([oracle, state]) => {
 			if (this.done) return;
-			this.handleResult(oracle, oracle.validateDeployment(deployment), undefined, deployment);
+			const result = oracle.validateDeployment(deployment, state);
+			this.handleResult(oracle, result, undefined, deployment);
 		});
 
 		Promise.all(this.pendingTests).then(() => this.complete());
@@ -176,7 +151,7 @@ export class TestRunCoordinator {
 }
 
 export class TestCoordinator {
-	public readonly oracles: Promise<OracleClasses>;
+	public readonly oracles: Promise<DeepReadonly<Oracles>>;
 
 	public readonly arbitrary: Promise<fc.Arbitrary<Generator>>;
 
@@ -193,27 +168,29 @@ export class TestCoordinator {
 			await assertEquals<TestModuleInitFn>(module.init)(this.testModuleConfig);
 	}
 
-	private loadOracles(): Promise<OracleClasses> {
-		const oracleClasses = this.config.oracles.map(async (moduleName) => {
-			const oracleModule = await import(moduleName);
-			await this.initTestModule(oracleModule);
-			const OracleConstructor = oracleModule.default;
-			const oracle = new OracleConstructor();
-			const isOracle = {
-				isAsyncDeploymentOracle: isAsyncDeploymentOracle(oracle),
-				isAsyncResourceOracle: isAsyncResourceOracle(oracle),
-				isDeploymentOracle: isDeploymentOracle(oracle),
-				isResourceOracle: isResourceOracle(oracle),
-			};
-			if (Object.values(isOracle).every((b) => b === false))
-				throw new Error(`Configured oracle has invalid interface: ${moduleName}`);
-			return {
-				Ctor: OracleConstructor,
-				...isOracle,
-				delayedInstantiation: !isOracle.isResourceOracle && !isOracle.isAsyncResourceOracle,
-			};
-		});
-		return Promise.all(oracleClasses);
+	private async loadOracles(): Promise<Oracles> {
+		const oracles: Oracles = {
+			resource: [],
+			asyncResource: [],
+			deployment: [],
+			asyncDeployment: [],
+		};
+		await Promise.all(
+			this.config.oracles.map(async (moduleName) => {
+				const oracleModule = await import(moduleName);
+				await this.initTestModule(oracleModule);
+				const OracleConstructor = oracleModule.default;
+				const oracle = new OracleConstructor();
+
+				if (isResourceOracle(oracle)) oracles.resource.push(oracle);
+				if (isAsyncResourceOracle(oracle)) oracles.asyncResource.push(oracle);
+				if (isDeploymentOracle(oracle)) oracles.deployment.push(oracle);
+				if (isAsyncDeploymentOracle(oracle)) oracles.asyncDeployment.push(oracle);
+				if (!is<Oracle<unknown>>(oracle))
+					throw new Error(`Configured oracle has invalid interface: ${moduleName}`);
+			})
+		);
+		return oracles;
 	}
 
 	private async loadArbitrary(): Promise<Arbitrary<Generator>> {

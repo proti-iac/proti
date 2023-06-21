@@ -16,8 +16,9 @@ describe('type guards', () => {
 			asyncValidateResource: fc.constant(() => {}),
 			validateDeployment: fc.constant(() => {}),
 			asyncValidateDeployment: fc.constant(() => {}),
+			newRunState: fc.constant(() => {}),
 		},
-		{ requiredKeys: ['name'] }
+		{ requiredKeys: ['name', 'newRunState'] }
 	);
 
 	it.each([

@@ -11,40 +11,56 @@ export type OracleMetadata = Readonly<{
 	name: string;
 	description?: string;
 }>;
-const isOracleMetadata: (val: unknown) => val is OracleMetadata = createIs<OracleMetadata>();
+const isOracleMetadata = createIs<OracleMetadata>();
 
-export interface ResourceOracle extends OracleMetadata {
-	readonly validateResource: (resource: ResourceArgs) => TestResult;
+export interface AbstractOracle<S> extends OracleMetadata {
+	/**
+	 * Create the oracle's state for a new test run. The returned new state,
+	 * e.g., a mutable object, is passed to all validation calls on the oracle
+	 * in the same test run.
+	 * @returns New oracle test run state.
+	 */
+	readonly newRunState: () => S;
 }
-export const isResourceOracle = (val: any): val is ResourceOracle =>
-	typeof val?.validateResource === 'function' && isOracleMetadata(val);
+const isAbstractOracle = (val: any): val is AsyncResourceOracle<unknown> =>
+	typeof val?.newRunState === 'function' && isOracleMetadata(val);
 
-export interface AsyncResourceOracle extends OracleMetadata {
-	readonly asyncValidateResource: (resource: ResourceArgs) => Promise<TestResult>;
+export interface ResourceOracle<S> extends AbstractOracle<S> {
+	readonly validateResource: (resource: ResourceArgs, runState: S) => TestResult;
 }
-export const isAsyncResourceOracle = (val: any): val is AsyncResourceOracle =>
-	typeof val?.asyncValidateResource === 'function' && isOracleMetadata(val);
+export const isResourceOracle = (val: any): val is ResourceOracle<unknown> =>
+	typeof val?.validateResource === 'function' && isAbstractOracle(val);
+
+export interface AsyncResourceOracle<S> extends AbstractOracle<S> {
+	readonly asyncValidateResource: (resource: ResourceArgs, runState: S) => Promise<TestResult>;
+}
+export const isAsyncResourceOracle = (val: any): val is AsyncResourceOracle<unknown> =>
+	typeof val?.asyncValidateResource === 'function' && isAbstractOracle(val);
 
 export type DeploymentOracleArgs = DeepReadonly<MockMonitor['resources']>;
 
-export interface DeploymentOracle extends OracleMetadata {
-	readonly validateDeployment: (resources: DeploymentOracleArgs) => TestResult;
+export interface DeploymentOracle<S> extends AbstractOracle<S> {
+	readonly validateDeployment: (resources: DeploymentOracleArgs, runState: S) => TestResult;
 }
-export const isDeploymentOracle = (val: any): val is DeploymentOracle =>
-	typeof val?.validateDeployment === 'function' && isOracleMetadata(val);
+export const isDeploymentOracle = (val: any): val is DeploymentOracle<unknown> =>
+	typeof val?.validateDeployment === 'function' && isAbstractOracle(val);
 
-export interface AsyncDeploymentOracle extends OracleMetadata {
-	readonly asyncValidateDeployment: (resources: DeploymentOracleArgs) => Promise<TestResult>;
+export interface AsyncDeploymentOracle<S> extends AbstractOracle<S> {
+	readonly asyncValidateDeployment: (
+		resources: DeploymentOracleArgs,
+		runState: S
+	) => Promise<TestResult>;
 }
-export const isAsyncDeploymentOracle = (val: any): val is AsyncDeploymentOracle =>
-	typeof val?.asyncValidateDeployment === 'function' && isOracleMetadata(val);
+export const isAsyncDeploymentOracle = (val: any): val is AsyncDeploymentOracle<unknown> =>
+	typeof val?.asyncValidateDeployment === 'function' && isAbstractOracle(val);
 
-export type Oracle =
-	| AsyncDeploymentOracle
-	| AsyncResourceOracle
-	| DeploymentOracle
-	| ResourceOracle;
-export const isOracle = (val: unknown): val is Oracle =>
+export type Oracle<S> =
+	| AsyncDeploymentOracle<S>
+	| AsyncResourceOracle<S>
+	| DeploymentOracle<S>
+	| ResourceOracle<S>;
+
+export const isOracle = (val: unknown): val is Oracle<unknown> =>
 	isAsyncDeploymentOracle(val) ||
 	isAsyncResourceOracle(val) ||
 	isDeploymentOracle(val) ||

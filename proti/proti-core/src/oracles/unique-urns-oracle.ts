@@ -1,16 +1,18 @@
 import type { ResourceOracle, ResourceArgs, TestResult } from '../oracle';
 
-export class UniqueUrnsOracle implements ResourceOracle {
+export class UniqueUrnsOracle implements ResourceOracle<Set<string>> {
 	name = 'Unique URNs';
 
 	description = 'Checks that the URNs of all resources are not duplicated';
 
-	private urns: Set<string> = new Set();
+	// eslint-disable-next-line class-methods-use-this
+	newRunState = () => new Set<string>();
 
-	validateResource = (resource: ResourceArgs): TestResult => {
-		if (this.urns.has(resource.urn))
+	// eslint-disable-next-line class-methods-use-this
+	validateResource = (resource: ResourceArgs, urns: Set<string>): TestResult => {
+		if (urns.has(resource.urn))
 			return new Error(`Duplicated definition of resource ${resource.urn}`);
-		this.urns.add(resource.urn);
+		urns.add(resource.urn);
 		return undefined;
 	};
 }
