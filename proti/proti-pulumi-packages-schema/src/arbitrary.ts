@@ -213,7 +213,12 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 		const cachedArbitrary = this.arbitraryCache.get(`#/resources/${resourceType}`);
 		if (cachedArbitrary) return cachedArbitrary;
 		const newArbitrary = this.generateArbitrary(resourceType).catch((cause) => {
-			throw new Error('Failed to generate resource arbitrary', { cause });
+			throw new Error(
+				`Failed to generate resource arbitrary${
+					cause?.message ? `: ${cause.message}` : ''
+				}`,
+				{ cause }
+			);
 		});
 		if (this.conf.cacheArbitraries)
 			this.appendArbitraryCache(`#/resources/${resourceType}`, newArbitrary);
