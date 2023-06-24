@@ -169,7 +169,7 @@ export const propertyDefinitionValidator: PropertyDefinitionTransform<Validator>
 export const constValidator: ConstTransform<Validator> =
 	async (constant, path) =>
 	(value: unknown): value is unknown => {
-		if (value === constant) return true;
+		if (value === constant || (Number.isNaN(value) && Number.isNaN(constant))) return true;
 		throw new Error(`${path} is not ${JSON.stringify(constant)}`);
 	};
 
