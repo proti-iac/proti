@@ -22,6 +22,7 @@
     "lint": "yarn g:lint",
     "g:test": "yarn g:pkgroot $INIT_CWD tsconfig.json test 'yarn build && INIT_CWD=$(pwd) && cd $PROJECT_CWD && jest --roots $INIT_CWD'",
     "test": "yarn build && yarn jest",
+    "pack:all": "yarn workspaces foreach -vi  --topological-dev --exclude proti-monorepo  pack --out ../%s@%v.tgz",
     "g:prepack": "yarn g:pkgroot $INIT_CWD package.json prepack 'yarn clean && yarn build'",
     "prepack": "yarn g:all prepack '-vip --topological-dev'",
     "postinstall": "ts-patch install"
