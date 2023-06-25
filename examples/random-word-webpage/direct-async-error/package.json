@@ -2,11 +2,11 @@
     "name": "random-word-webpage-direct-async-error",
     "main": "index.ts",
     "devDependencies": {
-        "@types/node": "^18"
+        "@types/node": "^20.3.1"
     },
     "dependencies": {
-        "@pulumi/aws": "^5.39.0",
-        "@pulumi/pulumi": "^3.65.1",
-        "@pulumi/random": "^4.13.0"
+        "@pulumi/aws": "^5.41.0",
+        "@pulumi/pulumi": "^3.73.0",
+        "@pulumi/random": "^4.13.2"
     }
 }
