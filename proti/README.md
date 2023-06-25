@@ -21,6 +21,10 @@ The module maintains a registry that maps Pulumi resource type strings to their 
 
 # Known Issues
 
+## Resolving Pulumi Package Schemas
+
+Since Pulumi version 3.72.0 retrieving package schemas of Pulumi packages that are not installed yet leads to a panic in Pulumi's CLI. In ProTI, this means such schemas cannot be resolved. Workaround: Use Pulumi 3.71.0 or below or make sure that all use Pulumi packages are already installed. Bug report on GitHub: https://github.com/pulumi/pulumi/issues/13279
+
 ## Parallel Test Runner
 
 Problem: We use our own Jest runner `@proti/runner` to pass down the resolver to the test runner `@proti/test-runner`. This works well in single process execution. However, currently parallel multi-process execution is broken, most likely because serialization and deserialization of the resolver fails when Jest passes the resolver to the separate test runner processes.
