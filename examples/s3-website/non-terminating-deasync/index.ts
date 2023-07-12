@@ -1,0 +1,56 @@
+import * as pulumi from '@pulumi/pulumi';
+import * as aws from '@pulumi/aws';
+import { loopWhile } from 'deasync';
+
+// Deasync is used in Pulumi 1.x. It is horrible and alters the event loop in a
+// weird waz. It was removed from Pulumi; however, to be compatible with old
+// programs, we may want to test against it.
+
+// Create an AWS resource (S3 Bucket)
+const bucket = new aws.s3.Bucket('website', { website: { indexDocument: 'index.html' } });
+const index = new aws.s3.BucketObject('index', {
+	bucket, // Direct dependency
+	content: pulumi.interpolate`
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Hello world!</title>
+	</head>
+	<body>
+		<p>Versioning enabled: ${bucket.versioning.enabled}</p>
+	</body>
+</html>`, // Lifting inside interpolation dependency
+	key: 'index.html',
+	contentType: 'text/html; charset=utf-8',
+});
+
+// Set the public access policy requires updating ownership controls and disabling block public access since May 2023 
+const ownershipControls = new aws.s3.BucketOwnershipControls("ownership-controls", {
+    bucket: bucket.id,
+    rule: { objectOwnership: "ObjectWriter" }
+});
+const publicAccessBlock = new aws.s3.BucketPublicAccessBlock("public-access-block", {
+    bucket: bucket.id,
+    blockPublicAcls: false,
+});
+// Set the access policy for the bucket so all objects are readable
+const bucketPolicy = new aws.s3.BucketPolicy('bucketPolicy', {
+	bucket: bucket.bucket, // Direct dependency
+	policy: {
+		Version: '2012-10-17',
+		Statement: [
+			{
+				Effect: 'Allow',
+				Principal: '*',
+				Action: 's3:GetObject',
+				Resource: pulumi.interpolate`${bucket.arn}/*`, // Interpolation dependency
+			},
+		],
+	},
+}, { dependsOn: ownershipControls });
+
+// Export the name of the bucket
+export const url = bucket.websiteEndpoint; // Direct dependency
+
+// Deasync busy wait
+loopWhile(() => true)
