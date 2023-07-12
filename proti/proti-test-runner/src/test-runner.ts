@@ -172,6 +172,21 @@ const runProti = async (
 			// Load MockMonitor from ProTI's Pulumi instance into the PUT's Pulumi instance
 			programPulumi.runtime.setMockOptions(monitor);
 
+			// Hard timeout for asnyc and deasync code that fast-check's softer
+			// timeout cannot handle. The hard timeout breaks ProTI's execution
+			// and takes one second longer to ensure fast-check's timeout is
+			// used whenever possible. Finally, sync code that blocks the event
+			// loop can also not be interrupted by this.
+			if (proti.testRunner.timeout) {
+				const hardTimeout = proti.testRunner.timeout + 1000;
+				setTimeout(() => {
+					const err =
+						'🤯🧨 ProTI failed with a hard timeout. 💥 ' +
+						`The program execution took longer than ${hardTimeout}ms. ` +
+						'You may want to check the program under test for deadlocks or increase the timeout.';
+					throw new Error(err);
+				}, hardTimeout);
+			}
 			const runStart = now();
 			await moduleLoader.execProgram().catch((error) => errors.push(error));
 			errors.push(...(await outputsWaiter.isCompleted()));

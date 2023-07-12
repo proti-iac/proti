@@ -38,13 +38,24 @@ describe('runner end-to-end', () => {
 		expect(() => cp.execSync(jestCmd([project], jestConfig)).toString()).not.toThrow();
 	});
 
-	it('should timeout examples/s3-website/non-terminating-async', () => {
+	it('should soft timeout examples/s3-website/non-terminating-async', () => {
 		const project = '../../../examples/s3-website/non-terminating-async';
 		const runnerConfig = {
 			/** If not set, it will not timeout */
 			timeout: 2000,
 		};
 		expect(() => cp.execSync(jestCmd([project], {}, runnerConfig))).toThrow('Property timeout');
+	});
+
+	it('should hard timeout examples/s3-website/non-terminating-deasync', () => {
+		const project = '../../../examples/s3-website/non-terminating-deasync';
+		const runnerConfig = {
+			/** If not set, it will not timeout */
+			timeout: 2000,
+		};
+		expect(() => cp.execSync(jestCmd([project], {}, runnerConfig))).toThrow(
+			'ProTI failed with a hard timeout.'
+		);
 	});
 
 	/* Does not work because it blocks event loop */
