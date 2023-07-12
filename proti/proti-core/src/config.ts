@@ -11,7 +11,14 @@ export const defaultTestCoordinatorConfig = () => ({
 });
 export type TestCoordinatorConfig = DeepReadonly<ReturnType<typeof defaultTestCoordinatorConfig>>;
 
-export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> => ({});
+export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> & {
+	/**
+	 * Timeout for a single run of the program under test. Only works on async
+	 * programs. If the program blocks the event loop, e.g., through busy
+	 * waiting, the timeout does not work.
+	 */
+	timeout?: number;
+} => ({});
 export type TestRunnerConfig = DeepReadonly<ReturnType<typeof defaultTestRunnerConfig>>;
 
 export const defaultModuleLoadingConfig = () => ({
