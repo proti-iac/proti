@@ -21,12 +21,16 @@ describe('runner end-to-end', () => {
 		expect(() => cp.execSync(jestCmd([project])).toString()).not.toThrow()
 	);
 
+	it.concurrent.each(['abc'])('should fail on %s', (project) => {
+		expect(() => cp.execSync(jestCmd([project]))).toThrow('Command failed:');
+	});
+
 	it.concurrent.each([
-		'abc',
 		'../../../examples/s3-website/invalid',
 		'../../../examples/s3-website/flat-throws',
+		'../../../examples/s3-website/flat-throws-async',
 	])('should fail on %s', (project) => {
-		expect(() => cp.execSync(jestCmd([project]))).toThrow('Command failed');
+		expect(() => cp.execSync(jestCmd([project]))).toThrow('ProTI found');
 	});
 
 	it('should terminate examples/s3-website/non-terminating-async-open-handle', () => {

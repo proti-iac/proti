@@ -70,8 +70,11 @@ const getGlobals = async (
 
 // Make sure we ignore "unhandledRejection" or errors that we actually caught
 const ignoreUnhandledRejectionErrors: Set<Error> = new Set();
+let notifyUnhandledRejection: ((error: Error) => void) | undefined;
 process.on('unhandledRejection', (err: Error) => {
-	if (!ignoreUnhandledRejectionErrors.has(err)) throw err;
+	if (!ignoreUnhandledRejectionErrors.has(err))
+		if (notifyUnhandledRejection !== undefined) notifyUnhandledRejection(err);
+		else throw err;
 });
 
 const runProti = async (
@@ -150,6 +153,9 @@ const runProti = async (
 		// eslint-disable-next-line no-plusplus
 		const runId = ++runIdCounter;
 		const errors: Error[] = [];
+		const unhandledRejection = new Promise<void>((_, reject) => {
+			notifyUnhandledRejection = reject;
+		}).catch((err) => errors.push(err));
 		const testRunCoordinator = await testCoordinator.newRunCoordinator(generator);
 		await runtime.isolateModulesAsync(async () => {
 			outputsWaiter.reset();
@@ -187,11 +193,23 @@ const runProti = async (
 					throw new Error(err);
 				}, hardTimeout);
 			}
+
 			const runStart = now();
-			await moduleLoader.execProgram().catch((error) => errors.push(error));
-			errors.push(...(await outputsWaiter.isCompleted()));
+			await Promise.race([
+				unhandledRejection,
+				moduleLoader.execProgram().catch((error) => errors.push(error)),
+			]);
+			errors.push(
+				...(await Promise.race([
+					unhandledRejection.then(() => []),
+					outputsWaiter.isCompleted(),
+				]))
+			);
+			// Give remaining async code a chance to settle
+			await new Promise(setImmediate);
 			// Skips deployment validation if an error was found already
 			await Promise.race([
+				unhandledRejection,
 				(async () => {
 					testRunCoordinator.validateDeployment(monitor.resources);
 					await testRunCoordinator.isDone;
@@ -211,6 +229,7 @@ const runProti = async (
 				);
 			});
 			const runEnd = now();
+			notifyUnhandledRejection = undefined;
 			runStats.push({
 				title: `Check program (run ${runId})`,
 				start: nsToMs(runStart),
