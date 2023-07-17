@@ -42,7 +42,7 @@ const bucketPolicy = new aws.s3.BucketPolicy('bucketPolicy', {
 			},
 		],
 	},
-}, { dependsOn: ownershipControls });
+}, { dependsOn: [bucket, publicAccessBlock, ownershipControls] });
 
 // Export the name of the bucket
 export const url = bucket.websiteEndpoint; // Direct dependency
