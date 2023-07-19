@@ -113,7 +113,7 @@ const runProti = async (
 	if (!preloads.has('@pulumi/pulumi')) throw new Error('Did not to preload @pulumi/pulumi');
 	const programPulumi = preloads.get('@pulumi/pulumi') as typeof pulumi;
 	if (!preloads.has('@pulumi/pulumi/output'))
-		throw new Error('Did not to preload @pulumi/pulumi/output');
+		throw new Error('Did not preload @pulumi/pulumi/output');
 	const programPulumiOutput = preloads.get('@pulumi/pulumi/output') as typeof pulumiOutput;
 	const outputsWaiter = new MutableWaiter();
 
@@ -221,8 +221,8 @@ const runProti = async (
 			testRunCoordinator.fails.forEach((fail) => {
 				errors.push(
 					new Error(
-						`Oracle "${fail.oracle.name}" failed on ${
-							fail.resource ? `${fail.resource.urn}` : 'deployment'
+						`Oracle "${fail.oracle.name}" found a 🐞 in ${
+							fail?.resource?.urn || 'the deployment'
 						}`,
 						{ cause: fail.error }
 					)
