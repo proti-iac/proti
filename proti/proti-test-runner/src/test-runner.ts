@@ -35,7 +35,7 @@ const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
 type AppendAccompanyingResult = (accompanyingResult: Result) => void;
 const makeAccompanyingTest =
 	(appendResult: AppendAccompanyingResult) =>
-	async <T>(title: string, test: Promise<T>): Promise<T> => {
+	async <T>(title: string, test: Promise<T> | T): Promise<T> => {
 		const start = now();
 		const result = (partialResult: Partial<Result>): void => {
 			const end = now();
@@ -48,7 +48,7 @@ const makeAccompanyingTest =
 				...partialResult,
 			});
 		};
-		const resultVal = errMsg(test, `Failed to ${title}`);
+		const resultVal = errMsg(Promise.resolve(test), `Failed to ${title}`);
 		resultVal.then(() => result({})).catch((e) => result({ errors: [e as Error] }));
 		return resultVal;
 	};
@@ -92,14 +92,6 @@ const runProti = async (
 		'Read Pulumi.yaml',
 		readPulumiProject(testPath)
 	);
-	const moduleLoader = new ModuleLoader(
-		config,
-		proti.moduleLoading,
-		runtime,
-		resolver,
-		hasteFS,
-		pulumiProject.main
-	);
 
 	if (config.injectGlobals) {
 		const globals = {
@@ -108,7 +100,19 @@ const runProti = async (
 		Object.assign(environment.global, globals);
 	}
 
-	await runAccompanyingTest('Transform program', moduleLoader.transformProgram());
+	const resolveAndTransform = async () => {
+		const modLoader = await ModuleLoader.create(
+			config,
+			proti.moduleLoading,
+			runtime,
+			resolver,
+			hasteFS,
+			pulumiProject.main
+		);
+		modLoader.transformProgram();
+		return modLoader;
+	};
+	const moduleLoader = await runAccompanyingTest('Transform program', resolveAndTransform());
 	const preloads = await runAccompanyingTest('Preload modules', moduleLoader.preload());
 	if (!preloads.has('@pulumi/pulumi')) throw new Error('Did not to preload @pulumi/pulumi');
 	const programPulumi = preloads.get('@pulumi/pulumi') as typeof pulumi;
@@ -195,10 +199,11 @@ const runProti = async (
 			}
 
 			const runStart = now();
-			await Promise.race([
-				unhandledRejection,
-				moduleLoader.execProgram().catch((error) => errors.push(error)),
-			]);
+			try {
+				moduleLoader.execProgram();
+			} catch (error) {
+				errors.push(error as Error);
+			}
 			errors.push(
 				...(await Promise.race([
 					unhandledRejection.then(() => []),

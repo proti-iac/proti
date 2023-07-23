@@ -21,8 +21,20 @@ describe('runner end-to-end', () => {
 		expect(() => cp.execSync(jestCmd([project])).toString()).not.toThrow()
 	);
 
-	it.concurrent.each(['abc'])('should fail on %s', (project) => {
-		expect(() => cp.execSync(jestCmd([project]))).toThrow('Command failed:');
+	it('should fail on non-existing project', () => {
+		expect(() => cp.execSync(jestCmd(['abc']))).toThrow('Command failed:');
+	});
+
+	it('should fail transforming if main from Pulumi.yaml cannot be resolved', () => {
+		let error: Error | undefined;
+		try {
+			cp.execSync(jestCmd(['../../../examples/s3-website/no-program']));
+		} catch (e) {
+			error = e as Error;
+		}
+		expect(error).toBeDefined();
+		expect(error?.message).toMatch(/Error: Failed to Transform program/);
+		expect(error?.message).toMatch(/Failed to resolve program from path/);
 	});
 
 	it.concurrent.each([

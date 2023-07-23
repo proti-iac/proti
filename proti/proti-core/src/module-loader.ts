@@ -9,56 +9,58 @@ import type { ModuleLoadingConfig } from './config';
 import { DeepReadonly, errMsg } from './utils';
 
 export class ModuleLoader {
-	private readonly log: (msg: string) => void;
-
-	private readonly dependencyResolver: Promise<DependencyResolver>;
-
-	private readonly program: Promise<string>;
-
-	private readonly programDependencies: Promise<ReadonlyArray<string>>;
-
-	private readonly preloads: Promise<ReadonlyArray<string>>;
-
 	public readonly modules: () => ReadonlyMap<string, unknown>;
 
 	public readonly mockedModules: () => ReadonlyMap<string, unknown>;
 
 	public readonly isolatedModules: () => ReadonlyMap<string, unknown>;
 
-	constructor(
-		projectConfig: DeepReadonly<Config.ProjectConfig>,
+	private constructor(
+		private readonly program: string,
 		private readonly config: ModuleLoadingConfig,
 		private readonly runtime: Runtime,
-		private readonly resolver: Resolver,
-		hasteFS: IHasteFS,
-		programPath: string
+		private readonly programDependencies: ReadonlyArray<string>,
+		private readonly preloads: ReadonlyArray<string>,
+		private readonly log: (msg: string) => void
 	) {
-		this.log = config.verbose ? console.log : () => {};
 		// eslint-disable-next-line no-underscore-dangle
 		this.modules = () => (runtime as any)._moduleRegistry || new Map();
 		// eslint-disable-next-line no-underscore-dangle
 		this.mockedModules = () => (runtime as any)._isolatedMockRegistry || new Map();
 		// eslint-disable-next-line no-underscore-dangle
 		this.isolatedModules = () => (runtime as any)._isolatedModuleRegistry || new Map();
-		this.program = this.resolveProgram(programPath);
-		this.dependencyResolver = (async () =>
-			new DependencyResolver(
-				resolver,
-				hasteFS,
-				await buildSnapshotResolver(projectConfig as Config.ProjectConfig)
-			))();
-		this.programDependencies = this.findProgramDependencies();
-		this.preloads = this.findPreloads();
 	}
 
-	public preload = async (): Promise<ReadonlyMap<string, unknown>> => {
-		const program = await this.program;
+	public static create = async (
+		projectConfig: DeepReadonly<Config.ProjectConfig>,
+		config: ModuleLoadingConfig,
+		runtime: Runtime,
+		resolver: Resolver,
+		hasteFS: IHasteFS,
+		programPath: string
+	): Promise<ModuleLoader> => {
+		const log = config.verbose ? console.log : () => {};
+		const program = await this.resolveProgram(programPath, resolver, log);
+		const dependencyResolver = new DependencyResolver(
+			resolver,
+			hasteFS,
+			await buildSnapshotResolver(projectConfig as Config.ProjectConfig)
+		);
+		const programDependencies = this.resolveDependenciesRecursively(
+			program,
+			dependencyResolver
+		);
+		const preloads = this.findPreloads(config, programDependencies);
+		return new ModuleLoader(program, config, runtime, programDependencies, preloads, log);
+	};
+
+	public preload = (): ReadonlyMap<string, unknown> => {
 		// eslint-disable-next-line no-underscore-dangle
 		const modulesBefore = this.modules().size;
 		const preloads: ReadonlyMap<string, unknown> = new Map(
-			(await this.preloads).map((preload) => {
-				this.log(`Preloading ${preload} in ${program}`);
-				return [preload, this.runtime.requireActual(program, preload)];
+			this.preloads.map((preload) => {
+				this.log(`Preloading ${preload} in ${this.program}`);
+				return [preload, this.runtime.requireActual(this.program, preload)];
 			})
 		);
 		this.log(`Preloaded ${this.modules().size - modulesBefore} modules`);
@@ -71,8 +73,8 @@ export class ModuleLoader {
 	 * Transforms program including its dependencies. Can be used to trigger code transformation
 	 * eplicitely before its execution, e.g., with `execProgram`.
 	 */
-	public transformProgram = async (): Promise<void> => {
-		const programModules = [await this.program, ...(await this.programDependencies)];
+	public transformProgram = (): void => {
+		const programModules = [this.program, ...this.programDependencies];
 		const logModules = this.config.showTransformed ? [':', ...programModules].join('\n') : '';
 		this.log(`Transforming ${programModules.length} modules${logModules}`);
 		programModules.forEach((module) => (this.runtime as any).transformFile(module));
@@ -82,10 +84,9 @@ export class ModuleLoader {
 	 * Loads the program module, causing it to execute. Reuses transformed version in cache.
 	 * @returns Loaded program module.
 	 */
-	public execProgram = async <T>(): Promise<T> => {
-		const program = await this.program;
-		this.log(`Loading program ${program}`);
-		const module: T = this.runtime.requireActual(program, '.');
+	public execProgram = <T>(): T => {
+		this.log(`Loading program ${this.program}`);
+		const module: T = this.runtime.requireActual(this.program, '.');
 		this.log(
 			`Loaded ${this.modules().size} global modules (${this.mockedModules().size} shared, ${
 				this.isolatedModules().size
@@ -98,29 +99,32 @@ export class ModuleLoader {
 		return module;
 	};
 
-	public mockModules = async (modules: ReadonlyMap<string, unknown>) => {
-		const program = await this.program;
-		modules.forEach((module, name) => this.runtime.setMock(program, name, () => module));
+	public mockModules = (modules: ReadonlyMap<string, unknown>) => {
+		modules.forEach((module, name) => this.runtime.setMock(this.program, name, () => module));
 	};
 
-	private resolveProgram = async (programPath: string): Promise<string> =>
+	private static resolveProgram = async (
+		programPath: string,
+		resolver: Resolver,
+		log: (msg: string) => void
+	): Promise<string> =>
 		errMsg(
-			this.resolver
+			resolver
 				.resolveModuleAsync(programPath, '.')
-				.catch(() => this.resolver.resolveModuleFromDirIfExists(programPath, '.'))
+				.catch(() => resolver.resolveModuleFromDirIfExists(programPath, '.'))
 				.then((resolvedPath: string | null): string => {
 					if (resolvedPath === null)
 						throw new Error(`Program resolved to null in ${programPath}`);
-					this.log(`Resolved program to ${resolvedPath}`);
+					log(`Resolved program to ${resolvedPath}`);
 					return resolvedPath;
 				}),
-			`Failed to resolve  program from path ${programPath}`
+			`Failed to resolve program from path ${programPath}`
 		);
 
-	private resolveDependenciesRecursively = async (
-		module: string
-	): Promise<ReadonlyArray<string>> => {
-		const dependencyResolver = await this.dependencyResolver;
+	private static resolveDependenciesRecursively = (
+		module: string,
+		dependencyResolver: DependencyResolver
+	): ReadonlyArray<string> => {
 		const recResolve = (m: string): ReadonlyArray<string> => [
 			...dependencyResolver
 				.resolve(m)
@@ -132,13 +136,13 @@ export class ModuleLoader {
 		return recResolve(module);
 	};
 
-	private findProgramDependencies = async () =>
-		this.resolveDependenciesRecursively(await this.program);
-
-	private findPreloads = async (): Promise<ReadonlyArray<string>> => [
-		...this.config.preload,
-		...(await this.programDependencies).filter((dependency) =>
-			this.config.preloadDependencies.some((pattern) => new RegExp(pattern).test(dependency))
+	private static findPreloads = (
+		config: ModuleLoadingConfig,
+		programDependencies: ReadonlyArray<string>
+	): ReadonlyArray<string> => [
+		...config.preload,
+		...programDependencies.filter((dependency) =>
+			config.preloadDependencies.some((pattern) => new RegExp(pattern).test(dependency))
 		),
 	];
 }
