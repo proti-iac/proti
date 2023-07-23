@@ -246,6 +246,22 @@ importers:
         specifier: ^20.3.1
         version: 20.3.1
 
+  s3-website/no-program:
+    dependencies:
+      '@pulumi/aws':
+        specifier: ^5.41.0
+        version: 5.41.0
+      '@pulumi/awsx':
+        specifier: ^1.0.2
+        version: 1.0.2
+      '@pulumi/pulumi':
+        specifier: ^3.73.0
+        version: 3.73.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.3.1
+        version: 20.3.1
+
   s3-website/non-terminating-async:
     dependencies:
       '@pulumi/aws':
