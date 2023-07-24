@@ -1,5 +1,3 @@
-export const expect = <T>(value: T) => {
-	type ValidationPredicate = (value: T) => boolean | Promise<boolean>;
+export const expect = <T>(value: T) =>
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	return { to: (predicate: ValidationPredicate): T => value };
-};
+	({ to: <S extends T>(predicate: (value: S) => boolean): T => value });

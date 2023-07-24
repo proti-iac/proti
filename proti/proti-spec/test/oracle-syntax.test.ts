@@ -10,4 +10,20 @@ describe('oracle syntax', () => {
 		};
 		fc.assert(fc.property(fc.anything(), pred));
 	});
+
+	it('should type correctly', () => {
+		// @ts-expect-error
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		ps.expect<true>(true).to((v: false) => false);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		ps.expect<true>(true).to((v: true) => false);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		ps.expect<true>(true).to((v: boolean) => false);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		ps.expect<boolean>(true).to((v: false) => false);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		ps.expect<boolean>(true).to((v: true) => false);
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		ps.expect<boolean>(true).to((v: boolean) => false);
+	});
 });
