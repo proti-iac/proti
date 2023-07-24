@@ -1,5 +1,5 @@
 import type { AssertionResult, TestResult } from '@jest/test-result';
-import { DeepReadonly } from '@proti/core';
+import type { DeepReadonly } from '@proti/core';
 import type { RunDetailsCommon } from 'fast-check';
 
 export type Result = DeepReadonly<{

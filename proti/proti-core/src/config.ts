@@ -18,6 +18,11 @@ export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> & {
 	 * waiting, the timeout does not work.
 	 */
 	timeout?: number;
+	/**
+	 * Disable @proti/spec ad-hoc specifications. If true, ad-hoc specifications
+	 * will be ignored and treated like when running with the Pulumi CLI.
+	 */
+	disableAdHocSpecs?: boolean;
 } => ({});
 export type TestRunnerConfig = DeepReadonly<ReturnType<typeof defaultTestRunnerConfig>>;
 

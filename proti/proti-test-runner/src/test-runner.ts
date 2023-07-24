@@ -24,6 +24,7 @@ import {
 	ModuleLoader,
 	MutableWaiter,
 	readPulumiProject,
+	specImpl,
 	TestCoordinator,
 } from '@proti/core';
 
@@ -121,6 +122,13 @@ const runProti = async (
 	const programPulumiOutput = preloads.get('@pulumi/pulumi/output') as typeof pulumiOutput;
 	const outputsWaiter = new MutableWaiter();
 
+	// Add @proti/spec ad-hoc specifications implementation to mocks, if it is used and enabled
+	const mocks: ReadonlyMap<string, unknown> =
+		moduleLoader.isProgramDependency('@proti/spec/bin/index.js') &&
+		proti.testRunner.disableAdHocSpecs !== true
+			? new Map([...preloads, ['@proti/spec', specImpl]])
+			: preloads;
+
 	// Ensure all Pulumi `Output` objects are registered to be waited for.
 	// Patches the `Output` constructor for all instantiations from outside Pulumi's output module.
 	// `OutputImpl` objects instantiated inside Pulumi's `output` module are not intercepted!
@@ -163,7 +171,7 @@ const runProti = async (
 		const testRunCoordinator = await testCoordinator.newRunCoordinator(generator);
 		await runtime.isolateModulesAsync(async () => {
 			outputsWaiter.reset();
-			await moduleLoader.mockModules(preloads);
+			moduleLoader.mockModules(mocks);
 
 			const monitor: MockMonitor = new MockMonitor({
 				async newResource(args: pulumi.runtime.MockResourceArgs) {

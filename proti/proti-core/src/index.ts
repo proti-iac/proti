@@ -5,6 +5,7 @@ export * from './mutable-waiter';
 export * from './generator';
 export * from './pulumi-project';
 export * from './oracle';
+export * from './spec-impl';
 export * from './test-coordinator';
 export * from './utils';
 

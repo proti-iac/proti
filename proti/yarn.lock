@@ -1085,6 +1085,7 @@ __metadata:
   resolution: "@proti/core@workspace:proti-core"
   dependencies:
     "@jest/types": ^29.5.0
+    "@proti/spec": "workspace:^"
     "@pulumi/pulumi": ^3.72.2
     "@types/jest": ^29.5.2
     "@types/js-yaml": ^4.0.5
@@ -1153,7 +1154,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@proti/spec@workspace:proti-spec":
+"@proti/spec@workspace:^, @proti/spec@workspace:proti-spec":
   version: 0.0.0-use.local
   resolution: "@proti/spec@workspace:proti-spec"
   dependencies:

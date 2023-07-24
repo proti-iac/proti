@@ -54,6 +54,13 @@ export class ModuleLoader {
 		return new ModuleLoader(program, config, runtime, programDependencies, preloads, log);
 	};
 
+	/**
+	 * @param dependency Program dependency file to check for.
+	 * @returns True if `dependency` is suffix of a resolved program dependency.
+	 */
+	public isProgramDependency = (dependency: string): boolean =>
+		this.programDependencies.some((s) => s.endsWith(dependency));
+
 	public preload = (): ReadonlyMap<string, unknown> => {
 		// eslint-disable-next-line no-underscore-dangle
 		const modulesBefore = this.modules().size;
