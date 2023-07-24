@@ -6,9 +6,8 @@ const words = ['software', 'is', 'great'];
 const bucket = new aws.s3.Bucket('website', {
     website: { indexDocument: 'index.html' }
 })
-const rng = new random.RandomInteger('word-id', {
-    min: 0, max: words.length - 1
-});
+const rngRange = { min: 0, max: words.length - 1 };
+const rng = new random.RandomInteger('word-id', rngRange);
 rng.result.apply((wordId) => {
 	words[3].toUpperCase();
     return new aws.s3.BucketObject('index', {
