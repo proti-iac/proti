@@ -6,6 +6,7 @@
     "proti-core",
     "proti-pulumi-packages-schema",
     "proti-runner",
+    "proti-spec",
     "proti-test-runner",
     "proti-reporter"
   ],

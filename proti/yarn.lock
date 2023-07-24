@@ -1153,6 +1153,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@proti/spec@workspace:proti-spec":
+  version: 0.0.0-use.local
+  resolution: "@proti/spec@workspace:proti-spec"
+  dependencies:
+    "@types/jest": ^29.5.2
+    "@types/node": ^18.16.18
+    fast-check: ^3.10.0
+    typescript: ^5.1.3
+  languageName: unknown
+  linkType: soft
+
 "@proti/test-runner@workspace:^, @proti/test-runner@workspace:proti-test-runner":
   version: 0.0.0-use.local
   resolution: "@proti/test-runner@workspace:proti-test-runner"
