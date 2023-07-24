@@ -25,6 +25,9 @@ describe('generateerator syntax', () => {
 	});
 
 	it('should type correctly', () => {
+		generate(true).with(fc.constant<true>(true));
+		generate(true).with(fc.constant<false>(false));
+		generate(true).with(fc.constant<boolean>(true));
 		generate<true>(true).with(fc.constant<true>(true));
 		// @ts-expect-error
 		generate<true>(true).with(fc.constant<false>(false));
