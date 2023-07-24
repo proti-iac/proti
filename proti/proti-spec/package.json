@@ -16,11 +16,13 @@
     "test": "yarn g:test",
     "prepack": "yarn g:prepack"
   },
+  "dependencies": {
+    "fast-check": "^3.10.0"
+  },
   "devDependencies": {
     "@pulumi/pulumi": "^3.72.2",
     "@types/jest": "^29.5.2",
     "@types/node": "^18.16.18",
-    "fast-check": "^3.10.0",
     "typescript": "^5.1.3"
   }
 }
