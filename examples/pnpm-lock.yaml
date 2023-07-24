@@ -38,6 +38,28 @@ importers:
         specifier: ^20.3.1
         version: 20.3.1
 
+  random-word-webpage/correct-proti-spec:
+    dependencies:
+      '@proti/spec':
+        specifier: file:../../../proti/@proti-spec@0.0.0.tgz
+        version: file:../proti/@proti-spec@0.0.0.tgz
+      '@pulumi/aws':
+        specifier: ^5.41.0
+        version: 5.41.0
+      '@pulumi/pulumi':
+        specifier: ^3.73.0
+        version: 3.73.0
+      '@pulumi/random':
+        specifier: ^4.13.2
+        version: 4.13.2
+      fast-check:
+        specifier: ^3.11.0
+        version: 3.11.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.3.1
+        version: 20.3.1
+
   random-word-webpage/direct-async-error:
     dependencies:
       '@pulumi/aws':
@@ -1030,6 +1052,13 @@ packages:
       strip-final-newline: 2.0.0
     dev: false
 
+  /fast-check@3.11.0:
+    resolution: {integrity: sha512-H2tctb7AGfFQfz+DEr3UWhJ3s47LXsGp5g3jeJr5tHjnf4xUvpArIqiwcDmL2EXiv+auLHIpF5MqaIpIKvpxiA==}
+    engines: {node: '>=8.0.0'}
+    dependencies:
+      pure-rand: 6.0.2
+    dev: false
+
   /file-uri-to-path@1.0.0:
     resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
     dev: false
@@ -1528,6 +1557,10 @@ packages:
     resolution: {integrity: sha512-RofWgt/7fL5wP1Y7fxE7/EmTLzQVnB0ycyibJ0OOHIlJqTNzglYFxVwETOcIoJqJmpDXJ9xImDv+Fq34F/d4Dw==}
     dev: false
 
+  /pure-rand@6.0.2:
+    resolution: {integrity: sha512-6Yg0ekpKICSjPswYOuC5sku/TSWaRYlA0qsXqJgM/d/4pLPHPuTxK7Nbf7jFKzAeedUhR8C7K9Uv63FBsSo8xQ==}
+    dev: false
+
   /querystring@0.2.0:
     resolution: {integrity: sha512-X/xY82scca2tau62i9mDyU9K+I+djTMUsvwf7xnUX5GLvVzgJybOJf4Y6o9Zx3oJK/LSXg5tTZBjwzqVPaPO2g==}
     engines: {node: '>=0.4.x'}
@@ -1917,4 +1950,12 @@ packages:
   /yn@2.0.0:
     resolution: {integrity: sha512-uTv8J/wiWTgUTg+9vLTi//leUl5vDQS6uii/emeTb2ssY7vl6QWf2fFbIIGjnhjvbdKlU0ed7QPgY1htTC86jQ==}
     engines: {node: '>=4'}
+    dev: false
+
+  file:../proti/@proti-spec@0.0.0.tgz:
+    resolution: {tarball: file:../proti/@proti-spec@0.0.0.tgz}
+    name: '@proti/spec'
+    version: 0.0.0
+    dependencies:
+      fast-check: 3.11.0
     dev: false
