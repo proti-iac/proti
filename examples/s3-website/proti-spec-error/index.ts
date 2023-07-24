@@ -1,20 +1,26 @@
-import * as ps from "@proti/spec";
-import * as pulumi from "@pulumi/pulumi";
-import * as aws from "@pulumi/aws";
-import * as random from "@pulumi/random";
+import { expect, gen } from '@proti/spec';
+import * as pulumi from '@pulumi/pulumi';
+import * as aws from '@pulumi/aws';
 
-const words = ['software', 'is', 'great'];
-const bucket = new aws.s3.Bucket('website', {
-    website: { indexDocument: 'index.html'}
-})
-const rngRange = { min: 0, max: words.length - 1 };
-const rng = new random.RandomInteger('word-id', rngRange);
-ps.generate(rng.result).with(ps.integer(rngRange)).apply((wordId) => {
-    return new aws.s3.BucketObject('index', {
-        bucket: bucket, key: 'index.html',
-        contentType: 'text/html; charset=utf-8',
-        content: '<!DOCTYPE html>' + ps.expect(words[wordId].toUpperCase()).to((s) => s.length > 0)
-    });
+const beFalse = (v: any) => v === false;
+expect(expect(true).to(beFalse)).to(beFalse);
+
+// Create an AWS resource (S3 Bucket)
+const bucket = new aws.s3.Bucket('website', { website: { indexDocument: 'index.html' } });
+const index = new aws.s3.BucketObject('index', {
+	bucket, // Direct dependency
+	content: pulumi.interpolate`
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Hello world!</title>
+	</head>
+	<body>
+		<p>Versioning enabled: ${bucket.versioning.enabled}</p>
+	</body>
+</html>`, // Lifting inside interpolation dependency
+	key: 'index.html',
+	contentType: 'text/html; charset=utf-8',
 });
 
 // Set the public access policy requires updating ownership controls and disabling block public access since May 2023 
@@ -42,4 +48,5 @@ const bucketPolicy = new aws.s3.BucketPolicy('bucketPolicy', {
 	},
 }, { dependsOn: [bucket, publicAccessBlock, ownershipControls] });
 
-export const url = bucket.websiteEndpoint;
+// Export the name of the bucket
+export const url = bucket.websiteEndpoint; // Direct dependency

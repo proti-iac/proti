@@ -52,9 +52,6 @@ importers:
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
-      fast-check:
-        specifier: ^3.11.0
-        version: 3.11.0
     devDependencies:
       '@types/node':
         specifier: ^20.3.1
@@ -340,6 +337,44 @@ importers:
 
   s3-website/non-terminating-sync:
     dependencies:
+      '@pulumi/aws':
+        specifier: ^5.41.0
+        version: 5.41.0
+      '@pulumi/awsx':
+        specifier: ^1.0.2
+        version: 1.0.2
+      '@pulumi/pulumi':
+        specifier: ^3.73.0
+        version: 3.73.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.3.1
+        version: 20.3.1
+
+  s3-website/proti-spec:
+    dependencies:
+      '@proti/spec':
+        specifier: file:../../../proti/@proti-spec@0.0.0.tgz
+        version: file:../proti/@proti-spec@0.0.0.tgz
+      '@pulumi/aws':
+        specifier: ^5.41.0
+        version: 5.41.0
+      '@pulumi/awsx':
+        specifier: ^1.0.2
+        version: 1.0.2
+      '@pulumi/pulumi':
+        specifier: ^3.73.0
+        version: 3.73.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20.3.1
+        version: 20.3.1
+
+  s3-website/proti-spec-error:
+    dependencies:
+      '@proti/spec':
+        specifier: file:../../../proti/@proti-spec@0.0.0.tgz
+        version: file:../proti/@proti-spec@0.0.0.tgz
       '@pulumi/aws':
         specifier: ^5.41.0
         version: 5.41.0
