@@ -1,8 +1,8 @@
 import * as pulumi from '@pulumi/pulumi';
 import * as fc from 'fast-check';
-import { gen } from '../src/generator-syntax';
+import { generate } from '../src/generator-syntax';
 
-describe('generator syntax', () => {
+describe('generateerator syntax', () => {
 	it('should pass through values', () => {
 		const pred = (value: any) => {
 			const neverCall = jest.fn();
@@ -18,36 +18,36 @@ describe('generator syntax', () => {
 				noShrink: neverCall,
 				shrink: neverCall,
 			};
-			expect(gen(value).with(arb)).toBe(value);
+			expect(generate(value).with(arb)).toBe(value);
 			expect(neverCall).toBeCalledTimes(0);
 		};
 		fc.assert(fc.property(fc.anything(), pred));
 	});
 
 	it('should type correctly', () => {
-		gen<true>(true).with(fc.constant<true>(true));
+		generate<true>(true).with(fc.constant<true>(true));
 		// @ts-expect-error
-		gen<true>(true).with(fc.constant<false>(false));
+		generate<true>(true).with(fc.constant<false>(false));
 		// @ts-expect-error
-		gen<true>(true).with(fc.constant<boolean>(true));
-		gen<boolean>(true).with(fc.constant<true>(true));
-		gen<boolean>(true).with(fc.constant<false>(false));
-		gen<boolean>(true).with(fc.constant<boolean>(true));
-		gen<pulumi.Output<true>>(pulumi.output(true)).with(fc.constant<true>(true));
+		generate<true>(true).with(fc.constant<boolean>(true));
+		generate<boolean>(true).with(fc.constant<true>(true));
+		generate<boolean>(true).with(fc.constant<false>(false));
+		generate<boolean>(true).with(fc.constant<boolean>(true));
+		generate<pulumi.Output<true>>(pulumi.output(true)).with(fc.constant<true>(true));
 		// @ts-expect-error
-		gen<pulumi.Output<true>>(pulumi.output(true)).with(fc.constant<false>(false));
+		generate<pulumi.Output<true>>(pulumi.output(true)).with(fc.constant<false>(false));
 		// @ts-expect-error
-		gen<pulumi.Output<true>>(pulumi.output(true)).with(fc.constant<boolean>(true));
-		gen<pulumi.Output<boolean>>(pulumi.output(true)).with(fc.constant<true>(true));
-		gen<pulumi.Output<boolean>>(pulumi.output(true)).with(fc.constant<false>(false));
-		gen<pulumi.Output<boolean>>(pulumi.output(true)).with(fc.constant<boolean>(true));
-		gen<pulumi.Output<boolean>>(pulumi.output(true)).with(
+		generate<pulumi.Output<true>>(pulumi.output(true)).with(fc.constant<boolean>(true));
+		generate<pulumi.Output<boolean>>(pulumi.output(true)).with(fc.constant<true>(true));
+		generate<pulumi.Output<boolean>>(pulumi.output(true)).with(fc.constant<false>(false));
+		generate<pulumi.Output<boolean>>(pulumi.output(true)).with(fc.constant<boolean>(true));
+		generate<pulumi.Output<boolean>>(pulumi.output(true)).with(
 			fc.constant<pulumi.Output<true>>(pulumi.output(true))
 		);
-		gen<pulumi.Output<boolean>>(pulumi.output(true)).with(
+		generate<pulumi.Output<boolean>>(pulumi.output(true)).with(
 			fc.constant<pulumi.Output<false>>(pulumi.output(false))
 		);
-		gen<pulumi.Output<boolean>>(pulumi.output(true)).with(
+		generate<pulumi.Output<boolean>>(pulumi.output(true)).with(
 			fc.constant<pulumi.Output<boolean>>(pulumi.output(true))
 		);
 	});
