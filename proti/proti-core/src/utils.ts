@@ -101,6 +101,20 @@ export const deepMerge = <T extends Dict>(
 };
 
 /**
+ * Removes the first 'at ...' line from the call stack of an error, hiding the location it was defined.
+ * @param error Error to pop the stack of.
+ * @returns `error`
+ */
+export const popErrStack = (error: Error): Error => {
+	if (error.stack) {
+		const stack = error.stack.split('\n');
+		// eslint-disable-next-line no-param-reassign
+		error.stack = [...stack.slice(0, 1), ...stack.slice(2)].join('\n');
+	}
+	return error;
+};
+
+/**
  * Wrap a rejecting promises value in an `Error` with the message `errorMsg`.
  * @param p Promise.
  * @param errorMsg Error message on reject.

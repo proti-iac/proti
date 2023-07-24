@@ -12,6 +12,7 @@ import {
 	createAppendOnlyMap,
 	type Dict,
 	mapValues,
+	popErrStack,
 	asyncMapValues,
 } from '../src/utils';
 
@@ -259,6 +260,29 @@ describe('deep merge', () => {
 			checkUnchangedValues(updated, object, update);
 		};
 		fc.assert(fc.property(objAndUpdateArb(), predicate));
+	});
+});
+
+describe('popErrStack', () => {
+	it('should work', () => {
+		const err = new Error();
+		const predicate = (stack: string | undefined) => {
+			err.stack = stack;
+			popErrStack(err);
+			if (stack === undefined) expect(err.stack).toBe(stack);
+			else {
+				const splitStack = stack.split('\n');
+				const splitErrStack = err.stack!.split('\n');
+				expect(splitErrStack.length).toBe(Math.max(1, splitStack.length - 1));
+				expect(splitErrStack.includes(splitStack[0])).toBe(true);
+				splitStack.splice(2).forEach((l) => expect(splitErrStack.includes(l)).toBe(true));
+			}
+		};
+		const arb = fc.oneof(
+			fc.stringOf(fc.oneof(fc.constant('\n'), fc.unicode())),
+			fc.constant(undefined)
+		);
+		fc.assert(fc.property(arb, predicate));
 	});
 });
 
