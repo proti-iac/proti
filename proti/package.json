@@ -7,7 +7,6 @@
     "proti-pulumi-packages-schema",
     "proti-runner",
     "proti-test-runner",
-    "proti-transformer",
     "proti-reporter"
   ],
   "scripts": {
@@ -30,7 +29,6 @@
   "devDependencies": {
     "@proti/runner": "workspace:^",
     "@proti/test-runner": "workspace:^",
-    "@proti/transformer": "workspace:^",
     "@types/jest": "^29.5.2",
     "@types/node": "^20.3.1",
     "@typescript-eslint/eslint-plugin": "^5.60.0",
