@@ -20,7 +20,7 @@ export const generate = <T>(value: T) => {
 		 * ad-hoc specfication.
 		 */
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		with: (arbitrary: Arbitrary<S>): S => value as S, // TypeScript is not smart enough: S = (T | U) | T implies that T is always assignable to S
+		with: (arbitrary: Arbitrary<S>): T => value,
 	};
 };
 

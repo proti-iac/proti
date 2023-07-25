@@ -29,7 +29,7 @@ export const createSpecImpl = (generator: Generator): typeof ps => ({
 	generate: <T>(value: T) => {
 		type S = T extends Output<infer U> ? T | U : T;
 		return {
-			with: (arbitrary: ps.Arbitrary<S>): S => {
+			with: (arbitrary: ps.Arbitrary<S>): T => {
 				// Instantiate error here to capture call stack
 				const specLocation = new Error().stack?.match(
 					/(?:[^\n]*\n){2}[^\n]*\(([^\n\\(\\)]+)\)/
@@ -37,7 +37,7 @@ export const createSpecImpl = (generator: Generator): typeof ps => ({
 				return generator.generateValue(
 					`ad-hoc-oracle::${specLocation ? specLocation[1] : stringify(arbitrary)}`,
 					arbitrary
-				);
+				) as T;
 			},
 		};
 	},
