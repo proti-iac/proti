@@ -1,8 +1,8 @@
 import * as pulumi from '@pulumi/pulumi';
 import * as fc from 'fast-check';
-import { generate } from '../src/generator-syntax';
+import { generate } from '../src/index';
 
-describe('generateerator syntax', () => {
+describe('generator syntax', () => {
 	it('should pass through values', () => {
 		const pred = (value: any) => {
 			const neverCall = jest.fn();

@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import * as ps from '../src/oracle-syntax';
+import * as ps from '../src/index';
 
 describe('oracle syntax', () => {
 	it('should pass through values', () => {
