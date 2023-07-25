@@ -1,4 +1,4 @@
-import type { Output } from '@pulumi/pulumi';
+import { Output, output } from '@pulumi/pulumi';
 import * as ps from '@proti/spec';
 import { stringify } from 'typia';
 import { Generator } from './generator';
@@ -34,10 +34,13 @@ export const createSpecImpl = (generator: Generator): typeof ps => ({
 				const specLocation = new Error().stack?.match(
 					/(?:[^\n]*\n){2}[^\n]*\(([^\n\\(\\)]+)\)/
 				);
-				return generator.generateValue(
-					`ad-hoc-oracle::${specLocation ? specLocation[1] : stringify(arbitrary)}`,
-					arbitrary
-				) as T;
+				const generatorId = `ad-hoc-oracle::${
+					specLocation ? specLocation[1] : stringify(arbitrary)
+				}`;
+				const generatedValue = generator.generateValue(generatorId, arbitrary);
+				return Output.isInstance(value) && !Output.isInstance(generatedValue)
+					? (output(generatedValue) as T)
+					: (generatedValue as T);
 			},
 		};
 	},
