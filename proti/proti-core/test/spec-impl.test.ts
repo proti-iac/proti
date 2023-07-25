@@ -1,7 +1,9 @@
 import * as fc from 'fast-check';
-import { specImpl } from '../src/spec-impl';
+import { createSpecImpl } from '../src/spec-impl';
+import { Generator } from '../src/generator';
 
 describe('ad-hoc spec implementation', () => {
+	const specImpl = createSpecImpl(jest.mocked<Generator>({} as Generator));
 	it('expect to', () => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const predicate = async (value: any, sync: boolean, result: boolean, reject: boolean) => {

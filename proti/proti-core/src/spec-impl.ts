@@ -1,7 +1,8 @@
 import * as ps from '@proti/spec';
+import { Generator } from './generator';
 import { popErrStack } from './utils';
 
-export const specImpl: typeof ps = {
+export const createSpecImpl = (generator: Generator): typeof ps => ({
 	...ps,
 	expect: <T>(value: T) => ({
 		to: (predicate: (value: T) => boolean | Promise<boolean>): T => {
@@ -22,4 +23,4 @@ export const specImpl: typeof ps = {
 			return value;
 		},
 	}),
-};
+});

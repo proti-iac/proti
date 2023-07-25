@@ -13,6 +13,7 @@ import type Resolver from 'jest-resolve';
 import { hrtime } from 'process';
 
 import {
+	createSpecImpl,
 	Config as ProtiConfig,
 	DeepReadonly,
 	errMsg,
@@ -24,7 +25,6 @@ import {
 	ModuleLoader,
 	MutableWaiter,
 	readPulumiProject,
-	specImpl,
 	TestCoordinator,
 } from '@proti/core';
 
@@ -122,13 +122,6 @@ const runProti = async (
 	const programPulumiOutput = preloads.get('@pulumi/pulumi/output') as typeof pulumiOutput;
 	const outputsWaiter = new MutableWaiter();
 
-	// Add @proti/spec ad-hoc specifications implementation to mocks, if it is used and enabled
-	const mocks: ReadonlyMap<string, unknown> =
-		moduleLoader.isProgramDependency('@proti/spec/bin/index.js') &&
-		proti.testRunner.disableAdHocSpecs !== true
-			? new Map([...preloads, ['@proti/spec', specImpl]])
-			: preloads;
-
 	// Ensure all Pulumi `Output` objects are registered to be waited for.
 	// Patches the `Output` constructor for all instantiations from outside Pulumi's output module.
 	// `OutputImpl` objects instantiated inside Pulumi's `output` module are not intercepted!
@@ -159,6 +152,11 @@ const runProti = async (
 		cacheDir: config.cacheDirectory,
 	});
 
+	// @proti/spec ad-hoc specifications is enabled when used in the program and not explicitely disabled
+	const isSpecEnabled =
+		moduleLoader.isProgramDependency('@proti/spec/bin/index.js') &&
+		proti.testRunner.disableAdHocSpecs !== true;
+
 	const runStats: RunResult[] = [];
 	let runIdCounter = 0;
 	const testPredicate = async (generator: Generator): Promise<boolean> => {
@@ -171,7 +169,12 @@ const runProti = async (
 		const testRunCoordinator = await testCoordinator.newRunCoordinator(generator);
 		await runtime.isolateModulesAsync(async () => {
 			outputsWaiter.reset();
-			moduleLoader.mockModules(mocks);
+			moduleLoader.mockModules(preloads);
+			// Load @proti/spec ad-hoc specifications implementation as mock, if enabled
+			if (isSpecEnabled) {
+				const specImpl = createSpecImpl(testRunCoordinator.generator);
+				moduleLoader.mockModules(new Map([['@proti/spec', specImpl]]));
+			}
 
 			const monitor: MockMonitor = new MockMonitor({
 				async newResource(args: pulumi.runtime.MockResourceArgs) {
