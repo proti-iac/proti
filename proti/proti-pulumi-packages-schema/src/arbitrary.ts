@@ -1,14 +1,13 @@
 import * as fc from 'fast-check';
 import {
-	createAppendOnlyArray,
-	type DeepReadonly,
-	Generator,
+	createAppendOnlyMap,
+	type Generator,
 	type ResourceArgs,
 	type ResourceOutput,
 	type TestModuleInitFn,
-	createAppendOnlyMap,
+	TraceGenerator,
 } from '@proti/core';
-import { is, stringify } from 'typia';
+import { is } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { type ArbitraryConfig, config } from './config';
@@ -35,18 +34,6 @@ import {
 	transformResourceDefinition,
 	transformTypeDefinition,
 } from './pulumi';
-
-export const resourceOutputTraceToString = (trace: ReadonlyArray<ResourceOutput>): string => {
-	const numLength = trace.length.toString().length;
-	return trace
-		.flatMap(({ id, state }, i) => [
-			`${i.toString().padStart(numLength)}: ${id}`,
-			...Object.entries(state).map(
-				([k, v]: [string, unknown]) => `${' '.repeat(numLength + 2)}- ${k}: ${stringify(v)}`
-			),
-		])
-		.join('\n');
-};
 
 export type Arbitrary<T = unknown> = fc.Arbitrary<T>;
 
@@ -152,14 +139,8 @@ export const resourceDefinitionArbitrary: ResourceDefinitionTransform<Arbitrary>
 export const enumTypeDefinitionArbitrary: EnumTypeDefinitionTransform<Arbitrary> = async (values) =>
 	fc.constantFrom(...values);
 
-export class PulumiPackagesSchemaGenerator implements Generator {
+export class PulumiPackagesSchemaGenerator extends TraceGenerator {
 	private static generatorIdCounter: number = 0;
-
-	private readonly generatorId: number;
-
-	public readonly trace: DeepReadonly<ResourceOutput[]>;
-
-	private readonly appendTrace: (output: ResourceOutput) => void;
 
 	constructor(
 		private readonly conf: ArbitraryConfig,
@@ -169,11 +150,11 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 			type: NormalizedUri,
 			arbitrary: Promise<Arbitrary>
 		) => void,
-		private readonly mrng: fc.Random,
-		private readonly biasFactor: number | undefined
+		mrng: fc.Random,
+		biasFactor: number | undefined
 	) {
-		this.generatorId = PulumiPackagesSchemaGenerator.generatorIdCounter++;
-		[this.trace, this.appendTrace] = createAppendOnlyArray<ResourceOutput>();
+		const generatorId = `pulumi-packages-schema-generator-${PulumiPackagesSchemaGenerator.generatorIdCounter++}`;
+		super(generatorId, mrng, biasFactor);
 	}
 
 	private async generateArbitrary(resourceType: Urn): Promise<Arbitrary> {
@@ -235,9 +216,10 @@ export class PulumiPackagesSchemaGenerator implements Generator {
 		return output;
 	}
 
-	public toString(): string {
-		const trace = resourceOutputTraceToString(this.trace);
-		return `Generator ${this.generatorId} resource output trace:\n${trace}`;
+	public generateValue<T>(specId: string, arbitrary: fc.Arbitrary<T>): T {
+		const { value } = arbitrary.generate(this.mrng, this.biasFactor);
+		this.appendTrace({ id: specId, value });
+		return value;
 	}
 }
 
