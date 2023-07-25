@@ -7,6 +7,7 @@ import {
 	type TestModuleInitFn,
 	TraceGenerator,
 } from '@proti/core';
+import { secret } from '@pulumi/pulumi';
 import { is } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
@@ -26,6 +27,7 @@ import {
 	type PrimitiveTypeTransform,
 	type PropertyDefinitionTransform,
 	type ResourceDefinitionTransform,
+	type SecretTransform,
 	type Transforms,
 	type TypeDefinition,
 	type UnionTypeTransform,
@@ -123,6 +125,8 @@ export const propertyDefinitionArbitrary: PropertyDefinitionTransform<Arbitrary>
 
 export const constArbitrary: ConstTransform<Arbitrary> = async (constant) => fc.constant(constant);
 
+export const secretArbitrary: SecretTransform<Arbitrary> = async (property) => property.map(secret);
+
 export const objectTypeDetailsArbitrary: ObjectTypeDetailsTransform<Arbitrary> = async (
 	propertyArbitraries,
 	required
@@ -182,6 +186,7 @@ export class PulumiPackagesSchemaGenerator extends TraceGenerator {
 			resourceDef: resourceDefinitionArbitrary,
 			propDef: propertyDefinitionArbitrary,
 			const: constArbitrary,
+			secret: secretArbitrary,
 			objType: objectTypeDetailsArbitrary,
 			enumType: enumTypeDefinitionArbitrary,
 		};

@@ -237,12 +237,18 @@ export type PropertyDefinitionTransform<T> = (
 	path: string
 ) => Promise<T>;
 export type ConstTransform<T> = (constant: boolean | number | string, path: string) => Promise<T>;
+export type SecretTransform<T> = (propDef: T, path: string) => Promise<T>;
 export const transformPropertyDefinition: TransformDef<PropertyDefinition> = async <T>(
 	propDef: PropertyDefinition,
 	transforms: Transforms<T>,
 	ntArgs: NamedTypeArgs<T>,
 	path: string
 ): Promise<T> => {
+	if (propDef.secret === true) {
+		const unsec = { ...propDef, secret: false };
+		const unsecretPropDef = await transformPropertyDefinition(unsec, transforms, ntArgs, path);
+		return transforms.secret(unsecretPropDef, `${path}$secret`);
+	}
 	if (propDef.const !== undefined) return transforms.const(propDef.const, `${path}$const`);
 	const defaultT =
 		propDef.default === undefined
@@ -333,6 +339,7 @@ export type MutableTransforms<T> = {
 	resourceDef: ResourceDefinitionTransform<T>;
 	propDef: PropertyDefinitionTransform<T>;
 	const: ConstTransform<T>;
+	secret: SecretTransform<T>;
 	objType: ObjectTypeDetailsTransform<T>;
 	enumType: EnumTypeDefinitionTransform<T>;
 };

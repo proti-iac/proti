@@ -91,6 +91,7 @@ const transforms: Transforms<string> = {
 	resourceDef: asyncThrows,
 	propDef: asyncThrows,
 	const: asyncThrows,
+	secret: asyncThrows,
 	objType: asyncThrows,
 	enumType: asyncThrows,
 };
@@ -356,11 +357,18 @@ describe('transform property definition', () => {
 		spy = jest.spyOn(pulumi, 'transformTypeReference').mockImplementation(asyncStringify1);
 	});
 	afterAll(() => spy.mockRestore());
+	const ts = {
+		...transforms,
+		secret: asyncStringify,
+		propDef: asyncStringify,
+		const: asyncStringify,
+	};
+
 	it('should use const if set', () => {
 		const arb = propertyDefinitionArb().filter((propDef) => propDef.const !== undefined);
 		const predicate = (propDef: PropertyDefinition, path: string) => {
-			const r = stringify(propDef.const, `${path}$const`);
-			const ts = { ...transforms, propDef: asyncStringify, const: asyncStringify };
+			const rConst = stringify(propDef.const, `${path}$const`);
+			const r = propDef.secret === true ? stringify(rConst, `${path}$secret`) : rConst;
 			const e = transformPropertyDefinition(propDef, ts, ntArgs, path);
 			return expect(e).resolves.toStrictEqual(r);
 		};
@@ -370,14 +378,21 @@ describe('transform property definition', () => {
 	it('should compose correctly if const unset', () => {
 		const arb = propertyDefinitionArb().filter((propDef) => propDef.const === undefined);
 		const predicate = (propDef: PropertyDefinition, path: string) => {
-			const r = stringify(
+			const rTypeRef = stringify(
 				stringify(propDef),
 				propDef.default === undefined ? undefined : stringify(propDef.default),
 				path
 			);
-			const ts = { ...transforms, propDef: asyncStringify, const: asyncStringify1 };
-			const e = transformPropertyDefinition(propDef, ts, ntArgs, path);
-			return expect(e).resolves.toStrictEqual(r);
+			const r = propDef.secret === true ? stringify(rTypeRef, `${path}$secret`) : rTypeRef;
+			const e = transformPropertyDefinition(
+				propDef,
+				{ ...ts, const: asyncStringify1 },
+				ntArgs,
+				path
+			);
+			return expect(e).resolves.toStrictEqual(
+				r.replace('secret\\\\\\":true', 'secret\\\\\\":false')
+			);
 		};
 		return fc.assert(fc.asyncProperty(arb, fc.string(), predicate));
 	});

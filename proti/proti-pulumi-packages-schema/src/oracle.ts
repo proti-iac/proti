@@ -29,6 +29,7 @@ import {
 	type PropertyDefinitionTransform,
 	type ResourceDefinition,
 	type ResourceDefinitionTransform,
+	type SecretTransform,
 	type Transforms,
 	type UnionTypeTransform,
 	type UnresolvableUriTransform,
@@ -181,6 +182,24 @@ export const constValidator: ConstTransform<Validator> =
 		throw new Error(`${path} is not ${JSON.stringify(constant)}`);
 	};
 
+export const secretValidator: SecretTransform<Validator> =
+	async (propDefValidator, path) =>
+	(value: unknown): value is unknown => {
+		/**
+		 * Pulumi secrets are outputs with a flag. In the resource monitor they look like:
+		 * {"4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+		 * "value": VALUE }
+		 */
+		if (
+			typeof value === 'object' &&
+			(value as any)['4dabf18193072939515e22adb298388d'] ===
+				'1b47061264138c4ac30d75fd1eb44270' &&
+			propDefValidator((value as any).value)
+		)
+			return true;
+		throw new Error(`${path} is not a secret: ${stringify(value)}`);
+	};
+
 export const objectTypeDetailsValidator: ObjectTypeDetailsTransform<Validator> = async (
 	propertyValidators,
 	required,
@@ -283,6 +302,7 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle<undefined
 			resourceDef: resourceDefinitionValidator,
 			propDef: propertyDefinitionValidator,
 			const: constValidator,
+			secret: secretValidator,
 			objType: objectTypeDetailsValidator,
 			enumType: enumTypeDefinitionValidator,
 		};

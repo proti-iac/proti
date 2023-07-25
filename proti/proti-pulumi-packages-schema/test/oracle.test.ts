@@ -121,6 +121,7 @@ describe('unresolvable URI validator', () => {
 			resourceDef: async () => anyValidator,
 			primitive: async () => anyValidator,
 			propDef: async () => anyValidator,
+			secret: async () => anyValidator,
 			unionType: async () => anyValidator,
 			unresolvableUri: async () => anyValidator,
 		};

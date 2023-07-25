@@ -87,6 +87,7 @@ describe('arbitraries', () => {
 				resourceDef: async () => fc.constant('VAL'),
 				primitive: async () => fc.constant('VAL'),
 				propDef: async () => fc.constant('VAL'),
+				secret: async () => fc.constant('VAL'),
 				unionType: async () => fc.constant('VAL'),
 				unresolvableUri: async () => fc.constant('VAL'),
 			};
