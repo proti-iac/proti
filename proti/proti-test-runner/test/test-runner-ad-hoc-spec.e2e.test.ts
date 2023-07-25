@@ -14,7 +14,7 @@ describe('runner ad-hoc spec end-to-end', () => {
 		}
 	);
 
-	it.skip('should run with ad-hoc specifications', () => {
+	it('should run with ad-hoc specifications', () => {
 		expect(() => cp.execSync(jestCmd([specProject])).toString()).not.toThrow();
 	});
 

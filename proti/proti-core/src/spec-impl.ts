@@ -1,4 +1,6 @@
+import type { Output } from '@pulumi/pulumi';
 import * as ps from '@proti/spec';
+import { stringify } from 'typia';
 import { Generator } from './generator';
 import { popErrStack } from './utils';
 
@@ -23,4 +25,20 @@ export const createSpecImpl = (generator: Generator): typeof ps => ({
 			return value;
 		},
 	}),
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	generate: <T>(value: T) => {
+		type S = T extends Output<infer U> ? T | U : T;
+		return {
+			with: (arbitrary: ps.Arbitrary<S>): S => {
+				// Instantiate error here to capture call stack
+				const specLocation = new Error().stack?.match(
+					/(?:[^\n]*\n){2}[^\n]*\(([^\n\\(\\)]+)\)/
+				);
+				return generator.generateValue(
+					`ad-hoc-oracle::${specLocation ? specLocation[1] : stringify(arbitrary)}`,
+					arbitrary
+				);
+			},
+		};
+	},
 });
