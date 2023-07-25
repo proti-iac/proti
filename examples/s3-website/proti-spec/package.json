@@ -7,6 +7,7 @@
     "@proti/spec": "file:../../../proti/@proti-spec@0.0.0.tgz",
     "@pulumi/aws": "^5.41.0",
     "@pulumi/awsx": "^1.0.2",
-    "@pulumi/pulumi": "^3.73.0"
+    "@pulumi/pulumi": "^3.73.0",
+    "fast-check": "^3.10.0"
   }
 }

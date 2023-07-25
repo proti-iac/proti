@@ -52,6 +52,9 @@ importers:
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
+      fast-check:
+        specifier: ^3.10.0
+        version: 3.11.0
     devDependencies:
       '@types/node':
         specifier: ^20.3.1
@@ -365,6 +368,9 @@ importers:
       '@pulumi/pulumi':
         specifier: ^3.73.0
         version: 3.73.0
+      fast-check:
+        specifier: ^3.10.0
+        version: 3.11.0
     devDependencies:
       '@types/node':
         specifier: ^20.3.1
@@ -384,6 +390,9 @@ importers:
       '@pulumi/pulumi':
         specifier: ^3.73.0
         version: 3.73.0
+      fast-check:
+        specifier: ^3.10.0
+        version: 3.11.0
     devDependencies:
       '@types/node':
         specifier: ^20.3.1
