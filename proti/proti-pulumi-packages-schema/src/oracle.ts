@@ -9,7 +9,7 @@ import {
 	createAppendOnlyArray,
 	createAppendOnlyMap,
 } from '@proti/core';
-import { is } from 'typia';
+import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { OracleConfig, config } from './config';
@@ -56,7 +56,8 @@ const jsTypeValidator =
 	<T extends Types>(type: T, path: string): Validator<unknown, JsTypeObject<T>> =>
 	(value): value is JsTypeObject<T> => {
 		const valueType = typeOf(value);
-		if (valueType !== type) throw Error(`${path} is not of type ${type}`);
+		if (valueType !== type)
+			throw Error(`${path} is not of type '${type}' but '${valueType}': ${stringify(value)}`);
 		return true;
 	};
 
@@ -66,7 +67,7 @@ const jsonValidator =
 		try {
 			JSON.parse(value);
 		} catch (e) {
-			throw new Error(`${path} is not a parsable JSON string`);
+			throw new Error(`${path} is not a parsable JSON string: ${stringify(value)}`);
 		}
 		return true;
 	};

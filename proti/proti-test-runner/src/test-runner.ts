@@ -25,6 +25,7 @@ import {
 	ModuleLoader,
 	MutableWaiter,
 	readPulumiProject,
+	type ResourceArgs,
 	TestCoordinator,
 } from '@proti/core';
 
@@ -235,14 +236,16 @@ const runProti = async (
 
 			errors.forEach((error) => ignoreUnhandledRejectionErrors.add(error));
 			testRunCoordinator.fails.forEach((fail) => {
-				errors.push(
-					new Error(
-						`Oracle "${fail.oracle.name}" found a 🐞 in ${
-							fail?.resource?.urn || 'the deployment'
-						}`,
-						{ cause: fail.error }
-					)
-				);
+				const stringifyResArgs = (a: ResourceArgs) =>
+					JSON.stringify(a, null, 4).replace(/^.*\n|\n.*$/g, '');
+				const subject = fail.resource
+					? `${fail.resource.urn}:\n${stringifyResArgs(fail.resource)}`
+					: 'the deployment';
+				const msg = `Oracle "${fail.oracle.name}" found a 🐞 in ${subject}`;
+				const err = new Error(msg, { cause: fail.error });
+				// The stack trace is uninteresting
+				delete err.stack;
+				errors.push(err);
 			});
 			const runEnd = now();
 			notifyUnhandledRejection = undefined;
