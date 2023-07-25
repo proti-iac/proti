@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@proti/spec": "workspace:^",
+    "@pulumi/pulumi": "^3.72.2",
     "fast-check": "^3.10.0",
     "jest-resolve-dependencies": "^29.5.0",
     "jest-snapshot": "^29.5.0",
@@ -33,7 +34,6 @@
   },
   "devDependencies": {
     "@jest/types": "^29.5.0",
-    "@pulumi/pulumi": "^3.72.2",
     "@types/jest": "^29.5.2",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "^18.16.18",
