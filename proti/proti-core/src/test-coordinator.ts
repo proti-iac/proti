@@ -2,7 +2,7 @@ import * as fc from 'fast-check';
 import type { Arbitrary } from 'fast-check';
 import { assertEquals, is } from 'typia';
 import type { PluginsConfig, TestCoordinatorConfig } from './config';
-import type { Generator, ResourceOutput } from './generator';
+import type { Generator } from './generator';
 import type { ModuleLoader } from './module-loader';
 import {
 	AsyncDeploymentOracle,
@@ -69,7 +69,7 @@ export class TestRunCoordinator {
 
 	public readonly isDone: Promise<void>;
 
-	constructor(private readonly generator: Generator, oracles: DeepReadonly<Oracles>) {
+	constructor(public readonly generator: Generator, oracles: DeepReadonly<Oracles>) {
 		[this.fails, this.appendFail] = createAppendOnlyArray<Fail>();
 		[this.pendingTests, this.appendPendingTest] = createAppendOnlyArray<Promise<TestResult>>();
 		const toOracleWithState = <O extends AbstractOracle<S>, S>(
@@ -143,10 +143,6 @@ export class TestRunCoordinator {
 		});
 
 		Promise.all(this.pendingTests).then(() => this.complete());
-	}
-
-	public generateResourceOutput(resource: ResourceArgs): Promise<ResourceOutput> {
-		return this.generator.generateResourceOutput(resource);
 	}
 }
 

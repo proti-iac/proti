@@ -180,7 +180,7 @@ const runProti = async (
 						...args,
 					};
 					testRunCoordinator.validateResource(resource);
-					return testRunCoordinator.generateResourceOutput(resource);
+					return testRunCoordinator.generator.generateResourceOutput(resource);
 				},
 				call(args: pulumi.runtime.MockCallArgs) {
 					const msg = `ProTI does not support provider functions 😢 Called: ${args.token}`;
