@@ -158,18 +158,28 @@ describe('cycle breaker validator', () => {
 });
 
 describe('array type validator', () => {
+	// Pulumi provides input state arrays like [a, b] often (always?) as {0: a, 1: b}
+	const arrayToPulumiIssueObject = (arr: unknown[]) =>
+		Object.fromEntries(arr.map((v, i) => [`${i}`, v]));
+
 	it('should validate valid array', () => {
-		const predicate = async (arr: unknown) =>
-			expect((await arrayTypeValidator(anyValidator, ''))(arr)).toBe(true);
+		const predicate = async (arr: unknown[]) => {
+			const validator = await arrayTypeValidator(anyValidator, '');
+			expect(validator(arr)).toBe(true);
+			// Pulumi provides input state arrays like [a, b] often (always?) as {0: a, 1: b}
+			expect(validator(arrayToPulumiIssueObject(arr))).toBe(true);
+		};
 		return fc.assert(fc.asyncProperty(fc.array(fc.anything()), predicate));
 	});
 
 	it('should not validate invalid items', () => {
-		const predicate = async (arr: unknown[]) =>
-			expect(async () =>
-				(await arrayTypeValidator(neverValidator, ''))([...arr, ''])
-			).rejects.toThrow();
-		return fc.assert(fc.asyncProperty(fc.array(fc.anything()), predicate));
+		const predicate = async (arr: unknown[]) => {
+			const validator = await arrayTypeValidator(neverValidator, '');
+			await expect(async () => validator([...arr, ''])).rejects.toThrow();
+			// Pulumi provides input state arrays like [a, b] often (always?) as {0: a, 1: b}
+			await expect(async () => validator(arrayToPulumiIssueObject(arr))).rejects.toThrow();
+		};
+		return fc.assert(fc.asyncProperty(fc.array(fc.anything(), { minLength: 1 }), predicate));
 	});
 
 	it('should not validate non-array', () => {

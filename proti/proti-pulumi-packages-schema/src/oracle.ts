@@ -111,8 +111,15 @@ export const cycleBreakerValidator: CycleBreakerTransform<Validator> = (asyncVal
 
 export const arrayTypeValidator: ArrayTypeTransform<Validator> = async (itemsValidator, path) => {
 	const isArray = jsTypeValidator('array', path);
-	return (value: unknown): value is readonly unknown[] =>
-		isArray(value) && value.every(itemsValidator);
+	const hasSequentialIntKeys = (v: any): v is object =>
+		typeof v === 'object' && Object.keys(v).every((key, index) => Number(key) === index);
+	return (value: unknown): value is readonly unknown[] => {
+		// Workaround because Pulumi provides input state arrays like [a, b]
+		// often (always?) as {0: a, 1: b}
+		const val: unknown =
+			!Array.isArray(value) && hasSequentialIntKeys(value) ? Object.values(value) : value;
+		return isArray(val) && val.every(itemsValidator);
+	};
 };
 
 export const mapTypeValidator: MapTypeTransform<Validator> = async (propertiesValidator, path) => {
