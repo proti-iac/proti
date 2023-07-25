@@ -8,6 +8,10 @@ ps.expect(ps.expect(specVal).to(beFalse)).to(beFalse);
 
 // Create an AWS resource (S3 Bucket)
 const bucket = new aws.s3.Bucket('website', { website: { indexDocument: 'index.html' } });
+ps.generate(bucket.websiteDomain).with(ps.constant('test.com'))
+	.apply((url) => ps.expect(url).to((s) => s === 'test.com'));
+ps.generate(bucket.websiteDomain).with(ps.constant(pulumi.output('test2.com')))
+	.apply((url) => ps.expect(url).to((s) => s === 'test2.com'));
 const index = new aws.s3.BucketObject('index', {
 	bucket, // Direct dependency
 	content: pulumi.interpolate`
