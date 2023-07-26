@@ -132,14 +132,19 @@ export class ModuleLoader {
 		module: string,
 		dependencyResolver: DependencyResolver
 	): ReadonlyArray<string> => {
-		const recResolve = (m: string): ReadonlyArray<string> => [
-			...dependencyResolver
-				.resolve(m)
-				.reduce<ReadonlySet<string>>(
-					(deps, dep) => new Set([...deps, dep, ...recResolve(dep)]),
-					new Set<string>()
-				),
-		];
+		const recResolve = (
+			mod: string,
+			prevResolvedDeps: string[] = []
+		): ReadonlyArray<string> => {
+			const deps = dependencyResolver.resolve(mod);
+			const newDeps = [...new Set(deps)].filter((dep) => !prevResolvedDeps.includes(dep));
+			const resolvedDeps = newDeps.reduce<ReadonlySet<string>>(
+				(acc, dep) =>
+					new Set([...acc, dep, ...recResolve(dep, [...prevResolvedDeps, ...newDeps])]),
+				new Set<string>()
+			);
+			return [...resolvedDeps];
+		};
 		return recResolve(module);
 	};
 
