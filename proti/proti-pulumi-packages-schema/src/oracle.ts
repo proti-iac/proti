@@ -9,6 +9,7 @@ import {
 	createAppendOnlyArray,
 	createAppendOnlyMap,
 } from '@proti/core';
+import { asset } from '@pulumi/pulumi';
 import { is, stringify } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
@@ -74,8 +75,24 @@ const jsonValidator =
 	};
 
 export const builtInTypeValidator: BuiltInTypeTransform<Validator> = async (type, path) => {
-	if (type === 'pulumi.json#/Archive' || type === 'pulumi.json#/Asset')
-		return jsTypeValidator('string', path);
+	if (type === 'pulumi.json#/Archive')
+		return (value: unknown): value is asset.Archive => {
+			if (
+				asset.Archive.isInstance(value) &&
+				Object.keys(value).some((key) => ['assets', 'path', 'uri'].includes(key))
+			)
+				return true;
+			throw new Error(`${path} is not a Pulumi Archive: ${stringify(value)}`);
+		};
+	if (type === 'pulumi.json#/Asset')
+		return (value: unknown): value is asset.Asset => {
+			if (
+				asset.Asset.isInstance(value) &&
+				Object.keys(value).some((key) => ['path', 'text', 'uri'].includes(key))
+			)
+				return true;
+			throw new Error(`${path} is not a Pulumi Asset: ${stringify(value)}`);
+		};
 	if (type === 'pulumi.json#/Any') return anyValidator;
 	if (type === 'pulumi.json#/Json')
 		return (value: unknown): value is string =>

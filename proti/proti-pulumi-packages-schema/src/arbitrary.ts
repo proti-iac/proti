@@ -7,7 +7,7 @@ import {
 	type TestModuleInitFn,
 	TraceGenerator,
 } from '@proti/core';
-import { secret } from '@pulumi/pulumi';
+import { secret, asset } from '@pulumi/pulumi';
 import { is } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
@@ -45,7 +45,25 @@ export type Arbitrary<T = unknown> = fc.Arbitrary<T>;
 export type ArbitraryCache = ReadonlyMap<NormalizedUri, Promise<Arbitrary>>;
 
 export const builtInTypeArbitrary: BuiltInTypeTransform<Arbitrary> = async (type, path) => {
-	if (type === 'pulumi.json#/Archive' || type === 'pulumi.json#/Asset') return fc.string();
+	const pulumiAssetArb = fc
+		.tuple(
+			fc.constantFrom(asset.FileAsset, asset.RemoteAsset, asset.StringAsset),
+			fc.string({ minLength: 1 })
+		)
+		.map(([Asset, s]) => new Asset(s));
+	const pulumiArchiveArb = fc.oneof(
+		fc
+			.tuple(
+				fc.constantFrom(asset.FileArchive, asset.RemoteArchive),
+				fc.string({ minLength: 1 })
+			)
+			.map(([Archive, s]) => new Archive(s)),
+		fc
+			.dictionary(fc.string(), pulumiAssetArb, { minKeys: 1 })
+			.map((assetMap) => new asset.AssetArchive(assetMap))
+	);
+	if (type === 'pulumi.json#/Archive') return pulumiArchiveArb;
+	if (type === 'pulumi.json#/Asset') return pulumiAssetArb;
 	if (type === 'pulumi.json#/Any') return fc.anything();
 	if (type === 'pulumi.json#/Json') return fc.json();
 	throw new Error(`${path} has unknown built-in type ${type}`);

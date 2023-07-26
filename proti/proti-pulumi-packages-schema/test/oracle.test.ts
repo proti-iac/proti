@@ -53,16 +53,8 @@ describe('built-in type validator', () => {
 		}
 	};
 	const cases = [
-		[
-			'json',
-			fc.json(),
-			['pulumi.json#/Any', 'pulumi.json#/Archive', 'pulumi.json#/Asset', 'pulumi.json#/Json'],
-		],
-		[
-			'string',
-			fc.string().filter((s) => !isJson(s)),
-			['pulumi.json#/Archive', 'pulumi.json#/Asset', 'pulumi.json#/Any'],
-		],
+		['json', fc.json(), ['pulumi.json#/Any', 'pulumi.json#/Json']],
+		['string', fc.string().filter((s) => !isJson(s)), ['pulumi.json#/Any']],
 		['any', fc.anything().filter((v) => typeof v !== 'string'), ['pulumi.json#/Any']],
 	] as ReadonlyArray<readonly [string, fc.Arbitrary<unknown>, ReadonlyArray<string>]>;
 	it.each(

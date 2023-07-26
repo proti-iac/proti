@@ -152,7 +152,7 @@ describe('arbitraries', () => {
 			fc.tuple(fc.constantFrom(...builtInTypeUris)),
 			builtInTypeArbitrary,
 			(type: BuiltInTypeUri) => (value: unknown) =>
-				typeof value === 'string' || type === 'pulumi.json#/Any',
+				typeof value === 'string' || type.startsWith('pulumi.json#/A'),
 		],
 		[
 			'array type',
