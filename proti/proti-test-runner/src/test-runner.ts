@@ -37,7 +37,7 @@ const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
 type AppendAccompanyingResult = (accompanyingResult: Result) => void;
 const makeAccompanyingTest =
 	(appendResult: AppendAccompanyingResult) =>
-	async <T>(title: string, test: Promise<T> | T): Promise<T> => {
+	async <T>(title: string, test: Promise<T>): Promise<T> => {
 		const start = now();
 		const result = (partialResult: Partial<Result>): void => {
 			const end = now();
@@ -50,7 +50,7 @@ const makeAccompanyingTest =
 				...partialResult,
 			});
 		};
-		const resultVal = errMsg(Promise.resolve(test), `Failed to ${title}`);
+		const resultVal = errMsg(test, `Failed to ${title}`);
 		resultVal.then(() => result({})).catch((e) => result({ errors: [e as Error] }));
 		return resultVal;
 	};
@@ -115,7 +115,10 @@ const runProti = async (
 		return modLoader;
 	};
 	const moduleLoader = await runAccompanyingTest('Transform program', resolveAndTransform());
-	const preloads = await runAccompanyingTest('Preload modules', moduleLoader.preload());
+	const preloads = await runAccompanyingTest(
+		'Preload modules',
+		(async () => moduleLoader.preload())()
+	);
 	if (!preloads.has('@pulumi/pulumi')) throw new Error('Did not to preload @pulumi/pulumi');
 	const programPulumi = preloads.get('@pulumi/pulumi') as typeof pulumi;
 	if (!preloads.has('@pulumi/pulumi/output'))
