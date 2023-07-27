@@ -12,56 +12,56 @@ importers:
         specifier: file:../../../proti/@proti-spec@0.0.0.tgz
         version: file:../proti/@proti-spec@0.0.0.tgz
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
       fast-check:
-        specifier: ^3.10.0
-        version: 3.11.0
+        specifier: ^3.12.0
+        version: 3.12.0
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/config-error:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/correct:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/correct-proti-spec:
     dependencies:
@@ -69,289 +69,289 @@ importers:
         specifier: file:../../../proti/@proti-spec@0.0.0.tgz
         version: file:../proti/@proti-spec@0.0.0.tgz
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
       fast-check:
-        specifier: ^3.10.0
-        version: 3.11.0
+        specifier: ^3.12.0
+        version: 3.12.0
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/direct-async-error:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/direct-error:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/implicit-async-error:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/implicit-error:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/paper:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   random-word-webpage/transpilation-error:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       '@pulumi/random':
         specifier: ^4.13.2
         version: 4.13.2
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/cb-dependent:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/cb-dependent-throws:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/flat:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/flat-redirect:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/flat-throws:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/flat-throws-async:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/invalid:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/no-program:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/non-terminating-async:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/non-terminating-async-open-handle:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/non-terminating-deasync:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       deasync:
         specifier: ^0.1.28
         version: 0.1.28
@@ -360,24 +360,24 @@ importers:
         specifier: ^0.1.2
         version: 0.1.2
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/non-terminating-sync:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/proti-spec:
     dependencies:
@@ -385,21 +385,21 @@ importers:
         specifier: file:../../../proti/@proti-spec@0.0.0.tgz
         version: file:../proti/@proti-spec@0.0.0.tgz
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       fast-check:
-        specifier: ^3.10.0
-        version: 3.11.0
+        specifier: ^3.12.0
+        version: 3.12.0
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   s3-website/proti-spec-error:
     dependencies:
@@ -407,145 +407,145 @@ importers:
         specifier: file:../../../proti/@proti-spec@0.0.0.tgz
         version: file:../proti/@proti-spec@0.0.0.tgz
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/awsx':
         specifier: ^1.0.2
         version: 1.0.2
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
       fast-check:
-        specifier: ^3.10.0
-        version: 3.11.0
+        specifier: ^3.12.0
+        version: 3.12.0
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/0:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/1:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/dependent/10:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/dependent/100:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/dependent/50:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/independent/10:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/independent/100:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
   scaling/independent/50:
     dependencies:
       '@pulumi/aws':
-        specifier: ^5.41.0
-        version: 5.41.0
+        specifier: ^5.42.0
+        version: 5.42.0
       '@pulumi/pulumi':
-        specifier: ^3.73.0
-        version: 3.73.0
+        specifier: ^3.76.1
+        version: 3.76.1
     devDependencies:
       '@types/node':
-        specifier: ^20.3.1
-        version: 20.3.1
+        specifier: ^20.4.5
+        version: 20.4.5
 
 packages:
 
-  /@grpc/grpc-js@1.8.16:
-    resolution: {integrity: sha512-Nvlq4V7XQmdRVDGgecR8ZPPCeY+uH1LhzbC+QxklwAahpQlq8YLsiOQgfkub9FiakRiohaDy361xqlTLkq9EHw==}
+  /@grpc/grpc-js@1.8.20:
+    resolution: {integrity: sha512-SPse1wE4PcIFojOISsAnrWXCBsCBwDdcDqz2SS0T8nBSxg9jwmCK70Jy7ypRn2nIspwLy3Ls5TNaKNHo+6dF8A==}
     engines: {node: ^8.13.0 || >=10.10.0}
     dependencies:
-      '@grpc/proto-loader': 0.7.7
-      '@types/node': 20.3.1
+      '@grpc/proto-loader': 0.7.8
+      '@types/node': 20.4.5
     dev: false
 
-  /@grpc/proto-loader@0.7.7:
-    resolution: {integrity: sha512-1TIeXOi8TuSCQprPItwoMymZXxWT0CPxUhkrkeCUH+D8U7QDwQ6b7SUz2MaLuWM2llT+J/TVFLmQI5KtML3BhQ==}
+  /@grpc/proto-loader@0.7.8:
+    resolution: {integrity: sha512-GU12e2c8dmdXb7XUlOgYWZ2o2i+z9/VeACkxTA/zzAe2IjclC5PnVL0lpgjhrqfpDYHzM8B1TF6pqWegMYAzlA==}
     engines: {node: '>=6'}
     hasBin: true
     dependencies:
       '@types/long': 4.0.2
       lodash.camelcase: 4.3.0
       long: 4.0.0
-      protobufjs: 7.2.3
+      protobufjs: 7.2.4
       yargs: 17.7.2
     dev: false
 
@@ -567,8 +567,8 @@ packages:
     engines: {node: '>=8.0.0'}
     dev: false
 
-  /@opentelemetry/context-async-hooks@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-KfwMzdjxUtQM3uy4ogEdN3pdakFreyZNybKKlvxUM+inF5tAObsGamlmsfmUt6s3mXEC70+DY743+TdG4FMf/Q==}
+  /@opentelemetry/context-async-hooks@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-JHPs/o15OO902lI5jkWWPz0JyOpQav7hfOY20MZFH/elq6kSvjBTw5cCu1v7SJwN0Ac3n08fOjYK+jtNlYP0LA==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.5.0'
@@ -576,27 +576,27 @@ packages:
       '@opentelemetry/api': 1.4.1
     dev: false
 
-  /@opentelemetry/core@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-MnMZ+sxsnlzloeuXL2nm5QcNczt/iO82UOeQQDHhV83F2fP3sgntW2evvtoxJki0MBLxEsh5ADD7PR/Hn5uzjw==}
+  /@opentelemetry/core@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-V6GoRTY6aANMDDOQ9CiHOiLWEK2b2b3OGZK+zk05Li5merb9jadFeV5ooTSGtjxfxVNMpQUaQERO1cdbdbeEGg==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.5.0'
     dependencies:
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/semantic-conventions': 1.14.0
+      '@opentelemetry/semantic-conventions': 1.15.1
     dev: false
 
-  /@opentelemetry/exporter-zipkin@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-S/R83ocJ7HjmPCbvNGphfEGiVtPY9Viq9mW1kfF9wW9dmM56+EIgKFVOcvcKJh3b01JQT5/bEtOORwlhJ2U2+g==}
+  /@opentelemetry/exporter-zipkin@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-q2qs4eMkr4z6psg0t9t1DYb6GbRKNCTKM4EgmPPwY0J0TrrYMGFEcS1rGqKiyfYQB7FsG0f7wPezbtWpdMwHzw==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
     dependencies:
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/core': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/resources': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/sdk-trace-base': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/semantic-conventions': 1.14.0
+      '@opentelemetry/core': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/resources': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/sdk-trace-base': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/semantic-conventions': 1.15.1
     dev: false
 
   /@opentelemetry/instrumentation-grpc@0.32.0(@opentelemetry/api@1.4.1):
@@ -622,72 +622,72 @@ packages:
       '@opentelemetry/api': 1.4.1
       '@opentelemetry/api-metrics': 0.32.0
       require-in-the-middle: 5.2.0
-      semver: 7.5.3
+      semver: 7.5.4
       shimmer: 1.2.1
     transitivePeerDependencies:
       - supports-color
     dev: false
 
-  /@opentelemetry/propagator-b3@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-E05zrq0FxbalwJen8XZVfVclKmc5aqvGhMuSfXkbQ3IXC3EE1IcmJXX3T1Fum2JgeUlOt7FM90kaRG0BZ8Bgow==}
+  /@opentelemetry/propagator-b3@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-Rgzp5CgxSLDLdtiUx/nv+1jkyyU/qbhTqTBxMUvk4fqPfddzQNZyllyJ9IMNp9Xh4pzYlPP5ZBlN5Sw5isjuaw==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.5.0'
     dependencies:
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/core': 1.14.0(@opentelemetry/api@1.4.1)
+      '@opentelemetry/core': 1.15.1(@opentelemetry/api@1.4.1)
     dev: false
 
-  /@opentelemetry/propagator-jaeger@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-B70+npZ9atPdRZjZ/KY5+aiHhK1h/8kqEoPfI6p5Pv0lMgi1aCXwi8w0Cjtm89nV3OhfwNCyuR6dhoFadvO0Ew==}
+  /@opentelemetry/propagator-jaeger@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-27cljZFnbUv5e459e2BhcsHCn2yePYq+07dZNW51e6F05GDWHC86fpwdh+WKvrfKSRMddUMkufHyoBWxtUN/Vg==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.5.0'
     dependencies:
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/core': 1.14.0(@opentelemetry/api@1.4.1)
+      '@opentelemetry/core': 1.15.1(@opentelemetry/api@1.4.1)
     dev: false
 
-  /@opentelemetry/resources@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-qRfWIgBxxl3z47E036Aey0Lj2ZjlFb27Q7Xnj1y1z/P293RXJZGLtcfn/w8JF7v1Q2hs3SDGxz7Wb9Dko1YUQA==}
+  /@opentelemetry/resources@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-15JcpyKZHhFYQ1uiC08vR02sRY/2seSnqSJ0tIUhcdYDzOhd0FrqPYpLj3WkLhVdQP6vgJ+pelAmSaOrCxCpKA==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.5.0'
     dependencies:
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/core': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/semantic-conventions': 1.14.0
+      '@opentelemetry/core': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/semantic-conventions': 1.15.1
     dev: false
 
-  /@opentelemetry/sdk-trace-base@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-NzRGt3PS+HPKfQYMb6Iy8YYc5OKA73qDwci/6ujOIvyW9vcqBJSWbjZ8FeLEAmuatUB5WrRhEKu9b0sIiIYTrQ==}
+  /@opentelemetry/sdk-trace-base@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-5hccBe2yXzzXyExJNkTsIzDe1AM7HK0al+y/D2yEpslJqS1HUzsUSuCMY7Z4+Sfz5Gf0kTa6KYEt1QUQppnoBA==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.5.0'
     dependencies:
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/core': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/resources': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/semantic-conventions': 1.14.0
+      '@opentelemetry/core': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/resources': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/semantic-conventions': 1.15.1
     dev: false
 
-  /@opentelemetry/sdk-trace-node@1.14.0(@opentelemetry/api@1.4.1):
-    resolution: {integrity: sha512-t+batuETp4RBje4F5hdzPTEk/Pg/f5hu+4+x0nkUve+MVqee1yzQrly7KhwcCAlDoMjXB0cwiLBm0NcWbAW5Vw==}
+  /@opentelemetry/sdk-trace-node@1.15.1(@opentelemetry/api@1.4.1):
+    resolution: {integrity: sha512-aZDcuYHwh+qyOD/FLFAEAh32V2DlAp8Ubyaohh51oSssC3cxmN9JmpkyPbp2PQX3Mn48gBubwTXr9g++3+NB5w==}
     engines: {node: '>=14'}
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.5.0'
     dependencies:
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/context-async-hooks': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/core': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/propagator-b3': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/propagator-jaeger': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/sdk-trace-base': 1.14.0(@opentelemetry/api@1.4.1)
-      semver: 7.5.3
+      '@opentelemetry/context-async-hooks': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/core': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/propagator-b3': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/propagator-jaeger': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/sdk-trace-base': 1.15.1(@opentelemetry/api@1.4.1)
+      semver: 7.5.4
     dev: false
 
-  /@opentelemetry/semantic-conventions@1.14.0:
-    resolution: {integrity: sha512-rJfCY8rCWz3cb4KI6pEofnytvMPuj3YLQwoscCCYZ5DkdiPjo15IQ0US7+mjcWy9H3fcZIzf2pbJZ7ck/h4tug==}
+  /@opentelemetry/semantic-conventions@1.15.1:
+    resolution: {integrity: sha512-n8Kur1/CZlYG32YCEj30CoUqA8R7UyDVZzoEU6SDP+13+kXDT2kFVu6MpcnEUTyGP3i058ID6Qjp5h6IJxdPPQ==}
     engines: {node: '>=14'}
     dev: false
 
@@ -739,12 +739,12 @@ packages:
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
     dev: false
 
-  /@pulumi/aws@5.41.0:
-    resolution: {integrity: sha512-3Z+biMtXenKnYCa4LIHrKNAnE9O4EEsU4cTsKnu3uUycaA4QWnmioD64oFhDKTkhCASSCQblzxSPDcaXOqxkmQ==}
+  /@pulumi/aws@5.42.0:
+    resolution: {integrity: sha512-1h7Q5DjwoWVGxhBMcNragx/Q1US1KT7g29Tk3RghTg/9N7rGUbzTQKEXSrGgRSjGA/aKTbU+gt5A9ZmhONLiLg==}
     requiresBuild: true
     dependencies:
-      '@pulumi/pulumi': 3.73.0
-      aws-sdk: 2.1404.0
+      '@pulumi/pulumi': 3.76.1
+      aws-sdk: 2.1424.0
       builtin-modules: 3.0.0
       mime: 2.6.0
       read-package-tree: 5.3.1
@@ -757,9 +757,9 @@ packages:
     resolution: {integrity: sha512-gT3piAGSa0ErafYYQ3iu7W175+usJ7fWtmoTcJ+oQW2bpnS+fM6uHro/bJlsBup1Ax2A8ep5Ts9AubPGbq01vA==}
     requiresBuild: true
     dependencies:
-      '@pulumi/aws': 5.41.0
+      '@pulumi/aws': 5.42.0
       '@pulumi/docker': 3.6.1
-      '@pulumi/pulumi': 3.73.0
+      '@pulumi/pulumi': 3.76.1
       '@types/aws-lambda': 8.10.119
       mime: 2.6.0
     transitivePeerDependencies:
@@ -770,25 +770,26 @@ packages:
     resolution: {integrity: sha512-BZME50QkT556v+LvmTXPT8ssB2xxNkp9+msB5xYFEnUnWcdGAx5yUysQw70RJCb+U0GbkJSbxtlgMJgOQf/now==}
     requiresBuild: true
     dependencies:
-      '@pulumi/pulumi': 3.73.0
-      semver: 5.7.1
+      '@pulumi/pulumi': 3.76.1
+      semver: 5.7.2
     transitivePeerDependencies:
       - supports-color
     dev: false
 
-  /@pulumi/pulumi@3.73.0:
-    resolution: {integrity: sha512-Yln/3jeIW3G6VM3zZgF53twPC/Mzfwy4LkDxI5kaWppeB+34TmbCJJeq309dT1IvGWUpN33Sndu/81ouP3cmfg==}
+  /@pulumi/pulumi@3.76.1:
+    resolution: {integrity: sha512-vNKWboDpUu/2rqtZwQhoG/y5aePh0FQTzDjCOuBE62jmjt24GjoBW3Lk+49iUV/GY1PxX3HTawCL71umFgiSgQ==}
     engines: {node: '>=8.13.0 || >=10.10.0'}
     dependencies:
-      '@grpc/grpc-js': 1.8.16
+      '@grpc/grpc-js': 1.8.20
       '@logdna/tail-file': 2.2.0
       '@opentelemetry/api': 1.4.1
-      '@opentelemetry/exporter-zipkin': 1.14.0(@opentelemetry/api@1.4.1)
+      '@opentelemetry/exporter-zipkin': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/instrumentation': 0.32.0(@opentelemetry/api@1.4.1)
       '@opentelemetry/instrumentation-grpc': 0.32.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/resources': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/sdk-trace-base': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/sdk-trace-node': 1.14.0(@opentelemetry/api@1.4.1)
-      '@opentelemetry/semantic-conventions': 1.14.0
+      '@opentelemetry/resources': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/sdk-trace-base': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/sdk-trace-node': 1.15.1(@opentelemetry/api@1.4.1)
+      '@opentelemetry/semantic-conventions': 1.15.1
       '@pulumi/query': 0.3.0
       execa: 5.1.1
       google-protobuf: 3.21.2
@@ -796,9 +797,10 @@ packages:
       js-yaml: 3.14.1
       minimist: 1.2.8
       normalize-package-data: 3.0.3
+      pkg-dir: 7.0.0
       read-package-tree: 5.3.1
       require-from-string: 2.0.2
-      semver: 7.5.3
+      semver: 7.5.4
       source-map-support: 0.5.21
       ts-node: 7.0.1
       typescript: 3.8.3
@@ -815,7 +817,7 @@ packages:
     resolution: {integrity: sha512-Ao2lLIwwGm/3xV77tJJt6FCQRuZQZ74/1MkrNf59xsNP8bbT1fXFO6M+qp4QNx5hDHdG0Q5uH3JvqAh3Hwxj7g==}
     requiresBuild: true
     dependencies:
-      '@pulumi/pulumi': 3.73.0
+      '@pulumi/pulumi': 3.76.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -832,8 +834,8 @@ packages:
     resolution: {integrity: sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==}
     dev: false
 
-  /@types/node@20.3.1:
-    resolution: {integrity: sha512-EhcH/wvidPy1WeML3TtYFGR83UzjxeWRen9V402T8aUGYsCHOmfoisV3ZSg03gAFIbLq8TnWOJ0f4cALtnSEUg==}
+  /@types/node@20.4.5:
+    resolution: {integrity: sha512-rt40Nk13II9JwQBdeYqmbn2Q6IVTA5uPhvSO+JVqdXw/6/4glI6oR9ezty/A9Hg5u7JH4OmYmuQ+XvjKm0Datg==}
 
   /ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -866,9 +868,21 @@ packages:
     dependencies:
       call-bind: 1.0.2
       define-properties: 1.2.0
-      es-abstract: 1.21.2
+      es-abstract: 1.22.1
       es-array-method-boxes-properly: 1.0.0
       is-string: 1.0.7
+    dev: false
+
+  /arraybuffer.prototype.slice@1.0.1:
+    resolution: {integrity: sha512-09x0ZWFEjj4WD8PDbykUwo3t9arLn8NIzmmYEJFpYekOAQjpkGSyrQhNoRTcwwcFRu+ycWF78QZ63oWTqSjBcw==}
+    engines: {node: '>= 0.4'}
+    dependencies:
+      array-buffer-byte-length: 1.0.0
+      call-bind: 1.0.2
+      define-properties: 1.2.0
+      get-intrinsic: 1.2.1
+      is-array-buffer: 3.0.2
+      is-shared-array-buffer: 1.0.2
     dev: false
 
   /arrify@1.0.1:
@@ -885,8 +899,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: false
 
-  /aws-sdk@2.1404.0:
-    resolution: {integrity: sha512-pt8SXXH/CDwA0qTNV1SkHhLXnIb9fk1NTutE5w/tj9u8Z5DSbHbc9bnmju1B9aoRG1VTR48/SqOyzkfquVnMCw==}
+  /aws-sdk@2.1424.0:
+    resolution: {integrity: sha512-F6+wIp/K4UCg4sWQmQuuFReRNA0eYaPTHjt2is5uHE+2Vk2ojBbwatahbUnEB335tRZhndKf4UwyoyuuAdakMw==}
     engines: {node: '>= 10.0.0'}
     dependencies:
       buffer: 4.9.2
@@ -1002,6 +1016,7 @@ packages:
 
   /debuglog@1.0.1:
     resolution: {integrity: sha512-syBZ+rnAK3EgMsH2aYEOLUW7mZSY9Gb+0wUMCFsZvcmiz+HigA0LOcq/HoQqVuGG+EKykunc7QG2bzrponfaSw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     dev: false
 
   /define-properties@1.2.0:
@@ -1028,11 +1043,12 @@ packages:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
     dev: false
 
-  /es-abstract@1.21.2:
-    resolution: {integrity: sha512-y/B5POM2iBnIxCiernH1G7rC9qQoM77lLIMQLuob0zhp8C56Po81+2Nj0WFKnd0pNReDTnkYryc+zhOzpEIROg==}
+  /es-abstract@1.22.1:
+    resolution: {integrity: sha512-ioRRcXMO6OFyRpyzV3kE1IIBd4WG5/kltnzdxSCqoP8CMGs/Li+M1uF5o7lOkZVFjDs+NLesthnF66Pg/0q0Lw==}
     engines: {node: '>= 0.4'}
     dependencies:
       array-buffer-byte-length: 1.0.0
+      arraybuffer.prototype.slice: 1.0.1
       available-typed-arrays: 1.0.5
       call-bind: 1.0.2
       es-set-tostringtag: 2.0.1
@@ -1053,19 +1069,23 @@ packages:
       is-regex: 1.1.4
       is-shared-array-buffer: 1.0.2
       is-string: 1.0.7
-      is-typed-array: 1.1.10
+      is-typed-array: 1.1.12
       is-weakref: 1.0.2
       object-inspect: 1.12.3
       object-keys: 1.1.1
       object.assign: 4.1.4
       regexp.prototype.flags: 1.5.0
+      safe-array-concat: 1.0.0
       safe-regex-test: 1.0.0
       string.prototype.trim: 1.2.7
       string.prototype.trimend: 1.0.6
       string.prototype.trimstart: 1.0.6
+      typed-array-buffer: 1.0.0
+      typed-array-byte-length: 1.0.0
+      typed-array-byte-offset: 1.0.0
       typed-array-length: 1.0.4
       unbox-primitive: 1.0.2
-      which-typed-array: 1.1.9
+      which-typed-array: 1.1.11
     dev: false
 
   /es-array-method-boxes-properly@1.0.0:
@@ -1121,8 +1141,8 @@ packages:
       strip-final-newline: 2.0.0
     dev: false
 
-  /fast-check@3.11.0:
-    resolution: {integrity: sha512-H2tctb7AGfFQfz+DEr3UWhJ3s47LXsGp5g3jeJr5tHjnf4xUvpArIqiwcDmL2EXiv+auLHIpF5MqaIpIKvpxiA==}
+  /fast-check@3.12.0:
+    resolution: {integrity: sha512-SqahE9mlL3+lhjJ39joMLwcj6F+24hfZdf/tchlNO8sHcTdrUUdA5P/ZbSFZM9Xpzs36XaneGwE0FWepm/zyOA==}
     engines: {node: '>=8.0.0'}
     dependencies:
       pure-rand: 6.0.2
@@ -1130,6 +1150,14 @@ packages:
 
   /file-uri-to-path@1.0.0:
     resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
+    dev: false
+
+  /find-up@6.3.0:
+    resolution: {integrity: sha512-v2ZsoEuVHYy8ZIlYqwPe/39Cy+cFDzp4dXPaxNvkEuouymu+2Jbz0PxpKarJHYJTmv2HWT3O382qY8l4jMWthw==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dependencies:
+      locate-path: 7.2.0
+      path-exists: 5.0.0
     dev: false
 
   /for-each@0.3.3:
@@ -1152,7 +1180,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       define-properties: 1.2.0
-      es-abstract: 1.21.2
+      es-abstract: 1.22.1
       functions-have-names: 1.2.3
     dev: false
 
@@ -1311,7 +1339,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       get-intrinsic: 1.2.1
-      is-typed-array: 1.1.10
+      is-typed-array: 1.1.12
     dev: false
 
   /is-bigint@1.0.4:
@@ -1403,15 +1431,11 @@ packages:
       has-symbols: 1.0.3
     dev: false
 
-  /is-typed-array@1.1.10:
-    resolution: {integrity: sha512-PJqgEHiWZvMpaFZ3uTc8kHPM4+4ADTlDniuQL7cU/UDA0Ql7F70yGfHph3cLNe+c9toaigv+DFzTJKhc2CtO6A==}
+  /is-typed-array@1.1.12:
+    resolution: {integrity: sha512-Z14TF2JNG8Lss5/HMqt0//T9JeHXttXy5pH/DBU4vi98ozO2btxzq9MwYDZYnKwU8nRsz/+GVFVRDq3DkVuSPg==}
     engines: {node: '>= 0.4'}
     dependencies:
-      available-typed-arrays: 1.0.5
-      call-bind: 1.0.2
-      for-each: 0.3.3
-      gopd: 1.0.1
-      has-tostringtag: 1.0.0
+      which-typed-array: 1.1.11
     dev: false
 
   /is-weakref@1.0.2:
@@ -1447,6 +1471,13 @@ packages:
 
   /json-parse-even-better-errors@2.3.1:
     resolution: {integrity: sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w==}
+    dev: false
+
+  /locate-path@7.2.0:
+    resolution: {integrity: sha512-gvVijfZvn7R+2qyPX8mAuKcFGDf6Nc61GdvGafQsHL0sBIxfKzA+usWn4GFC/bk+QdwPUD4kWFJLhElipq+0VA==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dependencies:
+      p-locate: 6.0.0
     dev: false
 
   /lodash.camelcase@4.3.0:
@@ -1521,7 +1552,7 @@ packages:
     dependencies:
       hosted-git-info: 2.8.9
       resolve: 1.22.2
-      semver: 5.7.1
+      semver: 5.7.2
       validate-npm-package-license: 3.0.4
     dev: false
 
@@ -1531,7 +1562,7 @@ packages:
     dependencies:
       hosted-git-info: 4.1.0
       is-core-module: 2.12.1
-      semver: 7.5.3
+      semver: 7.5.4
       validate-npm-package-license: 3.0.4
     dev: false
 
@@ -1572,7 +1603,7 @@ packages:
       array.prototype.reduce: 1.0.5
       call-bind: 1.0.2
       define-properties: 1.2.0
-      es-abstract: 1.21.2
+      es-abstract: 1.22.1
       safe-array-concat: 1.0.0
     dev: false
 
@@ -1589,6 +1620,25 @@ packages:
       mimic-fn: 2.1.0
     dev: false
 
+  /p-limit@4.0.0:
+    resolution: {integrity: sha512-5b0R4txpzjPWVw/cXXUResoD4hb6U/x9BH08L7nw+GN1sezDzPdxeRvpc9c433fZhBan/wusjbCsqwqm4EIBIQ==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dependencies:
+      yocto-queue: 1.0.0
+    dev: false
+
+  /p-locate@6.0.0:
+    resolution: {integrity: sha512-wPrq66Llhl7/4AGC6I+cqxT07LhXvWL08LNXz1fENOw0Ap4sRZZ/gZpTTJ5jpurzzzfS2W/Ge9BY3LgLjCShcw==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dependencies:
+      p-limit: 4.0.0
+    dev: false
+
+  /path-exists@5.0.0:
+    resolution: {integrity: sha512-RjhtfwJOxzcFmNOi6ltcbcu4Iu+FL3zEj83dk4kAS+fVpTxXLO1b38RvJgT/0QwvV/L3aY9TAnyv0EOqW4GoMQ==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dev: false
+
   /path-is-absolute@1.0.1:
     resolution: {integrity: sha512-AVbw3UJ2e9bq64vSaS9Am0fje1Pa8pbGqTTsmXfaIiMpnr5DlDhfJOuLj9Sf95ZPVDAUerDfEk88MPmPe7UCQg==}
     engines: {node: '>=0.10.0'}
@@ -1603,8 +1653,15 @@ packages:
     resolution: {integrity: sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==}
     dev: false
 
-  /protobufjs@7.2.3:
-    resolution: {integrity: sha512-TtpvOqwB5Gdz/PQmOjgsrGH1nHjAQVCN7JG4A6r1sXRWESL5rNMAiRcBQlCAdKxZcAbstExQePYG8xof/JVRgg==}
+  /pkg-dir@7.0.0:
+    resolution: {integrity: sha512-Ie9z/WINcxxLp27BKOCHGde4ITq9UklYKDzVo1nhk5sqGEXU3FpkwP5GM2voTGJkGd9B3Otl+Q4uwSOeSUtOBA==}
+    engines: {node: '>=14.16'}
+    dependencies:
+      find-up: 6.3.0
+    dev: false
+
+  /protobufjs@7.2.4:
+    resolution: {integrity: sha512-AT+RJgD2sH8phPmCf7OUZR8xGdcJRga4+1cOaXJ64hvcSkVhNcRHOwIxUatPH15+nj59WAGTDv3LSGZPEQbJaQ==}
     engines: {node: '>=12.0.0'}
     requiresBuild: true
     dependencies:
@@ -1618,7 +1675,7 @@ packages:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.3.1
+      '@types/node': 20.4.5
       long: 5.2.3
     dev: false
 
@@ -1725,13 +1782,13 @@ packages:
     resolution: {integrity: sha512-8I2a3LovHTOpm7NV5yOyO8IHqgVsfK4+UuySrXU8YXkSRX7k6hCV9b3HrkKCr3nMpgj+0bmocaJJWpvp1oc7ZA==}
     dev: false
 
-  /semver@5.7.1:
-    resolution: {integrity: sha512-sauaDf/PZdVgrLTNYHRtpXa1iRiKcaebiKQ1BJdpQlWH2lCvexQdX55snPFyK7QzpudqbCI0qXFfOasHdyNDGQ==}
+  /semver@5.7.2:
+    resolution: {integrity: sha512-cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g==}
     hasBin: true
     dev: false
 
-  /semver@7.5.3:
-    resolution: {integrity: sha512-QBlUtyVk/5EeHbi7X0fw6liDZc7BBmEaSYn01fMU1OUYbf6GPsbTtd8WmnqbI20SeycoHSeiybkE/q1Q+qlThQ==}
+  /semver@7.5.4:
+    resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
     engines: {node: '>=10'}
     hasBin: true
     dependencies:
@@ -1819,7 +1876,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       define-properties: 1.2.0
-      es-abstract: 1.21.2
+      es-abstract: 1.22.1
     dev: false
 
   /string.prototype.trimend@1.0.6:
@@ -1827,7 +1884,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       define-properties: 1.2.0
-      es-abstract: 1.21.2
+      es-abstract: 1.22.1
     dev: false
 
   /string.prototype.trimstart@1.0.6:
@@ -1835,7 +1892,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       define-properties: 1.2.0
-      es-abstract: 1.21.2
+      es-abstract: 1.22.1
     dev: false
 
   /strip-ansi@6.0.1:
@@ -1870,12 +1927,42 @@ packages:
       yn: 2.0.0
     dev: false
 
+  /typed-array-buffer@1.0.0:
+    resolution: {integrity: sha512-Y8KTSIglk9OZEr8zywiIHG/kmQ7KWyjseXs1CbSo8vC42w7hg2HgYTxSWwP0+is7bWDc1H+Fo026CpHFwm8tkw==}
+    engines: {node: '>= 0.4'}
+    dependencies:
+      call-bind: 1.0.2
+      get-intrinsic: 1.2.1
+      is-typed-array: 1.1.12
+    dev: false
+
+  /typed-array-byte-length@1.0.0:
+    resolution: {integrity: sha512-Or/+kvLxNpeQ9DtSydonMxCx+9ZXOswtwJn17SNLvhptaXYDJvkFFP5zbfU/uLmvnBJlI4yrnXRxpdWH/M5tNA==}
+    engines: {node: '>= 0.4'}
+    dependencies:
+      call-bind: 1.0.2
+      for-each: 0.3.3
+      has-proto: 1.0.1
+      is-typed-array: 1.1.12
+    dev: false
+
+  /typed-array-byte-offset@1.0.0:
+    resolution: {integrity: sha512-RD97prjEt9EL8YgAgpOkf3O4IF9lhJFr9g0htQkm0rchFp/Vx7LW5Q8fSXXub7BXAODyUQohRMyOc3faCPd0hg==}
+    engines: {node: '>= 0.4'}
+    dependencies:
+      available-typed-arrays: 1.0.5
+      call-bind: 1.0.2
+      for-each: 0.3.3
+      has-proto: 1.0.1
+      is-typed-array: 1.1.12
+    dev: false
+
   /typed-array-length@1.0.4:
     resolution: {integrity: sha512-KjZypGq+I/H7HI5HlOoGHkWUUGq+Q0TPhQurLbyrVrvnKTBgzLhIJ7j6J/XTQOi0d1RjyZ0wdas8bKs2p0x3Ng==}
     dependencies:
       call-bind: 1.0.2
       for-each: 0.3.3
-      is-typed-array: 1.1.10
+      is-typed-array: 1.1.12
     dev: false
 
   /typescript@3.8.3:
@@ -1917,8 +2004,8 @@ packages:
       inherits: 2.0.4
       is-arguments: 1.1.1
       is-generator-function: 1.0.10
-      is-typed-array: 1.1.10
-      which-typed-array: 1.1.9
+      is-typed-array: 1.1.12
+      which-typed-array: 1.1.11
     dev: false
 
   /uuid@8.0.0:
@@ -1943,8 +2030,8 @@ packages:
       is-symbol: 1.0.4
     dev: false
 
-  /which-typed-array@1.1.9:
-    resolution: {integrity: sha512-w9c4xkx6mPidwp7180ckYWfMmvxpjlZuIudNtDf4N/tTAUB8VJbX25qZoAsrtGuYNnGw3pa0AXgbGKRB8/EceA==}
+  /which-typed-array@1.1.11:
+    resolution: {integrity: sha512-qe9UWWpkeG5yzZ0tNYxDmd7vo58HDBc39mZ0xWWpolAGADdFOzkfamWLDxkOWcvHQKVmdTyQdLD4NOfjLWTKew==}
     engines: {node: '>= 0.4'}
     dependencies:
       available-typed-arrays: 1.0.5
@@ -1952,7 +2039,6 @@ packages:
       for-each: 0.3.3
       gopd: 1.0.1
       has-tostringtag: 1.0.0
-      is-typed-array: 1.1.10
     dev: false
 
   /which@2.0.2:
@@ -2021,10 +2107,15 @@ packages:
     engines: {node: '>=4'}
     dev: false
 
+  /yocto-queue@1.0.0:
+    resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
+    engines: {node: '>=12.20'}
+    dev: false
+
   file:../proti/@proti-spec@0.0.0.tgz:
     resolution: {tarball: file:../proti/@proti-spec@0.0.0.tgz}
     name: '@proti/spec'
     version: 0.0.0
     dependencies:
-      fast-check: 3.11.0
+      fast-check: 3.12.0
     dev: false

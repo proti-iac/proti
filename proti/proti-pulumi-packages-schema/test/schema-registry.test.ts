@@ -139,7 +139,7 @@ describe('schema registry', () => {
 						modules: () => modules,
 						isolatedModules: () => isolatedModules,
 						mockedModules: () => mockedModules,
-					} as unknown as ModuleLoader)
+					}) as unknown as ModuleLoader
 			))();
 			await init(true, c, moduleLoader);
 		};
@@ -239,7 +239,17 @@ describe('schema registry', () => {
 				['no-ver. ', () => [new Map([[pkgJsonNoVFile, null]]), e, e], false],
 				['no-ver. isolated ', () => [e, new Map([[pkgJsonNoVFile, null]]), e], false],
 				['no-ver. mocked ', () => [e, e, new Map([[pkgJsonNoVFile, null]])], false],
-			] as ReadonlyArray<readonly [string, () => readonly [ReadonlyMap<string, any>, ReadonlyMap<string, any>, ReadonlyMap<string, any>], boolean]>)(
+			] as ReadonlyArray<
+				readonly [
+					string,
+					() => readonly [
+						ReadonlyMap<string, any>,
+						ReadonlyMap<string, any>,
+						ReadonlyMap<string, any>,
+					],
+					boolean,
+				]
+			>)(
 				'downloads schemas from %smodules on missing resource schema',
 				async (_, modules, hasVersion) => {
 					const pulumi = initPulumiMock(pkgSchema);

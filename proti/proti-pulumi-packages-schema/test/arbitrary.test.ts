@@ -226,16 +226,19 @@ describe('arbitraries', () => {
 			enumTypeDefinitionArbitrary,
 			(values: any[]) => (value: unknown) => values.includes(value),
 		],
-	] as [string, string, Arbitrary<unknown[]>, (...v: any[]) => Promise<Arbitrary>, (...v: any[]) => (v: unknown) => boolean][])(
-		'%s should generate %s values',
-		(_, __, paramsArb, subject, validator) => {
-			const predicate = async (vs: any[], path: string) => {
-				const arb = await subject(...vs, path);
-				fc.assert(fc.property(arb, validator(...vs, path)), { numRuns: 1 });
-			};
-			return fc.assert(fc.asyncProperty(paramsArb, fc.string(), predicate));
-		}
-	);
+	] as [
+		string,
+		string,
+		Arbitrary<unknown[]>,
+		(...v: any[]) => Promise<Arbitrary>,
+		(...v: any[]) => (v: unknown) => boolean,
+	][])('%s should generate %s values', (_, __, paramsArb, subject, validator) => {
+		const predicate = async (vs: any[], path: string) => {
+			const arb = await subject(...vs, path);
+			fc.assert(fc.property(arb, validator(...vs, path)), { numRuns: 1 });
+		};
+		return fc.assert(fc.asyncProperty(paramsArb, fc.string(), predicate));
+	});
 });
 
 describe('pulumi packages schema generator', () => {

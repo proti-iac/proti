@@ -270,7 +270,7 @@ describe('object type details validator', () => {
 	type Arb = [
 		Readonly<Record<string, unknown>>,
 		Readonly<Record<string, Validator>>,
-		readonly string[]
+		readonly string[],
 	];
 	const arb: fc.Arbitrary<Arb> = fc
 		.uniqueArray(fc.string())

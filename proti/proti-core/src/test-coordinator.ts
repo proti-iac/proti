@@ -69,7 +69,10 @@ export class TestRunCoordinator {
 
 	public readonly isDone: Promise<void>;
 
-	constructor(public readonly generator: Generator, oracles: DeepReadonly<Oracles>) {
+	constructor(
+		public readonly generator: Generator,
+		oracles: DeepReadonly<Oracles>
+	) {
 		[this.fails, this.appendFail] = createAppendOnlyArray<Fail>();
 		[this.pendingTests, this.appendPendingTest] = createAppendOnlyArray<Promise<TestResult>>();
 		const toOracleWithState = <O extends AbstractOracle<S>, S>(

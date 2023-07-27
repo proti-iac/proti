@@ -164,7 +164,7 @@ export const interceptConstructor = <T, U extends { new (...v: any[]): T }>(
  */
 export const createAppendOnlyArray = <T>(): readonly [
 	DeepReadonly<T[]>,
-	(i: DeepReadonly<T>) => void
+	(i: DeepReadonly<T>) => void,
 ] => {
 	const array: DeepReadonly<T>[] = [];
 	return [array, array.push.bind(array)];
@@ -177,7 +177,7 @@ export const createAppendOnlyArray = <T>(): readonly [
  */
 export const createAppendOnlyMap = <K, V>(): [
 	ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>,
-	(key: DeepReadonly<K>, value: DeepReadonly<V>) => void
+	(key: DeepReadonly<K>, value: DeepReadonly<V>) => void,
 ] => {
 	const map = new Map<DeepReadonly<K>, DeepReadonly<V>>();
 	const append = (key: DeepReadonly<K>, value: DeepReadonly<V>) => {
