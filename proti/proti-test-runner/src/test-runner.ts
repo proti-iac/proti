@@ -37,7 +37,7 @@ const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
 type AppendAccompanyingResult = (accompanyingResult: Result) => void;
 const makeAccompanyingTest =
 	(appendResult: AppendAccompanyingResult) =>
-	async <T>(title: string, test: Promise<T>): Promise<T> => {
+	async <T>(title: string, test: () => T | Promise<T>): Promise<T> => {
 		const start = now();
 		const result = (partialResult: Partial<Result>): void => {
 			const end = now();
@@ -50,7 +50,7 @@ const makeAccompanyingTest =
 				...partialResult,
 			});
 		};
-		const resultVal = errMsg(test, `Failed to ${title}`);
+		const resultVal = errMsg(Promise.resolve(test()), `Failed to ${title}`);
 		resultVal.then(() => result({})).catch((e) => result({ errors: [e as Error] }));
 		return resultVal;
 	};
@@ -90,8 +90,7 @@ const runProti = async (
 		getGlobals(config.globals),
 		'Failed to get configuration from globals'
 	);
-	const pulumiProject = await runAccompanyingTest(
-		'Read Pulumi.yaml',
+	const pulumiProject = await runAccompanyingTest('Read Pulumi.yaml', () =>
 		readPulumiProject(testPath)
 	);
 
@@ -102,7 +101,7 @@ const runProti = async (
 		Object.assign(environment.global, globals);
 	}
 
-	const resolveAndTransform = async () => {
+	const resolveTransform = async () => {
 		const modLoader = await ModuleLoader.create(
 			config,
 			proti.moduleLoading,
@@ -114,11 +113,8 @@ const runProti = async (
 		modLoader.transformProgram();
 		return modLoader;
 	};
-	const moduleLoader = await runAccompanyingTest('Transform program', resolveAndTransform());
-	const preloads = await runAccompanyingTest(
-		'Preload modules',
-		(async () => moduleLoader.preload())()
-	);
+	const moduleLoader = await runAccompanyingTest('Transform program', resolveTransform);
+	const preloads = await runAccompanyingTest('Preload modules', moduleLoader.preload);
 	if (!preloads.has('@pulumi/pulumi')) throw new Error('Did not to preload @pulumi/pulumi');
 	const programPulumi = preloads.get('@pulumi/pulumi') as typeof pulumi;
 	if (!preloads.has('@pulumi/pulumi/output'))
@@ -295,8 +291,7 @@ const testRunner = async (
 	const start = now();
 	const accompanyingResults: Result[] = [];
 	const runAccompanyingTest = makeAccompanyingTest((result) => accompanyingResults.push(result));
-	const checkResult = await runAccompanyingTest(
-		'Running ProTI',
+	const checkResult = await runAccompanyingTest('Running ProTI', () =>
 		runProti(config, environment, runtime, testPath, runAccompanyingTest)
 	).catch(() => undefined);
 	return toTestResult({
