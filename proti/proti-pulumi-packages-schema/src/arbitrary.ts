@@ -248,7 +248,7 @@ export class PulumiPackagesSchemaGenerator extends TraceGenerator {
 
 export type PulumiPackagesSchemaArbitraryContext = {};
 
-export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<Generator> {
+export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<PulumiPackagesSchemaGenerator> {
 	private readonly registry: SchemaRegistry = SchemaRegistry.getInstance();
 
 	/**
@@ -272,7 +272,10 @@ export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<Generator> {
 		[this.arbitraryCache, this.appendArbitraryCache] = createAppendOnlyMap();
 	}
 
-	generate(mrng: fc.Random, biasFactor: number | undefined): fc.Value<Generator> {
+	generate(
+		mrng: fc.Random,
+		biasFactor: number | undefined
+	): fc.Value<PulumiPackagesSchemaGenerator> {
 		const generator = new PulumiPackagesSchemaGenerator(
 			this.conf,
 			this.registry,
@@ -286,12 +289,12 @@ export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<Generator> {
 	}
 
 	// eslint-disable-next-line class-methods-use-this
-	canShrinkWithoutContext(value: unknown): value is Generator {
+	canShrinkWithoutContext(value: unknown): value is PulumiPackagesSchemaGenerator {
 		return is<PulumiPackagesSchemaGenerator>(value);
 	}
 
 	// eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
-	shrink(value: Generator, context: unknown): fc.Stream<fc.Value<Generator>> {
+	shrink(value: Generator, context: unknown): fc.Stream<fc.Value<PulumiPackagesSchemaGenerator>> {
 		return fc.Stream.nil();
 	}
 }
