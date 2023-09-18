@@ -4,6 +4,7 @@
   "packageManager": "yarn@3.6.0",
   "workspaces": [
     "proti-core",
+    "proti-plugins-demo",
     "proti-pulumi-packages-schema",
     "proti-runner",
     "proti-spec",
