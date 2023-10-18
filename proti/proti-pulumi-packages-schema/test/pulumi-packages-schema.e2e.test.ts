@@ -19,15 +19,15 @@ const jestCmd = (...projects: string[]): string =>
 const execConf = { maxBuffer: 10 * 1024 * 1024 /* 10MB */ };
 
 describe('pulumi packags schema end-to-end', () => {
-	it.each(['../../../examples/s3-website/flat', '../../../examples/s3-website/cb-dependent'])(
+	it.each(['../../examples/s3-website/flat', '../../examples/s3-website/cb-dependent'])(
 		'should run on %s',
 		(project) => expect(() => cp.execSync(jestCmd(project), execConf).toString()).not.toThrow()
 	);
 
 	it.each([
 		'abc',
-		'../../../examples/s3-website/invalid',
-		'../../../examples/s3-website/flat-throws',
+		'../../examples/s3-website/invalid',
+		'../../examples/s3-website/flat-throws',
 	])('should fail on %s', (project) => {
 		expect(() => cp.execSync(jestCmd(project), execConf)).toThrow('Command failed');
 	});

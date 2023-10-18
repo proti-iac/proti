@@ -20,7 +20,7 @@ const jestCmd = (...projects: string[]): string =>
 describe('plugins demo', () => {
 	it('should run', () =>
 		expect(() =>
-			cp.execSync(jestCmd('../../../examples/s3-website/flat')).toString()
+			cp.execSync(jestCmd('../../examples/s3-website/flat')).toString()
 		).not.toThrow());
 
 	it('should fail', () => {

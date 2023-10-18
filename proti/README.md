@@ -86,7 +86,7 @@ ProTI is extended through generator and oracle plugins. Implementing either is s
 
 ## Developers Guide
 
-This project uses yarn. Initialize all dependencies by running `yarn`. Further, some end-to-end tests use the example Pulumi TypesScript projects under [`examples/`](./exampels/). To install their dependencies, run `pnpm install` once in [`examples/`](./exampels/).
+This project uses yarn. Initialize all dependencies by running `yarn`. Further, some end-to-end tests use the example Pulumi TypesScript projects under [`examples/`](./examples/). To install their dependencies, first, run `yarn pack` in the root directory of this repository and then `pnpm install` in [`examples/`](./examples/).
 
 All ProTI packages implement the following commands. Running the respective command in the root directory of this repository executes it for all packages.
 

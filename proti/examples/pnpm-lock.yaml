@@ -6,11 +6,13 @@ settings:
 
 importers:
 
+  .: {}
+
   random-word-webpage/aurora-proti-spec:
     dependencies:
       '@proti/spec':
-        specifier: file:../../../proti/@proti-spec@0.0.0.tgz
-        version: file:../proti/@proti-spec@0.0.0.tgz
+        specifier: file:../../../@proti-spec@0.0.0.tgz
+        version: file:../@proti-spec@0.0.0.tgz
       '@pulumi/aws':
         specifier: ^5.42.0
         version: 5.42.0
@@ -66,8 +68,8 @@ importers:
   random-word-webpage/correct-proti-spec:
     dependencies:
       '@proti/spec':
-        specifier: file:../../../proti/@proti-spec@0.0.0.tgz
-        version: file:../proti/@proti-spec@0.0.0.tgz
+        specifier: file:../../../@proti-spec@0.0.0.tgz
+        version: file:../@proti-spec@0.0.0.tgz
       '@pulumi/aws':
         specifier: ^5.42.0
         version: 5.42.0
@@ -382,8 +384,8 @@ importers:
   s3-website/proti-spec:
     dependencies:
       '@proti/spec':
-        specifier: file:../../../proti/@proti-spec@0.0.0.tgz
-        version: file:../proti/@proti-spec@0.0.0.tgz
+        specifier: file:../../../@proti-spec@0.0.0.tgz
+        version: file:../@proti-spec@0.0.0.tgz
       '@pulumi/aws':
         specifier: ^5.42.0
         version: 5.42.0
@@ -404,8 +406,8 @@ importers:
   s3-website/proti-spec-error:
     dependencies:
       '@proti/spec':
-        specifier: file:../../../proti/@proti-spec@0.0.0.tgz
-        version: file:../proti/@proti-spec@0.0.0.tgz
+        specifier: file:../../../@proti-spec@0.0.0.tgz
+        version: file:../@proti-spec@0.0.0.tgz
       '@pulumi/aws':
         specifier: ^5.42.0
         version: 5.42.0
@@ -2112,8 +2114,8 @@ packages:
     engines: {node: '>=12.20'}
     dev: false
 
-  file:../proti/@proti-spec@0.0.0.tgz:
-    resolution: {tarball: file:../proti/@proti-spec@0.0.0.tgz}
+  file:../@proti-spec@0.0.0.tgz:
+    resolution: {integrity: sha512-m6zEgDtPWSwEDhd1zIOGTqaNxhIoWkf13HaT15mweemlSN5rCbMj4euQF0nDTKJWZFhI2BnKoF+S/Zbo9GXjxw==, tarball: file:../@proti-spec@0.0.0.tgz}
     name: '@proti/spec'
     version: 0.0.0
     dependencies:

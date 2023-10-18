@@ -2,8 +2,8 @@ import * as cp from 'child_process';
 import { jestCmd } from './util';
 
 describe('runner ad-hoc spec end-to-end', () => {
-	const specProject = '../../../examples/s3-website/proti-spec';
-	const specErrorProject = '../../../examples/s3-website/proti-spec-error';
+	const specProject = '../../examples/s3-website/proti-spec';
+	const specErrorProject = '../../examples/s3-website/proti-spec-error';
 
 	it.concurrent.each([specProject, specErrorProject])(
 		'should run without ad-hoc specification mocking %s',
