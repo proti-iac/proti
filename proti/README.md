@@ -42,9 +42,9 @@ const config = {
 module.exports = config;
 ```
 
-Add further configuration to the file to augment Jest's, ts-jest's, and ProTI's default configuration. The default configuration configures a simple empty state test generator and an oracle that only checks URN uniqueness across all resources, which are implemented in [`@proti/core`](./proti-core/). Most likely, you want to at least to configure better generator and generator plugins. [The next section](#configuring-proti) describes how. More concretely, the [@proti/pulumi-packages-schema README](./proti-pulumi-packages-schema/README.md) describes how to install and configure our first type-based plugins.
+Add further configuration to the file to augment Jest's, ts-jest's, and ProTI's default configuration. The default configuration configures a simple empty state test generator and an oracle that only checks URN uniqueness across all resources, which are implemented in [`@proti/core`](./proti-core/). Most likely, you want to configure more sophisticated generator and generator plugins. [The next section](#configuring-proti) describes how. Concretely, [@proti/pulumi-packages-schema's README](./proti-pulumi-packages-schema/README.md) describes how to install and configure our first type-based plugins.
 
-1. Run ProTI by running Jest on the project:
+4. Run ProTI by running Jest on the project:
 
 ```bash
 npx jest
@@ -86,7 +86,9 @@ ProTI is extended through generator and oracle plugins. Implementing either is s
 
 ## Developers Guide
 
-This project uses yarn. All packages implement the following commands. Running the respective command in the root directory of this repository executes it for all package.
+This project uses yarn. Initialize all dependencies by running `yarn`. Further, some end-to-end tests use the example Pulumi TypesScript projects under [`examples/`](./exampels/). To install their dependencies, run `pnpm install` once in [`examples/`](./exampels/).
+
+All ProTI packages implement the following commands. Running the respective command in the root directory of this repository executes it for all packages.
 
 * `yarn build` builds the package incrementally.
 * `yarn clean` deletes the build.
