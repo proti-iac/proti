@@ -1,4 +1,4 @@
-import type { TestModuleConfig, TestModuleInitFn } from '@proti/core';
+import type { TestModuleConfig, TestModuleInitFn } from '@proti-iac/core';
 import path from 'path';
 import { config } from './config';
 import { SchemaRegistry } from './schema-registry';

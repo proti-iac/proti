@@ -1,5 +1,5 @@
 import { Output, output } from '@pulumi/pulumi';
-import * as ps from '@proti/spec';
+import * as ps from '@proti-iac/spec';
 import { stringify } from 'typia';
 import { Generator } from './generator';
 import { popErrStack } from './utils';

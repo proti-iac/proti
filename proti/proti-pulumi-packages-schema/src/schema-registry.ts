@@ -1,4 +1,4 @@
-import type { ModuleLoader } from '@proti/core';
+import type { ModuleLoader } from '@proti-iac/core';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { assertParse, is, stringify, TypeGuardError } from 'typia';

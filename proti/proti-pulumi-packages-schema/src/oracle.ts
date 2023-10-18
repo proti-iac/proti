@@ -8,7 +8,7 @@ import {
 	typeOf,
 	createAppendOnlyArray,
 	createAppendOnlyMap,
-} from '@proti/core';
+} from '@proti-iac/core';
 import { asset } from '@pulumi/pulumi';
 import { is, stringify } from 'typia';
 import { initModule } from './utils';

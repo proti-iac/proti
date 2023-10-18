@@ -1,4 +1,4 @@
-import type { ModuleLoader, PluginsConfig, TestModuleConfig } from '@proti/core';
+import type { ModuleLoader, PluginsConfig, TestModuleConfig } from '@proti-iac/core';
 import { resetCachedConfig } from '../src/config';
 import { initModule } from '../src/utils';
 
@@ -23,7 +23,7 @@ describe('init module', () => {
 	it('should not initialize with invalid plugin config', () => {
 		const pluginsConfig = { 'pulumi-packages-schema': { verbose: 'false' } };
 		return expect(initModule({ ...testModuleConfig, pluginsConfig })).rejects.toThrow(
-			'Invalid @proti/pulumi-packages-schema configuration. $input.verbose should be (boolean | undefined) but is false.'
+			'Invalid @proti-iac/pulumi-packages-schema configuration. $input.verbose should be (boolean | undefined) but is false.'
 		);
 	});
 });

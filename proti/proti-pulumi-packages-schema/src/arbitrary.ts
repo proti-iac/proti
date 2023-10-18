@@ -6,7 +6,7 @@ import {
 	type ResourceOutput,
 	type TestModuleInitFn,
 	TraceGenerator,
-} from '@proti/core';
+} from '@proti-iac/core';
 import { secret, asset } from '@pulumi/pulumi';
 import { is } from 'typia';
 import { initModule } from './utils';

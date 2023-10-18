@@ -1,5 +1,5 @@
 import { type TypeGuardError, assertEquals, equals, is } from 'typia';
-import { deepMerge, DeepPartial, DeepReadonly } from '@proti/core';
+import { deepMerge, DeepPartial, DeepReadonly } from '@proti-iac/core';
 
 /**
  * @returns Default configuration of plugin.
@@ -35,7 +35,7 @@ export const config = (partialConfig: unknown = {}, ignoreCache: boolean = false
 		} catch (e) {
 			if (is<TypeGuardError>(e))
 				throw new Error(
-					`Invalid @proti/plugins-demo configuration. ${e.path} should be ${e.expected} but is ${e.value}.`
+					`Invalid @proti-iac/plugins-demo configuration. ${e.path} should be ${e.expected} but is ${e.value}.`
 				);
 			throw e;
 		}

@@ -1,4 +1,4 @@
-import type { ResourceOracle, ResourceArgs, TestResult, TestModuleInitFn } from '@proti/core';
+import type { ResourceOracle, ResourceArgs, TestResult, TestModuleInitFn } from '@proti-iac/core';
 import { config } from './config';
 
 /**

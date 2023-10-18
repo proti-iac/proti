@@ -1,4 +1,4 @@
-import * as ps from "@proti/spec";
+import * as ps from "@proti-iac/spec";
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";

@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import type { CommandResult } from '@pulumi/pulumi/automation';
-import { createAppendOnlyMap, mapValues } from '@proti/core';
+import { createAppendOnlyMap, mapValues } from '@proti-iac/core';
 import {
 	builtInTypeUris,
 	decodeUri,

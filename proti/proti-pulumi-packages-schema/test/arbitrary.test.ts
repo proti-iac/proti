@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import prand from 'pure-rand';
-import { createAppendOnlyMap, typeOf, type ResourceArgs } from '@proti/core';
+import { createAppendOnlyMap, typeOf, type ResourceArgs } from '@proti-iac/core';
 import { createIs } from 'typia';
 import {
 	type Arbitrary,

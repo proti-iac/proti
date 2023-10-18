@@ -1,5 +1,5 @@
 {
-  "name": "@proti/plugins-demo",
+  "name": "@proti-iac/plugins-demo",
   "version": "0.0.0",
   "description": "Automated Testing for IaC Programs",
   "author": "Daniel Sokolowski <github@d.sokolowski.org>",
@@ -24,7 +24,7 @@
     "postinstall": "ts-patch install"
   },
   "dependencies": {
-    "@proti/core": "workspace:^",
+    "@proti-iac/core": "workspace:^",
     "@pulumi/pulumi": "^3.76.1",
     "fast-check": "^3.12.0",
     "ts-patch": "3.0.2",

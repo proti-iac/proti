@@ -1,5 +1,5 @@
 {
-  "name": "@proti/runner",
+  "name": "@proti-iac/runner",
   "version": "0.0.0",
   "description": "Automated Testing for IaC Programs",
   "author": "Daniel Sokolowski <github@d.sokolowski.org>",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@jest/test-result": "^29.6.2",
-    "@proti/core": "workspace:^",
+    "@proti-iac/core": "workspace:^",
     "jest-runner": "^29.6.2",
     "jest-watcher": "^29.6.2"
   },

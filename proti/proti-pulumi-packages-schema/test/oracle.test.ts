@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import type { ResourceArgs } from '@proti/core';
+import type { ResourceArgs } from '@proti-iac/core';
 import { type OracleConfig, defaultOracleConfig } from '../src/config';
 import {
 	anyValidator,

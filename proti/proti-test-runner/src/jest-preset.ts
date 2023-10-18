@@ -1,4 +1,4 @@
-import { Config, DeepPartial } from '@proti/core';
+import { Config, DeepPartial } from '@proti-iac/core';
 import { defaults } from 'jest-config';
 import type { JestConfigWithTsJest } from 'ts-jest';
 
@@ -12,7 +12,7 @@ const config: JestConfigWithTsJest = {
 				// tsconfig: {
 				// 	plugins: [
 				// 		{
-				// 			transform: '@proti/transformer',
+				// 			transform: '@proti-iac/transformer',
 				// 		},
 				// 	],
 				// },
@@ -25,15 +25,15 @@ const config: JestConfigWithTsJest = {
 
 	injectGlobals: true, // Inject globals into each test environment, e.g., expect, otherwise explicit import is required
 	moduleFileExtensions: [...defaults.moduleFileExtensions, 'yaml', 'yml'],
-	runner: '@proti/runner',
+	runner: '@proti-iac/runner',
 	// seed: 0, // Tests' rng seed. Set to a value for deterministic reruns.
 	// reporters: [
 	// 	'default', // Jest's default console reporting
-	// 	'@proti/reporter', // ProTI's CSV reporter
+	// 	'@proti-iac/reporter', // ProTI's CSV reporter
 	// ],
 	testEnvironment: 'node',
 	testMatch: ['**/Pulumi.y?(a)ml'],
-	testRunner: '@proti/test-runner',
+	testRunner: '@proti-iac/test-runner',
 };
 
 export default config;

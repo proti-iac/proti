@@ -27,7 +27,7 @@ import {
 	readPulumiProject,
 	type ResourceArgs,
 	TestCoordinator,
-} from '@proti/core';
+} from '@proti-iac/core';
 
 import { CheckResult, Result, RunResult, toTestResult } from './test-result';
 
@@ -61,7 +61,7 @@ const getGlobals = async (
 	const err = (subject: string, property: string) =>
 		new Error(
 			`No ${subject} available in config.globals.${property}. ` +
-				'Are you using the @proti/runner runner?\n' +
+				'Are you using the @proti-iac/runner runner?\n' +
 				`Received ${JSON.stringify(globals[property])}`
 		);
 	if (!isConfig(globals.proti)) throw err('Proti Config', 'proti');
@@ -154,9 +154,9 @@ const runProti = async (
 		cacheDir: config.cacheDirectory,
 	});
 
-	// @proti/spec ad-hoc specifications is enabled when used in the program and not explicitely disabled
+	// @proti-iac/spec ad-hoc specifications is enabled when used in the program and not explicitely disabled
 	const isSpecEnabled =
-		moduleLoader.isProgramDependency('@proti/spec/bin/index.js') &&
+		moduleLoader.isProgramDependency('@proti-iac/spec/bin/index.js') &&
 		proti.testRunner.disableAdHocSpecs !== true;
 
 	const runStats: RunResult[] = [];
@@ -172,10 +172,10 @@ const runProti = async (
 		await runtime.isolateModulesAsync(async () => {
 			outputsWaiter.reset();
 			moduleLoader.mockModules(preloads);
-			// Load @proti/spec ad-hoc specifications implementation as mock, if enabled
+			// Load @proti-iac/spec ad-hoc specifications implementation as mock, if enabled
 			if (isSpecEnabled) {
 				const specImpl = createSpecImpl(testRunCoordinator.generator);
-				moduleLoader.mockModules(new Map([['@proti/spec', specImpl]]));
+				moduleLoader.mockModules(new Map([['@proti-iac/spec', specImpl]]));
 			}
 
 			const monitor: MockMonitor = new MockMonitor({

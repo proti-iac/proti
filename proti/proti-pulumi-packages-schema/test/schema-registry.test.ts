@@ -1,4 +1,4 @@
-import type { ModuleLoader } from '@proti/core';
+import type { ModuleLoader } from '@proti-iac/core';
 import { promises as fs } from 'fs';
 import type { CommandResult } from '@pulumi/pulumi/automation';
 import os from 'os';

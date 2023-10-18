@@ -5,7 +5,7 @@
         "@types/node": "^20.4.5"
     },
     "dependencies": {
-        "@proti/spec": "file:../../../@proti-spec@0.0.0.tgz",
+        "@proti-iac/spec": "file:../../../@proti-iac-spec@0.0.0.tgz",
         "@pulumi/aws": "^5.42.0",
         "@pulumi/pulumi": "^3.76.1",
         "@pulumi/random": "^4.13.2",

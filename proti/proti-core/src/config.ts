@@ -5,9 +5,9 @@ import { deepMerge, type DeepPartial, type DeepReadonly } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
 	/** Test generator arbitrary to use */
-	arbitrary: '@proti/core/empty-state-generator-arbitrary',
+	arbitrary: '@proti-iac/core/empty-state-generator-arbitrary',
 	/** Test oracles to run */
-	oracles: ['@proti/core/unique-urns-oracle'],
+	oracles: ['@proti-iac/core/unique-urns-oracle'],
 });
 export type TestCoordinatorConfig = DeepReadonly<ReturnType<typeof defaultTestCoordinatorConfig>>;
 
@@ -19,7 +19,7 @@ export const defaultTestRunnerConfig = (): fc.Parameters<[Generator]> & {
 	 */
 	timeout?: number;
 	/**
-	 * Disable @proti/spec ad-hoc specifications. If true, ad-hoc specifications
+	 * Disable @proti-iac/spec ad-hoc specifications. If true, ad-hoc specifications
 	 * will be ignored and treated like when running with the Pulumi CLI.
 	 */
 	disableAdHocSpecs?: boolean;

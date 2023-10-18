@@ -1,4 +1,4 @@
-import { type DeepReadonly, asyncMapValues } from '@proti/core';
+import { type DeepReadonly, asyncMapValues } from '@proti-iac/core';
 import { runPulumiCmd } from '@pulumi/pulumi/automation';
 import { is } from 'typia';
 import type {

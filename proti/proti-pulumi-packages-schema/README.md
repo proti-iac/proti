@@ -1,6 +1,6 @@
-# @proti/pulumi-packages-schema
+# @proti-iac/pulumi-packages-schema
 
-[![NPM version](https://badge.fury.io/js/%40proti%2Fpulumi-packages-schema.svg)](https://npmjs.com/package/@proti/pulumi-packages-schema)
+[![NPM version](https://badge.fury.io/js/%40proti-iac%2Fpulumi-packages-schema.svg)](https://npmjs.com/package/@proti-iac/pulumi-packages-schema)
 [![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
 
 This package implements a [ProTI](https://proti-iac.github.io/) generator and a [ProTI](https://proti-iac.github.io/) oracle plugin. They are type-based, leveraging input and output configuration type metadata from [Pulumi package schemas](https://www.pulumi.com/docs/using-pulumi/pulumi-packages/schema/). By design, these are available for all resource types distributed in [Pulumi packages](https://www.pulumi.com/product/packages/). The generator plugin composes primitive fast-check arbitraries to a complex arbitrary of the shape of the resource type's output configuration type and draws random output configuration values from such arbitrary. The oracle plugin checks all received input configurations for type compliance with the resource type's input configuration type. 
@@ -10,7 +10,7 @@ This package implements a [ProTI](https://proti-iac.github.io/) generator and a 
 [Set up ProTI](https://proti-iac.github.io/#getting-started) in your Pulumi TypeScript IaC project and install this package:
 
 ```bash
-npm install --save-dev @proti/pulumi-packages-schema
+npm install --save-dev @proti-iac/pulumi-packages-schema
 ```
 
 Configure ProTI's generator and oracle plugins options to use this package's plugins. Set the following two options in Jest's configuration, e.g., in your project's `jest.config.js` file:
@@ -23,8 +23,8 @@ const config = {
 	globals: {
 		proti: {
 			testCoordinator: {
-				arbitrary: "@proti/pulumi-packages-schema/arbitrary",
-				oracles: ["@proti/pulumi-packages-schema/oracle", /* ... */],
+				arbitrary: "@proti-iac/pulumi-packages-schema/arbitrary",
+				oracles: ["@proti-iac/pulumi-packages-schema/oracle", /* ... */],
 			},
 			/* ... */
 		},

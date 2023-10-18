@@ -4,7 +4,7 @@ import type { TestWatcher } from 'jest-watcher';
 import type { TestRunnerOptions } from 'jest-runner';
 import type { Test } from '@jest/test-result';
 
-import { config } from '@proti/core';
+import { config } from '@proti-iac/core';
 
 export * from 'jest-runner';
 

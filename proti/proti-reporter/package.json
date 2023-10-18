@@ -1,5 +1,5 @@
 {
-  "name": "@proti/reporter",
+  "name": "@proti-iac/reporter",
   "version": "0.0.0",
   "description": "Automated Testing for IaC Programs",
   "author": "Daniel Sokolowski <github@d.sokolowski.org>",
@@ -25,8 +25,8 @@
     "typia": "^4.1.0"
   },
   "devDependencies": {
-    "@proti/core": "workspace:^",
-    "@proti/test-runner": "workspace:^",
+    "@proti-iac/core": "workspace:^",
+    "@proti-iac/test-runner": "workspace:^",
     "@types/jest": "^29.5.3",
     "@types/node": "^18.17.1",
     "jest": "^29.6.2",

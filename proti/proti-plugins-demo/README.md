@@ -1,6 +1,6 @@
-# @proti/plugins-demo
+# @proti-iac/plugins-demo
 
-[![NPM version](https://badge.fury.io/js/%40proti%2Fplugins-demo.svg)](https://npmjs.com/package/@proti/plugins-demo)
+[![NPM version](https://badge.fury.io/js/%40proti-iac%2Fplugins-demo.svg)](https://npmjs.com/package/@proti-iac/plugins-demo)
 [![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
 
 This package demonstrates the implementation of a [ProTI](https://proti-iac.github.io/) generator and a [ProTI](https://proti-iac.github.io/) oracle plugin. The [demo generator](./src/demo-arbitrary.ts) simply generates an empty output configuration for all resources. The [demo oracle](./src/demo-oracle.ts) checks whether all resource URNs in the IaC program are unique. Both plugins and the [config](./src/config.ts) demonstrate how ProTI plugins can leverage ProTI's interface for ProTI plugin user configuration through Jest. Use this package as a starter blueprint for your own ProTI plugin implementations.
@@ -26,12 +26,12 @@ The oracle interfaces are parameterized by the type of their state. Such state i
 
 ## Using This Plugin
 
-In the following, we assume the current package name `@proti/plugins-demo`. Replace it with your own package's name, if you used this package as a blueprint.
+In the following, we assume the current package name `@proti-iac/plugins-demo`. Replace it with your own package's name, if you used this package as a blueprint.
 
 [Set up ProTI](https://proti-iac.github.io/#getting-started) in your Pulumi TypeScript IaC project and install this package:
 
 ```bash
-npm install --save-dev @proti/plugins-demo
+npm install --save-dev @proti-iac/plugins-demo
 ```
 
 If you do not want to go through the central NPM registry, e.g., during development, you can instead link the package or pack it and install it through the packaged archive.
@@ -46,8 +46,8 @@ const config = {
 	globals: {
 		proti: {
 			testCoordinator: {
-				arbitrary: "@proti/plugins-demo/demo-arbitrary",
-				oracles: ["@proti/plugins-demo/demo-arbitrary", /* ... */],
+				arbitrary: "@proti-iac/plugins-demo/demo-arbitrary",
+				oracles: ["@proti-iac/plugins-demo/demo-arbitrary", /* ... */],
 			},
 			/* ... */
 		},

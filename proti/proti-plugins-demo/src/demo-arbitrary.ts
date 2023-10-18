@@ -7,7 +7,7 @@ import {
 	ResourceOutput,
 	TestModuleInitFn,
 	TraceGenerator,
-} from '@proti/core';
+} from '@proti-iac/core';
 import { config } from './config';
 
 /**

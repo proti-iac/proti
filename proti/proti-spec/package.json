@@ -1,5 +1,5 @@
 {
-  "name": "@proti/spec",
+  "name": "@proti-iac/spec",
   "version": "0.0.0",
   "description": "Automated Testing for IaC Programs",
   "author": "Daniel Sokolowski <github@d.sokolowski.org>",

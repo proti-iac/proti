@@ -1,4 +1,4 @@
-import { typeOf, type DeepPartial } from '@proti/core';
+import { typeOf, type DeepPartial } from '@proti-iac/core';
 import {
 	type ArbitraryConfig,
 	config,

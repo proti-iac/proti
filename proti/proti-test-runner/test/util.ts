@@ -1,4 +1,4 @@
-import type { Config, DeepPartial, TestRunnerConfig } from '@proti/core';
+import type { Config, DeepPartial, TestRunnerConfig } from '@proti-iac/core';
 import * as path from 'path';
 
 const protiConfig = path.resolve(__dirname, '..');
