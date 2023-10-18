@@ -1,4 +1,5 @@
 {
+  "ignorePatterns": ["random-word-webpage/transpilation-error/index.ts"],
   "rules": {
     "@typescript-eslint/no-unused-vars": "off",
     "arrow-body-style": "off"

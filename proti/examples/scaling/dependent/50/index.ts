@@ -2,7 +2,7 @@ import type { Output } from '@pulumi/pulumi';
 import * as aws from '@pulumi/aws';
 
 const defineBuckets = (count: number): Output<string[]> =>
-	count == 1
+	count === 1
 		? new aws.s3.Bucket(`${count}`).id.apply((i) => [i])
 		: defineBuckets(count - 1).apply((i) =>
 				new aws.s3.Bucket(`${count}`).id.apply((j) => [...i, j])

@@ -1,4 +1,4 @@
-import * as aws from "@pulumi/aws";
+import * as aws from '@pulumi/aws';
 
 const buckets: string[] = [];
 
