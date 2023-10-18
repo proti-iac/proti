@@ -17,6 +17,7 @@
   "scripts": {
     "clean": "yarn g:clean",
     "build": "yarn g:build:tspc",
+    "dev": "yarn g:build:tspc && yarn jest -c \"{ \\\"preset\\\": \\\"../proti-test-runner/jest-preset.js\\\", \\\"globals\\\": { \\\"proti\\\": { \\\"testCoordinator\\\": { \\\"arbitrary\\\": \\\"$(pwd)/bin/arbitrary\\\", \\\"oracles\\\": [ \\\"$(pwd)/bin/oracle\\\" ] }, \\\"plugins\\\": { \\\"pulumi-packages-schema\\\": {} } } } }\" --roots",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
     "prepack": "yarn g:prepack",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.3",
     "@types/node": "^18.17.1",
+    "jest": "^29.6.2",
     "pure-rand": "^6.0.2",
     "typescript": "^5.1.6"
   }
