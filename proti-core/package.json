@@ -19,7 +19,8 @@
     "build": "yarn g:build:tspc",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
-    "prepack": "yarn g:prepack",
+    "prepack": "yarn g:prepack && cp ../README.md . && cp ../LICENSE .",
+    "postpack": "rm README.md LICENSE",
     "postinstall": "ts-patch install"
   },
   "dependencies": {
