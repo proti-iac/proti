@@ -3,6 +3,7 @@
 ![CI workflow](https://github.com/proti-iac/proti/actions/workflows/ci.yaml/badge.svg)
 [![NPM version](https://badge.fury.io/js/%40proti-iac%2Fcore.svg)](https://npmjs.com/package/@proti-iac/core)
 [![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
+[![DOI](https://zenodo.org/badge/706779109.svg)](https://zenodo.org/doi/10.5281/zenodo.10028479)
 
 [ProTI](https://proti-iac.github.io) is an automated unit testing tool for Infrastructure as Code (IaC) programs. ProTI implements [Automated Configuration Testing (ACT)](https://proti-iac.github.io/#approach) for [Pulumi](https://pulumi.com) TypeScript, minimizing the development effort for unit testing Pulumi TypeScript IaC programs. ProTI is extensible through test generator and oracle plugins and leverages ideas from [fuzzing](https://en.wikipedia.org/wiki/Fuzzing) and [property-based testing](https://en.wikipedia.org/wiki/Software_testing#Property_testing).
 
