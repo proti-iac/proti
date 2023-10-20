@@ -4,7 +4,7 @@ import * as path from 'path';
 const runner = path.resolve(__dirname, '..');
 const tests = path.resolve(__dirname, 'e2e-tests');
 const jestCmd = (test: string) =>
-	`yarn jest --silent --runner ${runner} --testMatch '**/${test}-test.ts' --selectProjects proti-core --rootDir ${tests}`;
+	`yarn jest --silent --runner ${runner} --maxWorkers=2 --testMatch '**/${test}-test.ts' --selectProjects proti-core --rootDir ${tests}`;
 
 describe('runner', () => {
 	it('should run', () => expect(() => cp.execSync(jestCmd('success'))).not.toThrow());
