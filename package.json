@@ -14,8 +14,8 @@
   "scripts": {
     "g:all": "yarn workspaces foreach $1 --exclude proti-monorepo run $0",
     "g:pkgroot": "bash -c 'if [ -e \"$0/$1\" ] && [ $0 != $PROJECT_CWD ]; then cd $0 && eval $3; else echo \"\\\"$2\\\" must be executed in a package root with a $1, not in $0\"; fi'",
-    "g:clean": "yarn g:pkgroot $INIT_CWD package.json clean 'rm -rf bin'",
-    "clean": "yarn g:all clean -vip",
+    "g:clean": "yarn g:pkgroot $INIT_CWD package.json clean 'rm -rf bin && find . -maxdepth 1 -name \"*.tgz\" -delete'",
+    "clean": "yarn g:all clean -vip && find . -maxdepth 1 -name '*.tgz' -delete",
     "g:build": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn tsc'",
     "g:build:tspc": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn tspc'",
     "build": "yarn g:all build '-vip --topological-dev'",
