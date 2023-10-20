@@ -2115,7 +2115,7 @@ packages:
     dev: false
 
   file:../@proti-iac-spec@0.0.0.tgz:
-    resolution: {integrity: sha512-TY4dMagTelxATh8jmTwZUdA9EW2k9fnivzOieTM/cKmqzsXQFyia8jyg+/TdH75A7HBp4ZYVVciqKF2oaJnVlA==, tarball: file:../@proti-iac-spec@0.0.0.tgz}
+    resolution: {tarball: file:../@proti-iac-spec@0.0.0.tgz}
     name: '@proti-iac/spec'
     version: 0.0.0
     dependencies:

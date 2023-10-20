@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
+      - name: Install ProTI dependencies
+        run: yarn
+
+      - name: Install examples dependencies
+        run: |
+          (cd proti-spec && yarn pack --out ../%s@%v.tgz)
+          (cd examples && pnpm install)
+
+      - name: Pack workdir
+        run: tar -czf /tmp/workdir.tar.gz .
+      - name: Upload workdir
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}-${{ github.sha }}
+          path: /tmp/workdir.tar.gz
+
+  test:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Download workdir
+        uses: actions/download-artifact@v3
+        with:
+          name: install-${{ github.sha }}
+          path: /tmp
+      - name: Unpack workdir
+        run: tar -xzf /tmp/workdir.tar.gz .
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+      - name: Run tests
+        run: yarn && yarn test
+
+  pack:
+    runs-on: ubuntu-latest
+    needs: [install, test]
+    steps:
+      - name: Download workdir
+        uses: actions/download-artifact@v3
+        with:
+          name: install-${{ github.sha }}
+          path: /tmp
+      - name: Unpack workdir
+        run: tar -xzf /tmp/workdir.tar.gz .
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+      - name: Build packages
+        run: yarn && yarn pack:all
+      - name: Upload packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: packages-${{ github.sha }}
+          path: "*.tgz"

@@ -1,5 +1,6 @@
 # <img src="https://proti-iac.github.io/assets/img/logo.svg" alt="ProTI" width="200" />
 
+![CI workflow](https://github.com/proti-iac/proti/actions/workflows/ci.yaml/badge.svg)
 [![NPM version](https://badge.fury.io/js/%40proti-iac%2Fcore.svg)](https://npmjs.com/package/@proti-iac/core)
 [![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
 

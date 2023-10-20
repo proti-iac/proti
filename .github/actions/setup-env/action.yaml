@@ -1,0 +1,32 @@
+name: "Setup ProTI Development Environment"
+description: "Configures ProTI's development setup"
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+    - name: Install PNPM
+      run: npm install -g pnpm
+      shell: bash
+    - name: Install Pulumi
+      uses: pulumi/actions@v4
+      with:
+        pulumi-version: 3.76.1
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: echo "YARN_CACHE_FOLDER=$(yarn config get cacheFolder)" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Get PNPM store directory path
+      run: echo "PNPM_STORE_DIR=$(cd examples && pnpm store path)" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ env.YARN_CACHE_FOLDER }}
+          ${{ env.PNPM_STORE_DIR }}
+          '.yarn/cache'
+          '**/node_modules'
+        key: ${{ runner.os }}-yarn-pnpm-${{ hashFiles('yarn.lock', 'examples/pnpm-lock.yaml') }}
