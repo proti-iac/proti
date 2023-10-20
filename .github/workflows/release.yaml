@@ -1,0 +1,40 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
+      - name: Validate Tag Format
+        run: |
+          TAG_FORMAT="^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$"
+          if [[ ! "${{ github.ref }}" =~ $TAG_FORMAT ]]; then
+            echo "The tag format is not correct!"
+            exit 1
+          fi
+      - name: Set Version in all package's package.json
+        run: |
+          VERSION=$(echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//')
+          find . -maxdepth 2 -type f -name package.json | while read -r file; do
+              jq ".version=\"$VERSION\"" "$file" > "${file}.temp"
+              mv "${file}.temp" "$file"
+          done
+      - name: Install Dependencies
+        run: yarn
+      - name: Build package
+        run: yarn build
+      - name: Publish to NPM
+        run: |
+          find . -maxdepth 1 -type d -name "proti-*" | while read -r dir; do
+              (cd "$dir" && yarn npm publish --access public)
+          done
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
