@@ -299,7 +299,11 @@ export class SchemaRegistry {
 		const pkg = pkgName + (pkgVersion === undefined ? '' : `@${pkgVersion}`);
 		try {
 			const result = await runPulumi(['package', 'get-schema', pkg], this.projectDir, {});
-			const schema = assertParse<PkgSchema>(result.stdout);
+			// Some Pulumi versions write a line "Downloading provider: ..." to STDOUT
+			// before returning the schema.
+			// https://github.com/pulumi/pulumi/issues/14252
+			const stdout = result.stdout.replace(/^Downloading provider:.*\n?/, '');
+			const schema = assertParse<PkgSchema>(stdout);
 			this.log(`Downloaded schema for Pulumi package ${pkg}`);
 			return schema;
 		} catch (e) {
