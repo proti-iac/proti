@@ -1,7 +1,8 @@
 # <img src="https://proti-iac.github.io/assets/img/logo.svg" alt="ProTI" width="200" />
 
 ![CI workflow](https://github.com/proti-iac/proti/actions/workflows/ci.yaml/badge.svg)
-[![NPM version](https://badge.fury.io/js/%40proti-iac%2Fcore.svg)](https://npmjs.com/package/@proti-iac/core)
+[![GitHub version](https://badge.fury.io/gh/proti-iac%2Fproti.svg)](https://badge.fury.io/gh/proti-iac%2Fproti)
+[![NPM version](https://badge.fury.io/js/@proti-iac%2Fcore.svg)](https://badge.fury.io/js/@proti-iac%2Fcore)
 [![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
 [![DOI](https://zenodo.org/badge/706779109.svg)](https://zenodo.org/doi/10.5281/zenodo.10028479)
 
