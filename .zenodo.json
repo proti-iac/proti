@@ -1,0 +1,24 @@
+{
+  "title": "ProTI: Automated Unit Testing of Pulumi TypeScript Infrastructure as Code Programs",
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Sokolowski, Daniel",
+      "affiliation": "University of St. Gallen",
+      "orcid": "0000-0003-2911-8304"
+    },
+    {
+      "name": "Spielmann, David",
+      "affiliation": "University of St. Gallen",
+      "orcid": "0009-0004-1715-2059"
+    },
+    {
+      "name": "Salvaneschi, Guido",
+      "affiliation": "University of St. Gallen",
+      "orcid": "0000-0002-9324-8894"
+    }
+  ],
+  "access_right": "open",
+  "language": "eng"
+}
