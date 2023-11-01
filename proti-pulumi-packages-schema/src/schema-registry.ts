@@ -277,13 +277,32 @@ export class SchemaRegistry {
 	): Promise<readonly [string, string | undefined] | undefined> {
 		this.log(`Searching for Pulumi package in ${file}`);
 		try {
-			const content = assertParse<Readonly<{ scripts: Readonly<{ install: string }> }>>(
-				(await fs.readFile(file)).toString()
-			);
-			const match = content.scripts.install.match(/\s+resource\s+([^\s]+)(\s+v([^\s]+))?/);
-			if (match !== null) {
-				this.log(`Found Pulumi package ${match[1]} (version: ${match[3]}) in ${file}`);
-				return [match[1], match[3]];
+			const content = assertParse<
+				Readonly<{
+					version?: string;
+					scripts?: Readonly<{ install?: string }>;
+					pulumi?: { resource?: boolean; name?: string };
+				}>
+			>((await fs.readFile(file)).toString());
+			if (content.scripts && content.scripts.install) {
+				const match = content.scripts.install.match(
+					/\s+resource\s+([^\s]+)(\s+v([^\s]+))?/
+				);
+				if (match !== null) {
+					this.log(`Found Pulumi package ${match[1]} (version: ${match[3]}) in ${file}`);
+					return [match[1], match[3]];
+				}
+			}
+			if (
+				content.version &&
+				content.pulumi &&
+				content.pulumi.resource === true &&
+				content.pulumi.name
+			) {
+				this.log(
+					`Found Pulumi package ${content.pulumi.name} (version: ${content.version}) in ${file}`
+				);
+				return [content.pulumi.name, content.version];
 			}
 			this.log(`Did not find Pulumi package in ${file}`);
 		} catch (e) {

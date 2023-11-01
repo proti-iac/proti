@@ -47,6 +47,15 @@ describe('schema registry', () => {
 		},
 	};
 	let pkgJsonFile: string;
+	// Specification: https://github.com/pulumi/pulumi/issues/10800#issuecomment-1252101855
+	const pkgJsonPulumi = {
+		version: pkgVersion,
+		pulumi: {
+			resource: true,
+			name: pkgName,
+		},
+	};
+	let pkgJsonPulumiFile: string;
 	const pkgJsonNoV = {
 		scripts: {
 			install: `node scripts/install-pulumi-plugin.js resource ${pkgName}`,
@@ -66,29 +75,35 @@ describe('schema registry', () => {
 	};
 
 	beforeAll(async () => {
-		[cacheDir, projDir, pkgJsonFile, pkgJsonNoVFile] = await Promise.all(
-			['foo-', 'project-', 'pkg-', 'pkg-nov-'].map((name) =>
+		[cacheDir, projDir, pkgJsonFile, pkgJsonPulumiFile, pkgJsonNoVFile] = await Promise.all(
+			['foo-', 'project-', 'pkg-', 'pkg-pulumi-', 'pkg-nov-'].map((name) =>
 				fs.mkdtemp(path.join(os.tmpdir(), name))
 			)
 		);
 		pkgSchemaFile = path.join(cacheDir, `${pkg}.json`);
 		cachedPkgSchemaFile = path.join(cacheDir, conf.cacheSubdir, 'bar@1.2.3.json');
 		pkgJsonFile = path.join(pkgJsonFile, 'package.json');
+		pkgJsonPulumiFile = path.join(pkgJsonPulumiFile, 'package.json');
 		pkgJsonNoVFile = path.join(pkgJsonNoVFile, 'package.json');
 		await fs.mkdir(path.join(cacheDir, conf.cacheSubdir));
 		await Promise.all([
 			fs.writeFile(pkgSchemaFile, stringify(pkgSchema)),
 			fs.writeFile(cachedPkgSchemaFile, stringify(cachedPkgSchema)),
 			fs.writeFile(pkgJsonFile, stringify(pkgJson)),
+			fs.writeFile(pkgJsonPulumiFile, stringify(pkgJsonPulumi)),
 			fs.writeFile(pkgJsonNoVFile, stringify(pkgJsonNoV)),
 		]);
 	});
 
 	afterAll(() =>
 		Promise.all(
-			[projDir, cacheDir, path.dirname(pkgJsonFile), path.dirname(pkgJsonNoVFile)].map(
-				(dir) => fs.rm(dir, { recursive: true })
-			)
+			[
+				projDir,
+				cacheDir,
+				path.dirname(pkgJsonFile),
+				path.dirname(pkgJsonPulumiFile),
+				path.dirname(pkgJsonNoVFile),
+			].map((dir) => fs.rm(dir, { recursive: true }))
 		)
 	);
 
@@ -240,11 +255,13 @@ describe('schema registry', () => {
 				['no-ver. isolated ', () => [e, new Map([[pkgJsonNoVFile, null]]), e], false, ''],
 				['no-ver. mocked ', () => [e, e, new Map([[pkgJsonNoVFile, null]])], false, ''],
 				[
-					'poluted Pulumi output',
+					'poluted Pulumi output ',
 					() => [new Map([[pkgJsonFile, null]]), e, e],
 					true,
 					'Downloading provider: aws\n',
 				],
+				// New Pulumi package package.json install mechanism: https://github.com/proti-iac/proti/issues/1
+				['pulumi ', () => [new Map([[pkgJsonPulumiFile, null]]), e, e], true, ''],
 			] as ReadonlyArray<
 				readonly [
 					string,
@@ -257,7 +274,7 @@ describe('schema registry', () => {
 					string,
 				]
 			>)(
-				'downloads schemas from %s modules on missing resource schema',
+				'downloads schemas from %smodules on missing resource schema',
 				async (_, modules, hasVersion, schemaPrefix) => {
 					const pulumi = initPulumiMock(schemaPrefix + stringify(pkgSchema));
 					await initLoading(
