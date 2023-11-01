@@ -218,10 +218,10 @@ describe('schema registry', () => {
 		});
 
 		describe('automated downloading', () => {
-			const initPulumiMock = (downloadedSchema?: PkgSchema) => {
+			const initPulumiMock = (pulumiOutput: string = '') => {
 				const result: CommandResult = {
 					code: 0,
-					stdout: stringify(downloadedSchema),
+					stdout: pulumiOutput,
 					stderr: '',
 				};
 				return (runPulumi as jest.MockedFunction<typeof runPulumi>)
@@ -233,12 +233,18 @@ describe('schema registry', () => {
 
 			const e: ReadonlyMap<string, any> = new Map<string, any>();
 			it.each([
-				['', () => [new Map([[pkgJsonFile, null]]), e, e], true],
-				['isolated ', () => [e, new Map([[pkgJsonFile, null]]), e], true],
-				['mocked ', () => [e, e, new Map([[pkgJsonFile, null]])], true],
-				['no-ver. ', () => [new Map([[pkgJsonNoVFile, null]]), e, e], false],
-				['no-ver. isolated ', () => [e, new Map([[pkgJsonNoVFile, null]]), e], false],
-				['no-ver. mocked ', () => [e, e, new Map([[pkgJsonNoVFile, null]])], false],
+				['', () => [new Map([[pkgJsonFile, null]]), e, e], true, ''],
+				['isolated ', () => [e, new Map([[pkgJsonFile, null]]), e], true, ''],
+				['mocked ', () => [e, e, new Map([[pkgJsonFile, null]])], true, ''],
+				['no-ver. ', () => [new Map([[pkgJsonNoVFile, null]]), e, e], false, ''],
+				['no-ver. isolated ', () => [e, new Map([[pkgJsonNoVFile, null]]), e], false, ''],
+				['no-ver. mocked ', () => [e, e, new Map([[pkgJsonNoVFile, null]])], false, ''],
+				[
+					'poluted Pulumi output',
+					() => [new Map([[pkgJsonFile, null]]), e, e],
+					true,
+					'Downloading provider: aws\n',
+				],
 			] as ReadonlyArray<
 				readonly [
 					string,
@@ -248,11 +254,12 @@ describe('schema registry', () => {
 						ReadonlyMap<string, any>,
 					],
 					boolean,
+					string,
 				]
 			>)(
-				'downloads schemas from %smodules on missing resource schema',
-				async (_, modules, hasVersion) => {
-					const pulumi = initPulumiMock(pkgSchema);
+				'downloads schemas from %s modules on missing resource schema',
+				async (_, modules, hasVersion, schemaPrefix) => {
+					const pulumi = initPulumiMock(schemaPrefix + stringify(pkgSchema));
 					await initLoading(
 						{ loadCachedSchemas: false, cacheDownloadedSchemas: false },
 						...modules()
@@ -373,12 +380,14 @@ describe('schema registry', () => {
 				])(
 					'%s downloaded schemas to cache',
 					async (_, cacheDownloadedSchemas, pulumiCalls) => {
-						const pulumi = initPulumiMock({
-							name: 'barz',
-							version: '4.5.6',
-							resources: { bR: resourceDefinition },
-							types: { bT: typeDefinition },
-						});
+						const pulumi = initPulumiMock(
+							stringify({
+								name: 'barz',
+								version: '4.5.6',
+								resources: { bR: resourceDefinition },
+								types: { bT: typeDefinition },
+							})
+						);
 						const cacheFile = path.join(cacheDir, conf.cacheSubdir, 'barz@4.5.6.json');
 						await expect(fs.access(cacheFile)).rejects.toThrow(); // Precondition: cache file does not exist yet
 						const modules = new Map([[pkgJsonFile, null]]);
@@ -399,12 +408,14 @@ describe('schema registry', () => {
 				);
 
 				it('creates cache dir if missing', async () => {
-					initPulumiMock({
-						name: 'barz',
-						version: '4.5.6',
-						resources: { bR: resourceDefinition },
-						types: { bT: typeDefinition },
-					});
+					initPulumiMock(
+						stringify({
+							name: 'barz',
+							version: '4.5.6',
+							resources: { bR: resourceDefinition },
+							types: { bT: typeDefinition },
+						})
+					);
 					const cacheSubdir = 'anotherTmp';
 					const fullCacheDir = path.join(cacheDir, cacheSubdir);
 					await expect(fs.access(fullCacheDir)).rejects.toThrow(); // Precondition: cache dir does not exist yet
