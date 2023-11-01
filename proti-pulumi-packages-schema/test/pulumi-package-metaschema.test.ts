@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { assertParse } from 'typia';
+import { json } from 'typia';
 import { PulumiPackageMetaschema } from '../src/pulumi-package-metaschema';
 
 describe('pulumi package schema types', () => {
@@ -10,7 +10,7 @@ describe('pulumi package schema types', () => {
 			const file = path.join(__dirname, 'pulumi-package-metaschema', `${schema}.json`);
 			const fileContent = await fs.readFile(file);
 			expect(() =>
-				assertParse<PulumiPackageMetaschema>(fileContent.toString())
+				json.assertParse<PulumiPackageMetaschema>(fileContent.toString())
 			).not.toThrow();
 		}
 	);

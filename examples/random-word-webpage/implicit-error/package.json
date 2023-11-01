@@ -2,11 +2,11 @@
     "name": "random-word-webpage-implicit-error",
     "main": "index.ts",
     "devDependencies": {
-        "@types/node": "^20.4.5"
+        "@types/node": "^20.8.10"
     },
     "dependencies": {
-        "@pulumi/aws": "^5.42.0",
-        "@pulumi/pulumi": "^3.76.1",
-        "@pulumi/random": "^4.13.2"
+        "@pulumi/aws": "^6.7.0",
+        "@pulumi/pulumi": "^3.91.1",
+        "@pulumi/random": "^4.14.0"
     }
 }

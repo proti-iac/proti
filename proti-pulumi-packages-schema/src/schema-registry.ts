@@ -1,7 +1,7 @@
 import type { ModuleLoader } from '@proti-iac/core';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { assertParse, is, stringify, TypeGuardError } from 'typia';
+import { is, json, TypeGuardError } from 'typia';
 import type { SchemaRegistryConfig } from './config';
 import {
 	type PkgSchema,
@@ -10,6 +10,8 @@ import {
 	type TypeDefinition,
 	type Urn,
 } from './pulumi';
+
+const { assertParse } = json;
 
 export class SchemaRegistry {
 	private static instance: SchemaRegistry;
@@ -334,6 +336,6 @@ export class SchemaRegistry {
 	private async cachePkgSchema(schema: PkgSchema): Promise<void> {
 		await fs.mkdir(this.cacheDir, { recursive: true });
 		const fileName = `${schema.name}@${schema.version}.json`;
-		await fs.writeFile(path.join(this.cacheDir, fileName), stringify(schema));
+		await fs.writeFile(path.join(this.cacheDir, fileName), JSON.stringify(schema));
 	}
 }

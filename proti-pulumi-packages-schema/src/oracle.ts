@@ -10,7 +10,7 @@ import {
 	createAppendOnlyMap,
 } from '@proti-iac/core';
 import { asset } from '@pulumi/pulumi';
-import { is, stringify } from 'typia';
+import { is, json } from 'typia';
 import { initModule } from './utils';
 import { SchemaRegistry } from './schema-registry';
 import { OracleConfig, config } from './config';
@@ -37,6 +37,8 @@ import {
 	transformResourceDefinition,
 	transformTypeDefinition,
 } from './pulumi';
+
+const stringify = json.stringify;
 
 /**
  * Validators are type guards to get support from the type system. For better
