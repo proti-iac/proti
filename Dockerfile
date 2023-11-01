@@ -1,6 +1,6 @@
 FROM node
 
-ENV PULUMI_TAR=pulumi-v3.76.1-linux-x64.tar.gz
+ENV PULUMI_TAR=pulumi-v3.91.1-linux-x64.tar.gz
 ENV PULUMI_CONFIG_PASSPHRASE=""
 ENV PULUMI_SKIP_UPDATE_CHECK=true
 

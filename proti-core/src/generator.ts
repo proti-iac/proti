@@ -1,7 +1,9 @@
-import { is, stringify } from 'typia';
+import { is, json } from 'typia';
 import type * as fc from 'fast-check';
 import type { ResourceArgs } from './oracle';
 import { createAppendOnlyArray, type DeepReadonly } from './utils';
+
+const stringify = json.assertStringify;
 
 export type ResourceOutput = DeepReadonly<{ id: string; state: Record<string, any> }>;
 

@@ -1,6 +1,6 @@
 import type { MockResourceArgs } from '@pulumi/pulumi/runtime';
 import type { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
-import { createIs } from 'typia';
+import { is } from 'typia';
 import type { DeepReadonly } from './utils';
 
 export type ResourceArgs = DeepReadonly<MockResourceArgs & { urn: string }>;
@@ -11,7 +11,6 @@ export type OracleMetadata = Readonly<{
 	name: string;
 	description?: string;
 }>;
-const isOracleMetadata = createIs<OracleMetadata>();
 
 export interface AbstractOracle<S> extends OracleMetadata {
 	/**
@@ -23,7 +22,7 @@ export interface AbstractOracle<S> extends OracleMetadata {
 	readonly newRunState: () => S;
 }
 const isAbstractOracle = (val: any): val is AsyncResourceOracle<unknown> =>
-	typeof val?.newRunState === 'function' && isOracleMetadata(val);
+	typeof val?.newRunState === 'function' && is<OracleMetadata>(val);
 
 export interface ResourceOracle<S> extends AbstractOracle<S> {
 	readonly validateResource: (resource: ResourceArgs, runState: S) => TestResult;

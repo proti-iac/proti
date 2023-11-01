@@ -18,16 +18,16 @@
     "postpack": "rm README.md LICENSE"
   },
   "dependencies": {
-    "@jest/test-result": "^29.6.2",
+    "@jest/test-result": "^29.7.0",
     "@proti-iac/core": "workspace:^",
-    "jest-runner": "^29.6.2",
-    "jest-watcher": "^29.6.2"
+    "jest-runner": "^29.7.0",
+    "jest-watcher": "^29.7.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.3",
-    "@types/node": "^18.17.1",
-    "jest": "^29.6.2",
+    "@types/jest": "^29.5.7",
+    "@types/node": "^18.18.8",
+    "jest": "^29.7.0",
     "ts-jest": "^29.1.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.2.2"
   }
 }

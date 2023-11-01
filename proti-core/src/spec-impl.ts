@@ -1,8 +1,10 @@
 import { Output, output } from '@pulumi/pulumi';
 import * as ps from '@proti-iac/spec';
-import { stringify } from 'typia';
+import { json } from 'typia';
 import { Generator } from './generator';
 import { popErrStack } from './utils';
+
+const stringify = json.assertStringify;
 
 export const createSpecImpl = (generator: Generator): typeof ps => ({
 	...ps,

@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import type { CommandResult } from '@pulumi/pulumi/automation';
 import os from 'os';
 import path from 'path';
-import { stringify } from 'typia';
+import { json } from 'typia';
 import { config, SchemaRegistryConfig } from '../src/config';
 import {
 	type PkgSchema,
@@ -13,6 +13,8 @@ import {
 	type Urn,
 } from '../src/pulumi';
 import { SchemaRegistry } from '../src/schema-registry';
+
+const stringify = json.stringify;
 
 jest.mock('../src/pulumi', () => ({ runPulumi: jest.fn() }));
 
