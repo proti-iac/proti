@@ -3,12 +3,12 @@
 ![CI workflow](https://github.com/proti-iac/proti/actions/workflows/ci.yaml/badge.svg)
 [![GitHub version](https://badge.fury.io/gh/proti-iac%2Fproti.svg)](https://badge.fury.io/gh/proti-iac%2Fproti)
 [![NPM version](https://badge.fury.io/js/@proti-iac%2Fcore.svg)](https://badge.fury.io/js/@proti-iac%2Fcore)
-[![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
+[![License](https://img.shields.io/github/license/proti-iac/proti)](./LICENSE)
 [![DOI](https://zenodo.org/badge/706779109.svg)](https://zenodo.org/doi/10.5281/zenodo.10028479)
 
 [ProTI](https://proti-iac.github.io) is an automated unit testing tool for Infrastructure as Code (IaC) programs. ProTI implements [Automated Configuration Testing (ACT)](https://proti-iac.github.io/#approach) for [Pulumi](https://pulumi.com) TypeScript, minimizing the development effort for unit testing Pulumi TypeScript IaC programs. ProTI is extensible through test generator and oracle plugins and leverages ideas from [fuzzing](https://en.wikipedia.org/wiki/Fuzzing) and [property-based testing](https://en.wikipedia.org/wiki/Software_testing#Property_testing).
 
-ProTI builds upon [Jest](https://jestjs.io/), implementing the Jest runner [`@proti-iac/runner`](./proti-runner/), the Jest test-runner [`@proti-iac/test-runner`](./proti-test-runner/), and the Jest reporter [`@proti-iac/reporter`](./proti-reporter/). [`@proti-iac/core`](./proti-core/) and [`@proti-iac/spec`](./proti-spec/) implement the core abstractions and the inline specification syntax, leveraging [fast-check](https://fast-check.dev) for random-based testing abstractions. [`@proti-iac/pulumi-packages-schema`](./proti-pulumi-packages-schema/) implements the first type-based generator and oracle plugins. [@proti-iac/plugins-demo](./proti-plugins-demo/) demonstrates the setup of an NPM package of configurable ProTI generator and oracle plugins, serving as a blueprint for new ProTI plugins.
+ProTI builds upon [Jest](https://jestjs.io/), implementing the Jest runner [`@proti-iac/runner`](./proti-runner/), the Jest test-runner [`@proti-iac/test-runner`](./proti-test-runner/), and the Jest reporter [`@proti-iac/reporter`](./proti-reporter/). [`@proti-iac/core`](./proti-core/) and [`@proti-iac/spec`](./proti-spec/) implement the core abstractions and the inline specification syntax, leveraging [fast-check](https://fast-check.dev) for random-based testing abstractions. [`@proti-iac/pulumi-packages-schema`](./proti-pulumi-packages-schema/) implements the first type-based generator and oracle plugins. [`@proti-iac/plugins-demo`](./proti-plugins-demo/) demonstrates the setup of an NPM package of configurable ProTI generator and oracle plugins, serving as a blueprint for new ProTI plugins.
 
 ![Overview of ProTI's NPM packages](https://proti-iac.github.io/assets/img/proti-packages.svg)
 
@@ -45,7 +45,7 @@ const config = {
 module.exports = config;
 ```
 
-Add further configuration to the file to augment Jest's, ts-jest's, and ProTI's default configuration. The default configuration configures a simple empty state test generator and an oracle that only checks URN uniqueness across all resources, which are implemented in [`@proti-iac/core`](./proti-core/). Most likely, you want to configure more sophisticated generator and generator plugins. [The next section](#configuring-proti) describes how. Concretely, [@proti-iac/pulumi-packages-schema's README](./proti-pulumi-packages-schema/README.md) describes how to install and configure our first type-based plugins.
+Add further configuration to the file to augment Jest's, ts-jest's, and ProTI's default configuration. The default configuration configures a simple empty state test generator and an oracle that only checks URN uniqueness across all resources, which are implemented in [`@proti-iac/core`](./proti-core/). Most likely, you want to configure more sophisticated generator and generator plugins. [The next section](#configuring-proti) describes how. Concretely, [`@proti-iac/pulumi-packages-schema`'s README](./proti-pulumi-packages-schema/README.md) describes how to install and configure our first type-based plugins.
 
 4. Run ProTI by running Jest on the project:
 
@@ -61,7 +61,7 @@ The generator plugin and the set of oracle plugins are configured in the test co
 
 The test runner configuration object under `globals.proti.testRunner` is passed as a whole to fast-check's runner in ProTI's test runner, inheriting all [configuration options of fast-check](https://fast-check.dev/api-reference/interfaces/Parameters.html). For instance, you can configure the test runner's verbosity level in `globals.proti.testRunner.verbose`. `0` only shows the final error result, `1` all failing tests, `2` the full tree of passing and failing tests.
 
-ProTI plugins are configured through `globals.proti.plugins.[PLUGIN NAME]`. For instance, the schema registry's schema cache of [@proti-iac/pulumi-packages-schema](./proti-pulumi-packages-schema/) can be disabled by setting `globals.proti.plugins.pulumi-packages-schema.registry.cacheDownloadedSchemas` to `false`.
+ProTI plugins are configured through `globals.proti.plugins.[PLUGIN NAME]`. For instance, the schema registry's schema cache of [`@proti-iac/pulumi-packages-schema`](./proti-pulumi-packages-schema/) can be disabled by setting `globals.proti.plugins.pulumi-packages-schema.registry.cacheDownloadedSchemas` to `false`.
 
 ### Using ProTI's Inline Specifications
 
@@ -111,7 +111,7 @@ Workaround: Use another Pulumi version than 3.72.0 or 3.73.0.
 
 ### Parallel Test Runner
 
-We use our own Jest runner `@proti-iac/runner` to pass down the resolver to the test runner `@proti-iac/test-runner`. This works well in single-worker execution. However, currently, parallel multi-worker execution is broken, most likely because serialization and deserialization of the resolver fails when Jest passes the resolver to the separate test runner.
+We use our own Jest runner [`@proti-iac/runner`](./proti-runner/) to pass down the resolver to the test runner [`@proti-iac/test-runner`](./proti-test-runner/). This works well in single-worker execution. However, currently, parallel multi-worker execution is broken, most likely because serialization and deserialization of the resolver fails when Jest passes the resolver to the separate test runner.
 
 Workaround: Only use single-worker execution. If multiple projects are tested, this can be enforced with `--runInBand` or `-i`.
 
@@ -125,5 +125,5 @@ Workarounds: Run ProTI only individually on programs. Fix the "Parallel Test Run
 
 We aim to leverage some cool concepts in our code:
 
-* Immutable types: Wherever possible we want to immutable `readonly` type definitions, i.e., through `Readonly<...>`, `ReadonlyArray<...>`, `ReadonlySet<...>`, and `ReadonlyMap<..., ...>`. `@proti-iac/core` implements a `DeepReadonly<...>` utility which makes this easier. More about immutable types in TypeScript: https://levelup.gitconnected.com/the-complete-guide-to-immutability-in-typescript-99154f859fdb
+* Immutable types: Wherever possible we want to immutable `readonly` type definitions, i.e., through `Readonly<...>`, `ReadonlyArray<...>`, `ReadonlySet<...>`, and `ReadonlyMap<..., ...>`. [`@proti-iac/core`](./proti-core/) implements a `DeepReadonly<...>` utility which makes this easier. More about immutable types in TypeScript: https://levelup.gitconnected.com/the-complete-guide-to-immutability-in-typescript-99154f859fdb
 * Stateless arbitraries: fast-check arbitraries are meant to be stateless, allowing safe re-use across tests. We embrace this and try to re-use instantiated arbitraries wherever possible for better run time and resource efficiency. 

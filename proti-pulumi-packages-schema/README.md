@@ -1,7 +1,10 @@
 # @proti-iac/pulumi-packages-schema
 
+![CI workflow](https://github.com/proti-iac/proti/actions/workflows/ci.yaml/badge.svg)
+[![GitHub version](https://badge.fury.io/gh/proti-iac%2Fproti.svg)](https://badge.fury.io/gh/proti-iac%2Fproti)
 [![NPM version](https://badge.fury.io/js/%40proti-iac%2Fpulumi-packages-schema.svg)](https://npmjs.com/package/@proti-iac/pulumi-packages-schema)
-[![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
+[![License](https://img.shields.io/github/license/proti-iac/proti)](../LICENSE)
+[![DOI](https://zenodo.org/badge/706779109.svg)](https://zenodo.org/doi/10.5281/zenodo.10028479)
 
 This package implements a [ProTI](https://proti-iac.github.io/) generator and a [ProTI](https://proti-iac.github.io/) oracle plugin. They are type-based, leveraging input and output configuration type metadata from [Pulumi package schemas](https://www.pulumi.com/docs/using-pulumi/pulumi-packages/schema/). By design, these are available for all resource types distributed in [Pulumi packages](https://www.pulumi.com/product/packages/). The generator plugin composes primitive fast-check arbitraries to a complex arbitrary of the shape of the resource type's output configuration type and draws random output configuration values from such arbitrary. The oracle plugin checks all received input configurations for type compliance with the resource type's input configuration type. 
 
@@ -35,7 +38,7 @@ const config = {
 module.exports = config;
 ```
 
-This package is configurable. The options are defined by the [exported `Config` type](./src/config.ts). This configuration can be defined under `globals.proti.plugins.pulumi-packages-schema`. For instance, to disable the schema registry's schema cache you can set `globals.proti.plugins.pulumi-packages-schema.registry.cacheDownloadedSchemas` of the `config` object in your project's `jest.config.js` file to `false`.
+This package is configurable. The options are defined by the [exported `Config` type](../proti-pulumi-packages-schema/src/config.ts). This configuration can be defined under `globals.proti.plugins.pulumi-packages-schema`. For instance, to disable the schema registry's schema cache you can set `globals.proti.plugins.pulumi-packages-schema.registry.cacheDownloadedSchemas` of the `config` object in your project's `jest.config.js` file to `false`.
 
 ## Schema Registry
 
