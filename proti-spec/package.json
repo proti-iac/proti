@@ -14,7 +14,7 @@
     "build": "yarn g:build",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
-    "prepack": "yarn g:prepack && cp ../README.md . && cp ../LICENSE .",
+    "prepack": "yarn g:prepack && yarn g:license:copy && yarn g:readme:copy && yarn g:readme:urls",
     "postpack": "rm README.md LICENSE"
   },
   "dependencies": {

@@ -1,9 +1,12 @@
 # @proti-iac/plugins-demo
 
+![CI workflow](https://github.com/proti-iac/proti/actions/workflows/ci.yaml/badge.svg)
+[![GitHub version](https://badge.fury.io/gh/proti-iac%2Fproti.svg)](https://badge.fury.io/gh/proti-iac%2Fproti)
 [![NPM version](https://badge.fury.io/js/%40proti-iac%2Fplugins-demo.svg)](https://npmjs.com/package/@proti-iac/plugins-demo)
-[![License](https://img.shields.io/github/license/proti-iac/proti)](LICENSE)
+[![License](https://img.shields.io/github/license/proti-iac/proti)](../LICENSE)
+[![DOI](https://zenodo.org/badge/706779109.svg)](https://zenodo.org/doi/10.5281/zenodo.10028479)
 
-This package demonstrates the implementation of a [ProTI](https://proti-iac.github.io/) generator and a [ProTI](https://proti-iac.github.io/) oracle plugin. The [demo generator](./src/demo-arbitrary.ts) simply generates an empty output configuration for all resources. The [demo oracle](./src/demo-oracle.ts) checks whether all resource URNs in the IaC program are unique. Both plugins and the [config](./src/config.ts) demonstrate how ProTI plugins can leverage ProTI's interface for ProTI plugin user configuration through Jest. Use this package as a starter blueprint for your own ProTI plugin implementations.
+This package demonstrates the implementation of a [ProTI](https://proti-iac.github.io/) generator and a [ProTI](https://proti-iac.github.io/) oracle plugin. The [demo generator](../proti-plugins-demo/src/demo-arbitrary.ts) simply generates an empty output configuration for all resources. The [demo oracle](../proti-plugins-demo/src/demo-oracle.ts) checks whether all resource URNs in the IaC program are unique. Both plugins and the [config](../proti-plugins-demo/src/config.ts) demonstrate how ProTI plugins can leverage ProTI's interface for ProTI plugin user configuration through Jest. Use this package as a starter blueprint for your own ProTI plugin implementations.
 
 For development, we provide some general instructions under the [Developers Guide](../README.md#developers-guide) in the main README of this repository.
 
@@ -11,11 +14,11 @@ This package implements a rudimentary end-to-end test using one of the example P
 
 ## Implementing Generator Plugins
 
-[`src/demo-arbitrary.ts`](./src/demo-arbitrary.ts) is an example ProTI generator plugin. Generator modules must have a default export that implements `Arbitrary<Generator>`. `Arbitrary` is the arbitrary abstraction from fast-check, and [`Generator`](../proti-core/src/generator.ts) the test generator abstraction of ProTI. ProTI draws one generator from the arbitrary per test run. The generator itself is then invoked throughout the test run to incrementally provide the input for the test run, practically unfolding the test case.
+[`src/demo-arbitrary.ts`](../proti-plugins-demo/src/demo-arbitrary.ts) is an example ProTI generator plugin. Generator modules must have a default export that implements `Arbitrary<Generator>`. `Arbitrary` is the arbitrary abstraction from fast-check, and [`Generator`](../proti-core/src/generator.ts) the test generator abstraction of ProTI. ProTI draws one generator from the arbitrary per test run. The generator itself is then invoked throughout the test run to incrementally provide the input for the test run, practically unfolding the test case.
 
 ## Implementing Oracle Plugins
 
-[`src/demo-oracle.ts`](./src/demo-oracle.ts) is an example ProTI oracle plugin. Oracle modules must have a default export that implements one of [ProTI's oracle interfaces](../proti-core/src/oracle.ts). The following oracle interfaces exist:
+[`src/demo-oracle.ts`](../proti-plugins-demo/src/demo-oracle.ts) is an example ProTI oracle plugin. Oracle modules must have a default export that implements one of [ProTI's oracle interfaces](../proti-core/src/oracle.ts). The following oracle interfaces exist:
 
 * `ResourceOracle` is for oracles that are synchronously invoked for every resource on its definition.
 * `AsyncResourceOracle` is like `ResourceOracle` but asynchronous.
@@ -58,4 +61,4 @@ const config = {
 module.exports = config;
 ```
 
-This package is configurable. The options are defined by the [exported `Config` type](./src/config.ts). This configuration can be defined under `globals.proti.plugins.plugins-demo`.
+This package is configurable. The options are defined by the [exported `Config` type](../proti-plugins-demo/src/config.ts). This configuration can be defined under `globals.proti.plugins.plugins-demo`.

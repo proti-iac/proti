@@ -20,8 +20,8 @@
     "dev": "yarn g:build:tspc && yarn jest -c \"{ \\\"preset\\\": \\\"../proti-test-runner/jest-preset.js\\\", \\\"globals\\\": { \\\"proti\\\": { \\\"testCoordinator\\\": { \\\"arbitrary\\\": \\\"$(pwd)/bin/arbitrary\\\", \\\"oracles\\\": [ \\\"$(pwd)/bin/oracle\\\" ] }, \\\"plugins\\\": { \\\"pulumi-packages-schema\\\": {} } } } }\" --roots",
     "lint": "yarn g:lint",
     "test": "yarn g:test",
-    "prepack": "yarn g:prepack && cp ../LICENSE .",
-    "postpack": "rm LICENSE",
+    "prepack": "yarn g:prepack && yarn g:license:copy && cp README.md READMEbu.md && yarn g:readme:urls",
+    "postpack": "rm README.md LICENSE && mv READMEbu.md README.md",
     "update-schema": "curl https://raw.githubusercontent.com/pulumi/pulumi/master/pkg/codegen/schema/pulumi.json | yarn json2ts > src/pulumi-generated.d.ts",
     "postinstall": "ts-patch install"
   },

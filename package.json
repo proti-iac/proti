@@ -19,6 +19,7 @@
     "g:build": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn tsc'",
     "g:build:tspc": "yarn g:pkgroot $INIT_CWD tsconfig.json build 'yarn tspc'",
     "build": "yarn g:all build '-vip --topological-dev'",
+    "g:license:copy": "yarn g:pkgroot $INIT_CWD tsconfig.json 'copy LICENSE' 'cp ../LICENSE .'",
     "g:lint": "eslint --ext .ts --ignore-pattern bin/ $INIT_CWD",
     "lint": "yarn g:lint",
     "g:test": "yarn g:pkgroot $INIT_CWD tsconfig.json test 'yarn build && INIT_CWD=$(pwd) && cd $PROJECT_CWD && jest --roots $INIT_CWD'",
@@ -26,7 +27,9 @@
     "pack:all": "yarn workspaces foreach -vi  --topological-dev --exclude proti-monorepo  pack --out ../%s@%v.tgz",
     "g:prepack": "yarn g:pkgroot $INIT_CWD package.json prepack 'yarn clean && yarn build'",
     "prepack": "yarn g:all prepack '-vip --topological-dev'",
-    "postinstall": "ts-patch install"
+    "postinstall": "ts-patch install",
+    "g:readme:copy": "yarn g:pkgroot $INIT_CWD tsconfig.json 'copy README' 'cp ../README.md .'",
+    "g:readme:urls": "yarn g:pkgroot $INIT_CWD tsconfig.json 'resolve README URLs' 'sed -i.bak \"s#\\(\\[\\`@proti-iac/[^\\`]*\\`\\](\\)\\./proti-\\([^/]*/)\\)#\\1https://www.npmjs.com/package/@proti-iac/\\2#g\" README.md && sed -i.bak \"s#\\(\\](\\)\\.\\{1,2\\}/\\([^)]*)\\)#\\1https://github.com/proti-iac/proti/blob/main/\\2#g\" README.md && rm README.md.bak'"
   },
   "devDependencies": {
     "@proti-iac/runner": "workspace:^",
