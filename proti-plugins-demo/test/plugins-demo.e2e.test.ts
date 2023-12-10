@@ -6,7 +6,10 @@ const protiConfig: DeepPartial<Config> = {
 	testRunner: { numRuns: 2 },
 	testCoordinator: {
 		arbitrary: path.resolve(__dirname, '../bin/demo-arbitrary'),
-		oracles: [path.resolve(__dirname, '../bin/demo-oracle')],
+		oracles: [
+			path.resolve(__dirname, '../bin/demo-oracle'),
+			path.resolve(__dirname, '../bin/demo-isolated-runtime'),
+		],
 	},
 };
 const jestCmd = (...projects: string[]): string =>
