@@ -8,7 +8,7 @@ describe('init module', () => {
 		pluginsConfig: {},
 		testPath: '',
 		cacheDir: '',
-	};
+	} as PluginArgs;
 
 	beforeEach(() => resetCachedConfig());
 

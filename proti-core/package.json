@@ -35,7 +35,6 @@
   },
   "devDependencies": {
     "@jest/environment": "^29.7.0",
-    "@jest/transform": "^29.7.0",
     "@jest/types": "^29.6.3",
     "@types/jest": "^29.5.7",
     "@types/js-yaml": "^4.0.8",

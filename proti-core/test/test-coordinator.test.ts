@@ -13,7 +13,7 @@ describe('test coordinator', () => {
 		pluginsConfig: defaultPluginsConfig(),
 		testPath: 'TEST_PATH',
 		cacheDir: 'CACHE',
-	};
+	} as PluginArgs;
 
 	describe('loading test oracles', () => {
 		it('should not load oracles', async () => {
