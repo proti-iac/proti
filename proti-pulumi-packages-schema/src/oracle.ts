@@ -1,8 +1,8 @@
 import {
 	type AsyncResourceOracle,
 	type JsType,
+	type PluginInitFn,
 	type ResourceArgs,
-	type TestModuleInitFn,
 	type TestResult,
 	type Types,
 	typeOf,
@@ -354,4 +354,4 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle<undefined
 
 export default PulumiPackagesSchemaOracle;
 
-export const init: TestModuleInitFn = initModule;
+export const init: PluginInitFn = initModule;

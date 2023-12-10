@@ -5,7 +5,7 @@ import type {
 	DeploymentOracle,
 	ResourceOracle,
 } from '../../src/oracle';
-import type { TestModuleConfig, TestModuleInitFn } from '../../src/test-coordinator';
+import type { PluginArgs, PluginInitFn } from '../../src/plugin';
 
 class Oracle
 	implements
@@ -32,11 +32,11 @@ class Oracle
 export default Oracle;
 
 // eslint-disable-next-line import/no-mutable-exports
-export let config: TestModuleConfig;
-export const init: TestModuleInitFn = async (testModuleConfig) =>
+export let config: PluginArgs;
+export const init: PluginInitFn = async (pluginArgs) =>
 	new Promise((done) => {
 		process.nextTick(() => {
-			config = testModuleConfig;
+			config = pluginArgs;
 			done();
 		});
 	});

@@ -28,6 +28,7 @@
     "@proti-iac/core": "workspace:^",
     "@pulumi/pulumi": "^3.91.1",
     "fast-check": "^3.13.2",
+    "jest-runtime": "^29.7.0",
     "ts-patch": "3.0.2",
     "typia": "^5.2.4"
   },
