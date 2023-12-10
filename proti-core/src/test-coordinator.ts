@@ -1,9 +1,8 @@
 import * as fc from 'fast-check';
 import type { Arbitrary } from 'fast-check';
 import { assertEquals, is } from 'typia';
-import type { PluginsConfig, TestCoordinatorConfig } from './config';
+import type { TestCoordinatorConfig } from './config';
 import type { Generator } from './generator';
-import type { ModuleLoader } from './module-loader';
 import {
 	AsyncDeploymentOracle,
 	AsyncResourceOracle,
@@ -20,7 +19,8 @@ import {
 	TestResult,
 	AbstractOracle,
 } from './oracle';
-import { createAppendOnlyArray, DeepReadonly } from './utils';
+import type { PluginArgs, PluginInitFn } from './plugin';
+import { createAppendOnlyArray, type DeepReadonly } from './utils';
 
 type Oracles = {
 	resource: ResourceOracle<unknown>[];
@@ -35,14 +35,6 @@ type Fail = DeepReadonly<{
 	resource?: ResourceArgs;
 	error: Error;
 }>;
-
-export type TestModuleConfig = Readonly<{
-	readonly testPath: string;
-	readonly cacheDir: string;
-	readonly moduleLoader: ModuleLoader;
-	readonly pluginsConfig: PluginsConfig;
-}>;
-export type TestModuleInitFn = (config: TestModuleConfig) => Promise<void>;
 
 type OracleWithState<O extends AbstractOracle<S>, S = unknown> = readonly [O, S];
 type UnpackArray<T> = T extends (infer U)[] ? U : never;
@@ -156,7 +148,7 @@ export class TestCoordinator {
 
 	constructor(
 		private readonly config: TestCoordinatorConfig,
-		private readonly testModuleConfig: TestModuleConfig
+		private readonly pluginArgs: PluginArgs
 	) {
 		this.oracles = this.loadOracles();
 		this.arbitrary = this.loadArbitrary();
@@ -164,7 +156,7 @@ export class TestCoordinator {
 
 	private async initTestModule(module: any): Promise<void> {
 		if (typeof module.init === 'function')
-			await assertEquals<TestModuleInitFn>(module.init)(this.testModuleConfig);
+			await assertEquals<PluginInitFn>(module.init)(this.pluginArgs);
 	}
 
 	private async loadOracles(): Promise<Oracles> {

@@ -1122,6 +1122,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@proti-iac/core@workspace:proti-core"
   dependencies:
+    "@jest/environment": ^29.7.0
+    "@jest/transform": ^29.7.0
     "@jest/types": ^29.6.3
     "@proti-iac/spec": "workspace:^"
     "@pulumi/pulumi": ^3.91.1
@@ -1152,6 +1154,7 @@ __metadata:
     "@types/node": ^18.18.8
     fast-check: ^3.13.2
     jest: ^29.7.0
+    jest-runtime: ^29.7.0
     ts-patch: 3.0.2
     typescript: ^5.2.2
     typia: ^5.2.4

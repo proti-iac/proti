@@ -1,15 +1,15 @@
-import type { TestModuleConfig, TestModuleInitFn } from '@proti-iac/core';
+import type { PluginInitFn } from '@proti-iac/core';
 import path from 'path';
 import { config } from './config';
 import { SchemaRegistry } from './schema-registry';
 
 const pluginName = 'pulumi-packages-schema';
-export const initModule: TestModuleInitFn = async ({
+export const initModule: PluginInitFn = async ({
 	moduleLoader,
 	pluginsConfig,
 	testPath,
 	cacheDir,
-}: TestModuleConfig) => {
+}) => {
 	const pluginConfig: unknown =
 		pluginName in pluginsConfig ? pluginsConfig[pluginName] : undefined;
 	const conf = config(pluginConfig);

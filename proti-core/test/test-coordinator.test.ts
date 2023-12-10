@@ -4,10 +4,11 @@ import { is } from 'typia';
 import { defaultPluginsConfig, defaultTestCoordinatorConfig } from '../src/config';
 import type { ModuleLoader } from '../src/module-loader';
 import { isOracle } from '../src/oracle';
-import { TestCoordinator, TestModuleConfig } from '../src/test-coordinator';
+import type { PluginArgs } from '../src/plugin';
+import { TestCoordinator } from '../src/test-coordinator';
 
 describe('test coordinator', () => {
-	const testModuleConfig: TestModuleConfig = {
+	const pluginArgs: PluginArgs = {
 		moduleLoader: new (jest.fn<ModuleLoader, []>())(),
 		pluginsConfig: defaultPluginsConfig(),
 		testPath: 'TEST_PATH',
@@ -16,7 +17,7 @@ describe('test coordinator', () => {
 
 	describe('loading test oracles', () => {
 		const coordinatorForOracles = (oracles: string[]): TestCoordinator =>
-			new TestCoordinator({ ...defaultTestCoordinatorConfig(), oracles }, testModuleConfig);
+			new TestCoordinator({ ...defaultTestCoordinatorConfig(), oracles }, pluginArgs);
 
 		it('should not load oracles', async () => {
 			const coordinator = coordinatorForOracles([]);
@@ -53,7 +54,7 @@ describe('test coordinator', () => {
 			const module = require(initOraclePath);
 			expect(module.config).toBe(undefined);
 			await coordinatorForOracles([initOraclePath]).oracles;
-			expect(module.config).toBe(testModuleConfig);
+			expect(module.config).toBe(pluginArgs);
 		});
 	});
 
@@ -64,7 +65,7 @@ describe('test coordinator', () => {
 					...defaultTestCoordinatorConfig(),
 					arbitrary,
 				},
-				testModuleConfig
+				pluginArgs
 			);
 		const arbPath = path.resolve(__dirname, './test-coordinator-tests/arbitrary');
 		const initArbPath = path.resolve(__dirname, './test-coordinator-tests/arbitrary-init');
@@ -84,7 +85,7 @@ describe('test coordinator', () => {
 			const module = require(initArbPath);
 			expect(module.config).toBe(undefined);
 			await coordinatorForArbitrary(initArbPath).arbitrary;
-			expect(module.config).toBe(testModuleConfig);
+			expect(module.config).toBe(pluginArgs);
 		});
 	});
 });
