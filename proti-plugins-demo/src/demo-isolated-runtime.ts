@@ -1,0 +1,23 @@
+import type { ResourceOracle, TestResult, TestModuleInitFn } from '@proti-iac/core';
+
+/**
+ * Simple {@link ResourceOracle} emonstrating a ProTI plugin with an isolated Jest runtime.
+ */
+export class DemoIsolatedRuntime implements ResourceOracle<null> {
+	name = 'Demo Isolated Runtime';
+
+	description = 'An oracle plugin demonstrating a ProTI plugin with an isolated Jest runtime';
+
+	// eslint-disable-next-line class-methods-use-this
+	newRunState = () => null;
+
+	// eslint-disable-next-line class-methods-use-this
+	validateResource = (): TestResult => undefined;
+}
+
+export default DemoIsolatedRuntime;
+
+/**
+ * Initialization method called when the oracle is loaded.
+ */
+export const init: TestModuleInitFn = async () => {};
