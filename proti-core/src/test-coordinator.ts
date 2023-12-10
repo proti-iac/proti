@@ -1,9 +1,8 @@
 import * as fc from 'fast-check';
 import type { Arbitrary } from 'fast-check';
 import { assertEquals, is } from 'typia';
-import type { PluginsConfig, TestCoordinatorConfig } from './config';
+import type { TestCoordinatorConfig } from './config';
 import type { Generator } from './generator';
-import type { ModuleLoader } from './module-loader';
 import {
 	AsyncDeploymentOracle,
 	AsyncResourceOracle,
@@ -20,7 +19,8 @@ import {
 	TestResult,
 	AbstractOracle,
 } from './oracle';
-import { createAppendOnlyArray, DeepReadonly } from './utils';
+import type { PluginArgs, PluginInitFn } from './plugin';
+import { createAppendOnlyArray, type DeepReadonly } from './utils';
 
 type Oracles = {
 	resource: ResourceOracle<unknown>[];
@@ -35,14 +35,6 @@ type Fail = DeepReadonly<{
 	resource?: ResourceArgs;
 	error: Error;
 }>;
-
-export type TestModuleConfig = Readonly<{
-	readonly testPath: string;
-	readonly cacheDir: string;
-	readonly moduleLoader: ModuleLoader;
-	readonly pluginsConfig: PluginsConfig;
-}>;
-export type TestModuleInitFn = (config: TestModuleConfig) => Promise<void>;
 
 type OracleWithState<O extends AbstractOracle<S>, S = unknown> = readonly [O, S];
 type UnpackArray<T> = T extends (infer U)[] ? U : never;
@@ -157,25 +149,22 @@ export class TestCoordinator {
 
 	public static async create(
 		config: TestCoordinatorConfig,
-		testModuleConfig: TestModuleConfig
+		pluginArgs: PluginArgs
 	): Promise<TestCoordinator> {
 		return new TestCoordinator(
-			await this.loadArbitrary(config, testModuleConfig),
-			await this.loadOracles(config, testModuleConfig)
+			await this.loadArbitrary(config, pluginArgs),
+			await this.loadOracles(config, pluginArgs)
 		);
 	}
 
-	private static async initTestModule(
-		module: any,
-		testModuleConfig: TestModuleConfig
-	): Promise<void> {
+	private static async initTestModule(module: any, pluginArgs: PluginArgs): Promise<void> {
 		if (typeof module.init === 'function')
-			await assertEquals<TestModuleInitFn>(module.init)(testModuleConfig);
+			await assertEquals<PluginInitFn>(module.init)(pluginArgs);
 	}
 
 	public static async loadOracles(
 		config: TestCoordinatorConfig,
-		testModuleConfig: TestModuleConfig
+		pluginArgs: PluginArgs
 	): Promise<Oracles> {
 		const oracles: Oracles = {
 			resource: [],
@@ -186,7 +175,7 @@ export class TestCoordinator {
 		await Promise.all(
 			config.oracles.map(async (moduleName) => {
 				const oracleModule = await import(moduleName);
-				await this.initTestModule(oracleModule, testModuleConfig);
+				await this.initTestModule(oracleModule, pluginArgs);
 				const OracleConstructor = oracleModule.default;
 				const oracle = new OracleConstructor();
 
@@ -203,10 +192,10 @@ export class TestCoordinator {
 
 	public static async loadArbitrary(
 		config: TestCoordinatorConfig,
-		testModuleConfig: TestModuleConfig
+		pluginArgs: PluginArgs
 	): Promise<Arbitrary<Generator>> {
 		const generatorArbitraryModule = await import(config.arbitrary);
-		await this.initTestModule(generatorArbitraryModule, testModuleConfig);
+		await this.initTestModule(generatorArbitraryModule, pluginArgs);
 		const ArbitraryConstructor = generatorArbitraryModule.default;
 		const arbitrary = new ArbitraryConstructor();
 		if (!is<fc.Arbitrary<Generator>>(arbitrary))

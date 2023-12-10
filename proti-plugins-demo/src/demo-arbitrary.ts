@@ -3,9 +3,9 @@ import { Arbitrary } from 'fast-check';
 import { is } from 'typia';
 import {
 	Generator,
+	PluginInitFn,
 	ResourceArgs,
 	ResourceOutput,
-	TestModuleInitFn,
 	TraceGenerator,
 } from '@proti-iac/core';
 import { config } from './config';
@@ -60,4 +60,4 @@ export default DemoGeneratorArbitrary;
 /**
  * Initialization method called when the generator is loaded.
  */
-export const init: TestModuleInitFn = async () => {};
+export const init: PluginInitFn = async () => {};

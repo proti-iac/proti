@@ -4,10 +4,11 @@ import { is } from 'typia';
 import { defaultPluginsConfig, defaultTestCoordinatorConfig } from '../src/config';
 import type { ModuleLoader } from '../src/module-loader';
 import { isOracle } from '../src/oracle';
-import { TestCoordinator, TestModuleConfig } from '../src/test-coordinator';
+import type { PluginArgs } from '../src/plugin';
+import { TestCoordinator } from '../src/test-coordinator';
 
 describe('test coordinator', () => {
-	const testModuleConfig: TestModuleConfig = {
+	const pluginArgs: PluginArgs = {
 		moduleLoader: new (jest.fn<ModuleLoader, []>())(),
 		pluginsConfig: defaultPluginsConfig(),
 		testPath: 'TEST_PATH',
@@ -19,7 +20,7 @@ describe('test coordinator', () => {
 			Object.entries(
 				await TestCoordinator.loadOracles(
 					{ ...defaultTestCoordinatorConfig(), oracles: [] },
-					testModuleConfig
+					pluginArgs
 				)
 			).forEach(([, oracles]) => expect(oracles.length).toBe(0));
 		});
@@ -39,7 +40,7 @@ describe('test coordinator', () => {
 						path.resolve(__dirname, './test-coordinator-tests/', file)
 					),
 				},
-				testModuleConfig
+				pluginArgs
 			);
 			Object.entries(oracles).forEach(([type, orcls]) => {
 				expect(orcls.length).toBe(types.includes(type as OracleTypes) ? 1 : 0);
@@ -50,7 +51,7 @@ describe('test coordinator', () => {
 		it('should fail on loading non-existing oracle', () => {
 			const oracles = TestCoordinator.loadOracles(
 				{ ...defaultTestCoordinatorConfig(), oracles: ['a'] },
-				testModuleConfig
+				pluginArgs
 			);
 			expect(oracles).rejects.toThrow(/Cannot find module 'a' from /);
 		});
@@ -62,9 +63,9 @@ describe('test coordinator', () => {
 			expect(module.config).toBe(undefined);
 			await TestCoordinator.loadOracles(
 				{ ...defaultTestCoordinatorConfig(), oracles: [initOraclePath] },
-				testModuleConfig
+				pluginArgs
 			);
-			expect(module.config).toBe(testModuleConfig);
+			expect(module.config).toBe(pluginArgs);
 		});
 	});
 
@@ -75,7 +76,7 @@ describe('test coordinator', () => {
 		it('should load arbitrary', async () => {
 			const arb = await TestCoordinator.loadArbitrary(
 				{ ...defaultTestCoordinatorConfig(), arbitrary: arbPath },
-				testModuleConfig
+				pluginArgs
 			);
 			expect(is<fc.Arbitrary<Generator>>(arb)).toBe(true);
 		});
@@ -83,7 +84,7 @@ describe('test coordinator', () => {
 		it('should fail on loading non-existing arbitrary', () => {
 			const arb = TestCoordinator.loadArbitrary(
 				{ ...defaultTestCoordinatorConfig(), arbitrary: 'a' },
-				testModuleConfig
+				pluginArgs
 			);
 			expect(arb).rejects.toThrow(/Cannot find module 'a' from /);
 		});
@@ -94,9 +95,9 @@ describe('test coordinator', () => {
 			expect(module.config).toBe(undefined);
 			await TestCoordinator.loadArbitrary(
 				{ ...defaultTestCoordinatorConfig(), arbitrary: initArbPath },
-				testModuleConfig
+				pluginArgs
 			);
-			expect(module.config).toBe(testModuleConfig);
+			expect(module.config).toBe(pluginArgs);
 		});
 	});
 });
