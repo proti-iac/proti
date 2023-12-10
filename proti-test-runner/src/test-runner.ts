@@ -8,8 +8,8 @@ import type pulumiOutput from '@pulumi/pulumi/output';
 import { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
 import * as fc from 'fast-check';
 import type { IHasteFS } from 'jest-haste-map';
-import type Runtime from 'jest-runtime';
 import type Resolver from 'jest-resolve';
+import type Runtime from 'jest-runtime';
 import { hrtime } from 'process';
 
 import {
@@ -80,21 +80,22 @@ process.on('unhandledRejection', (err: Error) => {
 });
 
 const runProti = async (
-	config: DeepReadonly<Config.ProjectConfig>,
+	globalConfig: DeepReadonly<Config.GlobalConfig>,
+	projectConfig: DeepReadonly<Config.ProjectConfig>,
 	environment: JestEnvironment,
 	runtime: Runtime,
 	testPath: string,
 	runAccompanyingTest: ReturnType<typeof makeAccompanyingTest>
 ): Promise<CheckResult> => {
 	const [proti, resolver, hasteFS] = await errMsg(
-		getGlobals(config.globals),
+		getGlobals(projectConfig.globals),
 		'Failed to get configuration from globals'
 	);
 	const pulumiProject = await runAccompanyingTest('Read Pulumi.yaml', () =>
 		readPulumiProject(testPath)
 	);
 
-	if (config.injectGlobals) {
+	if (projectConfig.injectGlobals) {
 		const globals = {
 			expect: jestExpect,
 		};
@@ -103,7 +104,7 @@ const runProti = async (
 
 	const resolveTransform = async () => {
 		const modLoader = await ModuleLoader.create(
-			config,
+			projectConfig,
 			proti.moduleLoading,
 			runtime,
 			resolver,
@@ -151,7 +152,15 @@ const runProti = async (
 		moduleLoader,
 		pluginsConfig: proti.plugins,
 		testPath,
-		cacheDir: config.cacheDirectory,
+		cacheDir: projectConfig.cacheDirectory,
+		projectConfig,
+		globalConfig,
+		environment,
+		resolver,
+		runtime,
+		hasteFS,
+		protiConfig: proti,
+		pulumiProject,
 	});
 
 	// @proti-iac/spec ad-hoc specifications is enabled when used in the program and not explicitely disabled
@@ -285,7 +294,7 @@ const runProti = async (
 
 const testRunner = async (
 	globalConfig: DeepReadonly<Config.GlobalConfig>,
-	config: DeepReadonly<Config.ProjectConfig>,
+	projectConfig: DeepReadonly<Config.ProjectConfig>,
 	environment: JestEnvironment,
 	runtime: Runtime,
 	testPath: string
@@ -294,7 +303,7 @@ const testRunner = async (
 	const accompanyingResults: Result[] = [];
 	const runAccompanyingTest = makeAccompanyingTest((result) => accompanyingResults.push(result));
 	const checkResult = await runAccompanyingTest('Running ProTI', () =>
-		runProti(config, environment, runtime, testPath, runAccompanyingTest)
+		runProti(globalConfig, projectConfig, environment, runtime, testPath, runAccompanyingTest)
 	).catch(() => undefined);
 	return toTestResult({
 		testPath,
