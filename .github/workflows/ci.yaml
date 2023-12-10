@@ -49,9 +49,25 @@ jobs:
       - name: Run tests
         run: yarn && yarn test
 
+  lint:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Download workdir
+        uses: actions/download-artifact@v3
+        with:
+          name: install-${{ github.sha }}
+          path: /tmp
+      - name: Unpack workdir
+        run: tar -xzf /tmp/workdir.tar.gz .
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+      - name: Run linter
+        run: yarn && yarn lint
+
   pack:
     runs-on: ubuntu-latest
-    needs: [install, test]
+    needs: [install, lint, test]
     steps:
       - name: Download workdir
         uses: actions/download-artifact@v3

@@ -14,7 +14,7 @@ import {
 } from '../src/pulumi';
 import { SchemaRegistry } from '../src/schema-registry';
 
-const stringify = json.stringify;
+const { stringify } = json;
 
 jest.mock('../src/pulumi', () => ({ runPulumi: jest.fn() }));
 

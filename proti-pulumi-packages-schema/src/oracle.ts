@@ -38,7 +38,7 @@ import {
 	transformTypeDefinition,
 } from './pulumi';
 
-const stringify = json.stringify;
+const { stringify } = json;
 
 /**
  * Validators are type guards to get support from the type system. For better
