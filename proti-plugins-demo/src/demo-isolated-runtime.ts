@@ -1,4 +1,8 @@
-import { type ShouldInstrumentOptions, createScriptTransformer } from '@jest/transform';
+import {
+	createScriptTransformer,
+	type ScriptTransformer,
+	type ShouldInstrumentOptions,
+} from '@jest/transform';
 import type { Config } from '@jest/types';
 import {
 	type ResourceOracle,
@@ -7,6 +11,7 @@ import {
 	ModuleLoader,
 } from '@proti-iac/core';
 import Runtime from 'jest-runtime';
+import path from 'path';
 
 /**
  * Simple {@link ResourceOracle} emonstrating a ProTI plugin with an isolated Jest runtime.
@@ -45,8 +50,17 @@ export const init: PluginInitFn = async ({
 		collectCoverageFrom: globalConfig.collectCoverageFrom as string[],
 		coverageProvider: globalConfig.coverageProvider,
 	};
-	const transformer = await createScriptTransformer(
-		projectConfig as Config.ProjectConfig,
+	const manipulatedConfig: Config.ProjectConfig = {
+		...(projectConfig as Config.ProjectConfig),
+		// Replace all configured transformers with the demo transformer for the isolated environment
+		transform: projectConfig.transform.map(([pattern]) => [
+			pattern,
+			path.join(__dirname, '/demo-transformer.js'),
+			{},
+		]),
+	};
+	const transformer: ScriptTransformer = await createScriptTransformer(
+		manipulatedConfig,
 		cacheFS
 	);
 	const runtime = new Runtime(
@@ -68,5 +82,7 @@ export const init: PluginInitFn = async ({
 		pulumiProject.main
 	);
 	// Run program in isolated environment
+	console.info('Running program in isolated runtime of demo ProTI plugin');
 	await modLoader.execProgram();
+	console.info('Completed running program in isolated runtime of demo ProTI plugin');
 };
