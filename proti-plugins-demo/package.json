@@ -9,6 +9,7 @@
     ".": "./bin/index.js",
     "./demo-arbitrary": "./bin/demo-arbitrary.js",
     "./demo-isolated-runtime": "./bin/demo-isolated-runtime.js",
+    "./demo-transformer": "./bin/demo-transformer.js",
     "./demo-oracle": "./bin/demo-oracle.js"
   },
   "types": "./bin/index.d.ts",
@@ -31,6 +32,7 @@
     "@pulumi/pulumi": "^3.91.1",
     "fast-check": "^3.13.2",
     "jest-runtime": "^29.7.0",
+    "ts-jest": "^29.1.1",
     "ts-patch": "3.0.2",
     "typia": "^5.2.4"
   },
