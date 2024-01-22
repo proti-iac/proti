@@ -21,7 +21,7 @@ export const readPulumiProject = async (projectFile: string): Promise<PulumiProj
 		projectFile,
 		main:
 			typeof project.main === 'string'
-				? path.resolve(projectFile, project.main)
+				? path.resolve(path.dirname(projectFile), project.main)
 				: path.dirname(projectFile),
 		...(typeof project.name === 'string' ? { name: project.name } : {}),
 		...(typeof project.description === 'string' ? { description: project.description } : {}),

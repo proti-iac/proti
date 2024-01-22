@@ -1,0 +1,2 @@
+runtime: nodejs
+main: hello/world.ts
