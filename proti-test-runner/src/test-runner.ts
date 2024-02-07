@@ -27,6 +27,7 @@ import {
 	readPulumiProject,
 	type ResourceArgs,
 	TestCoordinator,
+	createAppendOnlyArray,
 } from '@proti-iac/core';
 
 import { CheckResult, Result, RunResult, toTestResult } from './test-result';
@@ -161,14 +162,20 @@ const runProti = async (
 
 	const runStats: RunResult[] = [];
 	let runIdCounter = 0;
-	const testPredicate = async (generator: Generator): Promise<boolean> => {
-		// eslint-disable-next-line no-plusplus
-		const runId = ++runIdCounter;
-		const errors: Error[] = [];
+
+	const executeTestRun = async (
+		runId: number,
+		generator: Generator,
+		errors: readonly Error[],
+		reportError: (e: Error) => void
+	): Promise<void> => {
 		const unhandledRejection = new Promise<void>((_, reject) => {
 			notifyUnhandledRejection = reject;
-		}).catch((err) => errors.push(err));
-		const testRunCoordinator = await testCoordinator.newRunCoordinator(generator);
+		}).catch(reportError);
+		const testRunCoordinator = await errMsg(
+			testCoordinator.newRunCoordinator(generator),
+			'Failed to initialize test run coordinator'
+		);
 		await runtime.isolateModulesAsync(async () => {
 			outputsWaiter.reset();
 			moduleLoader.mockModules(preloads);
@@ -215,14 +222,11 @@ const runProti = async (
 			try {
 				moduleLoader.execProgram();
 			} catch (error) {
-				errors.push(error as Error);
+				reportError(error as Error);
 			}
-			errors.push(
-				...(await Promise.race([
-					unhandledRejection.then(() => []),
-					outputsWaiter.isCompleted(),
-				]))
-			);
+			(
+				await Promise.race([unhandledRejection.then(() => []), outputsWaiter.isCompleted()])
+			).forEach(reportError);
 			// Give remaining async code a chance to settle
 			await new Promise(setImmediate);
 			// Skips deployment validation if an error was found already
@@ -246,7 +250,7 @@ const runProti = async (
 				const err = new Error(msg, { cause: fail.error });
 				// The stack trace is uninteresting
 				delete err.stack;
-				errors.push(err);
+				reportError(err);
 			});
 			const runEnd = now();
 			notifyUnhandledRejection = undefined;
@@ -255,6 +259,26 @@ const runProti = async (
 				start: nsToMs(runStart),
 				end: nsToMs(runEnd),
 				duration: nsToMs(runEnd - runStart),
+				generator: generator.toString(),
+				errors,
+			});
+		});
+	};
+
+	const testPredicate = async (generator: Generator): Promise<boolean> => {
+		// eslint-disable-next-line no-plusplus
+		const runId = ++runIdCounter;
+		const [errors, reportError] = createAppendOnlyArray<Error>();
+		await errMsg(
+			executeTestRun(runId, generator, errors, reportError),
+			`Failed to execute test run ${runId}`
+		).catch((err) => {
+			reportError(err);
+			runStats.push({
+				title: `Check program (run ${runId})`,
+				start: -1,
+				end: -1,
+				duration: 0,
 				generator: generator.toString(),
 				errors,
 			});
