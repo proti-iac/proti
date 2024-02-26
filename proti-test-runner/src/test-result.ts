@@ -46,7 +46,7 @@ const hasFailed = (result: Result): boolean => result.errors.length > 0;
 
 const toErrorMessage = (error: Error): string =>
 	(error.stack ? error.stack : error.message) +
-	(error.cause instanceof Error || (error.cause as any)?.name === 'Error' // If error happened in other frame, instanceof Error is false
+	(error.cause instanceof Error || typeof (error.cause as any)?.message === 'string' // If error happened in other frame, instanceof Error is false
 		? `\ncaused by ${toErrorMessage(error.cause as Error)}`
 		: '');
 
