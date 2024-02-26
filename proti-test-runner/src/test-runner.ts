@@ -317,7 +317,7 @@ const testRunner = async (
 	const start = now();
 	const accompanyingResults: Result[] = [];
 	const runAccompanyingTest = makeAccompanyingTest((result) => accompanyingResults.push(result));
-	const checkResult = await runAccompanyingTest('Running ProTI', () =>
+	const checkResult = await runAccompanyingTest('Run ProTI', () =>
 		runProti(config, environment, runtime, testPath, runAccompanyingTest)
 	).catch(() => undefined);
 	return toTestResult({
