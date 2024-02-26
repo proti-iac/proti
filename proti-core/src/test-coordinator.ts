@@ -150,24 +150,33 @@ export class TestRunCoordinator {
 }
 
 export class TestCoordinator {
-	public readonly oracles: Promise<DeepReadonly<Oracles>>;
+	private constructor(
+		public readonly arbitrary: fc.Arbitrary<Generator>,
+		public readonly oracles: DeepReadonly<Oracles>
+	) {}
 
-	public readonly arbitrary: Promise<fc.Arbitrary<Generator>>;
-
-	constructor(
-		private readonly config: TestCoordinatorConfig,
-		private readonly testModuleConfig: TestModuleConfig
-	) {
-		this.oracles = this.loadOracles();
-		this.arbitrary = this.loadArbitrary();
+	public static async create(
+		config: TestCoordinatorConfig,
+		testModuleConfig: TestModuleConfig
+	): Promise<TestCoordinator> {
+		return new TestCoordinator(
+			await this.loadArbitrary(config, testModuleConfig),
+			await this.loadOracles(config, testModuleConfig)
+		);
 	}
 
-	private async initTestModule(module: any): Promise<void> {
+	private static async initTestModule(
+		module: any,
+		testModuleConfig: TestModuleConfig
+	): Promise<void> {
 		if (typeof module.init === 'function')
-			await assertEquals<TestModuleInitFn>(module.init)(this.testModuleConfig);
+			await assertEquals<TestModuleInitFn>(module.init)(testModuleConfig);
 	}
 
-	private async loadOracles(): Promise<Oracles> {
+	public static async loadOracles(
+		config: TestCoordinatorConfig,
+		testModuleConfig: TestModuleConfig
+	): Promise<Oracles> {
 		const oracles: Oracles = {
 			resource: [],
 			asyncResource: [],
@@ -175,9 +184,9 @@ export class TestCoordinator {
 			asyncDeployment: [],
 		};
 		await Promise.all(
-			this.config.oracles.map(async (moduleName) => {
+			config.oracles.map(async (moduleName) => {
 				const oracleModule = await import(moduleName);
-				await this.initTestModule(oracleModule);
+				await this.initTestModule(oracleModule, testModuleConfig);
 				const OracleConstructor = oracleModule.default;
 				const oracle = new OracleConstructor();
 
@@ -192,17 +201,21 @@ export class TestCoordinator {
 		return oracles;
 	}
 
-	private async loadArbitrary(): Promise<Arbitrary<Generator>> {
-		const generatorArbitraryModule = await import(this.config.arbitrary);
-		if (!is<fc.Arbitrary<Generator>>(this.arbitrary))
-			throw new Error(`Invalid test generator arbitrary ${this.config.arbitrary}`);
-		await this.initTestModule(generatorArbitraryModule);
+	public static async loadArbitrary(
+		config: TestCoordinatorConfig,
+		testModuleConfig: TestModuleConfig
+	): Promise<Arbitrary<Generator>> {
+		const generatorArbitraryModule = await import(config.arbitrary);
+		await this.initTestModule(generatorArbitraryModule, testModuleConfig);
 		const ArbitraryConstructor = generatorArbitraryModule.default;
-		return new ArbitraryConstructor();
+		const arbitrary = new ArbitraryConstructor();
+		if (!is<fc.Arbitrary<Generator>>(arbitrary))
+			throw new Error(`Invalid test generator arbitrary ${config.arbitrary}`);
+		return arbitrary;
 	}
 
-	public async newRunCoordinator(generator: Generator): Promise<TestRunCoordinator> {
+	public newRunCoordinator(generator: Generator): TestRunCoordinator {
 		if (!this.arbitrary) throw new Error('Test generator not initialized');
-		return new TestRunCoordinator(generator, await this.oracles);
+		return new TestRunCoordinator(generator, this.oracles);
 	}
 }

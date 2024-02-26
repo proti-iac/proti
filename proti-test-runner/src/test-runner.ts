@@ -148,12 +148,14 @@ const runProti = async (
 		}
 	);
 
-	const testCoordinator = new TestCoordinator(proti.testCoordinator, {
-		moduleLoader,
-		pluginsConfig: proti.plugins,
-		testPath,
-		cacheDir: config.cacheDirectory,
-	});
+	const testCoordinator = await runAccompanyingTest('Load ProTI plugins', async () =>
+		TestCoordinator.create(proti.testCoordinator, {
+			moduleLoader,
+			pluginsConfig: proti.plugins,
+			testPath,
+			cacheDir: config.cacheDirectory,
+		})
+	);
 
 	// @proti-iac/spec ad-hoc specifications is enabled when used in the program and not explicitely disabled
 	const isSpecEnabled =
@@ -172,10 +174,7 @@ const runProti = async (
 		const unhandledRejection = new Promise<void>((_, reject) => {
 			notifyUnhandledRejection = reject;
 		}).catch(reportError);
-		const testRunCoordinator = await errMsg(
-			testCoordinator.newRunCoordinator(generator),
-			'Failed to initialize test run coordinator'
-		);
+		const testRunCoordinator = testCoordinator.newRunCoordinator(generator);
 		await runtime.isolateModulesAsync(async () => {
 			outputsWaiter.reset();
 			moduleLoader.mockModules(preloads);
