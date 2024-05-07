@@ -1184,7 +1184,6 @@ __metadata:
     "@jest/reporters": ^29.7.0
     "@jest/test-result": ^29.7.0
     "@proti-iac/core": "workspace:^"
-    "@proti-iac/test-runner": "workspace:^"
     "@types/jest": ^29.5.7
     "@types/node": ^18.18.8
     csv-stringify: ^6.4.4

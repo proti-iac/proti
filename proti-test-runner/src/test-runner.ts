@@ -13,6 +13,7 @@ import type Runtime from 'jest-runtime';
 import { hrtime } from 'process';
 
 import {
+	type CheckResult,
 	createSpecImpl,
 	Config as ProtiConfig,
 	DeepReadonly,
@@ -26,11 +27,13 @@ import {
 	MutableWaiter,
 	readPulumiProject,
 	type ResourceArgs,
+	type Result,
+	type RunResult,
 	TestCoordinator,
 	createAppendOnlyArray,
 } from '@proti-iac/core';
 
-import { CheckResult, Result, RunResult, toTestResult } from './test-result';
+import { toTestResult } from './test-result';
 
 const now: () => bigint = hrtime.bigint;
 const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
