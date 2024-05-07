@@ -2,9 +2,9 @@ import * as fc from 'fast-check';
 import {
 	createAppendOnlyMap,
 	type Generator,
+	type PluginInitFn,
 	type ResourceArgs,
 	type ResourceOutput,
-	type TestModuleInitFn,
 	TraceGenerator,
 } from '@proti-iac/core';
 import { secret, asset } from '@pulumi/pulumi';
@@ -300,4 +300,4 @@ export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<PulumiPackagesSc
 }
 
 export default PulumiPackagesSchemaArbitrary;
-export const init: TestModuleInitFn = initModule;
+export const init: PluginInitFn = initModule;

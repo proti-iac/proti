@@ -1,4 +1,4 @@
-import type { ResourceOracle, ResourceArgs, TestResult, TestModuleInitFn } from '@proti-iac/core';
+import type { PluginInitFn, ResourceOracle, ResourceArgs, TestResult } from '@proti-iac/core';
 import { config } from './config';
 
 /**
@@ -30,4 +30,4 @@ export default DemoOracle;
 /**
  * Initialization method called when the oracle is loaded.
  */
-export const init: TestModuleInitFn = async () => {};
+export const init: PluginInitFn = async () => {};
