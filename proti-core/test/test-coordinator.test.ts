@@ -8,12 +8,12 @@ import type { PluginArgs } from '../src/plugin';
 import { TestCoordinator } from '../src/test-coordinator';
 
 describe('test coordinator', () => {
-	const pluginArgs: PluginArgs = {
+	const pluginArgs = {
 		moduleLoader: new (jest.fn<ModuleLoader, []>())(),
 		pluginsConfig: defaultPluginsConfig(),
 		testPath: 'TEST_PATH',
 		cacheDir: 'CACHE',
-	};
+	} as PluginArgs;
 
 	describe('loading test oracles', () => {
 		it('should not load oracles', async () => {

@@ -3,12 +3,12 @@ import { resetCachedConfig } from '../src/config';
 import { initModule } from '../src/utils';
 
 describe('init module', () => {
-	const pluginArgs: PluginArgs = {
+	const pluginArgs = {
 		moduleLoader: new (jest.fn<ModuleLoader, []>())(),
 		pluginsConfig: {},
 		testPath: '',
 		cacheDir: '',
-	};
+	} as PluginArgs;
 
 	beforeEach(() => resetCachedConfig());
 
