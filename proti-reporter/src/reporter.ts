@@ -6,9 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { hrtime } from 'process';
 import { assert } from 'typia';
-import type { DeepReadonly } from '@proti-iac/core';
-
-import type { SerializableCheckResult, SerializableRunResult } from '@proti-iac/test-runner';
+import type { DeepReadonly, SerializableCheckResult, SerializableRunResult } from '@proti-iac/core';
 
 const now: () => bigint = hrtime.bigint;
 const nsToMs = (ms: bigint): number => Number(ms / 1000000n);
