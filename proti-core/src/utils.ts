@@ -101,6 +101,18 @@ export const deepMerge = <T extends Dict>(
 };
 
 /**
+ * Checks whether a value `v` has the properties `methods` with a value of type
+ * `function` assigned. Utility to implement interface type guards that is
+ * intended to be used after typias's `is<T>`, which checks for all fields
+ * except methods.
+ * @param v Value to check
+ * @param methods Method names to check for
+ * @returns True, if all method fields are of type function
+ */
+export const hasMethods = (v: unknown, methods: readonly string[]): boolean =>
+	methods.every((method) => typeof (v as any)[method] === 'function');
+
+/**
  * Removes the first 'at ...' line from the call stack of an error, hiding the location it was defined.
  * @param error Error to pop the stack of.
  * @returns `error`

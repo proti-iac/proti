@@ -14,6 +14,7 @@ import {
 	mapValues,
 	popErrStack,
 	asyncMapValues,
+	hasMethods,
 } from '../src/utils';
 
 describe('deep partial', () => {
@@ -260,6 +261,34 @@ describe('deep merge', () => {
 			checkUnchangedValues(updated, object, update);
 		};
 		fc.assert(fc.property(objAndUpdateArb(), predicate));
+	});
+});
+
+describe('hasMethods', () => {
+	// value, method keys, non-method keys, non-existing keys
+	const valArb: fc.Arbitrary<[object, string[], string[], string[]]> = fc
+		.tuple(
+			fc.dictionary(fc.string(), fc.func(fc.anything())),
+			fc.dictionary(fc.string(), fc.anything()),
+			fc.uniqueArray(fc.string())
+		)
+		.filter(([, nf, n]) => Object.keys(nf).length + n.length > 0)
+		.map(([f, nf, n]) => [{ ...nf, ...f }, Object.keys(f), Object.keys(nf), n]);
+
+	it('should accept', () => {
+		const arb = valArb.chain(([v, f]) => fc.tuple(fc.constant(v), fc.subarray(f)));
+		const predicate = ([value, methods]: [object, string[]]) =>
+			expect(hasMethods(value, methods)).toBe(true);
+		fc.assert(fc.property(arb, predicate));
+	});
+
+	it('should reject', () => {
+		const arb = valArb.chain(([v, f, nf, n]) =>
+			fc.tuple(fc.constant(v), fc.subarray([...f, ...nf, ...n]), fc.string(), fc.anything())
+		);
+		const predicate = ([value, methods, key, val]: [object, string[], string, any]) =>
+			expect(hasMethods({ ...value, [key]: val }, [...methods, key])).toBe(false);
+		fc.assert(fc.property(arb, predicate));
 	});
 });
 

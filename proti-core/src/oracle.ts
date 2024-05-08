@@ -1,7 +1,7 @@
 import type { MockResourceArgs } from '@pulumi/pulumi/runtime';
 import type { MockMonitor } from '@pulumi/pulumi/runtime/mocks';
 import { is } from 'typia';
-import type { DeepReadonly } from './utils';
+import { type DeepReadonly, hasMethods } from './utils';
 
 export type ResourceArgs = DeepReadonly<MockResourceArgs & { urn: string }>;
 
@@ -21,28 +21,28 @@ export interface AbstractOracle<S> extends OracleMetadata {
 	 */
 	readonly newRunState: () => S;
 }
-const isAbstractOracle = (val: any): val is AsyncResourceOracle<unknown> =>
-	typeof val?.newRunState === 'function' && is<OracleMetadata>(val);
+const isAbstractOracle = (v: unknown): v is AsyncResourceOracle<unknown> =>
+	is<AbstractOracle<unknown>>(v) && hasMethods(v, ['newRunState']);
 
 export interface ResourceOracle<S> extends AbstractOracle<S> {
 	readonly validateResource: (resource: ResourceArgs, runState: S) => TestResult;
 }
-export const isResourceOracle = (val: any): val is ResourceOracle<unknown> =>
-	typeof val?.validateResource === 'function' && isAbstractOracle(val);
+export const isResourceOracle = (v: unknown): v is ResourceOracle<unknown> =>
+	isAbstractOracle(v) && hasMethods(v, ['validateResource']);
 
 export interface AsyncResourceOracle<S> extends AbstractOracle<S> {
 	readonly asyncValidateResource: (resource: ResourceArgs, runState: S) => Promise<TestResult>;
 }
-export const isAsyncResourceOracle = (val: any): val is AsyncResourceOracle<unknown> =>
-	typeof val?.asyncValidateResource === 'function' && isAbstractOracle(val);
+export const isAsyncResourceOracle = (v: unknown): v is AsyncResourceOracle<unknown> =>
+	isAbstractOracle(v) && hasMethods(v, ['asyncValidateResource']);
 
 export type DeploymentOracleArgs = DeepReadonly<MockMonitor['resources']>;
 
 export interface DeploymentOracle<S> extends AbstractOracle<S> {
 	readonly validateDeployment: (resources: DeploymentOracleArgs, runState: S) => TestResult;
 }
-export const isDeploymentOracle = (val: any): val is DeploymentOracle<unknown> =>
-	typeof val?.validateDeployment === 'function' && isAbstractOracle(val);
+export const isDeploymentOracle = (v: unknown): v is DeploymentOracle<unknown> =>
+	isAbstractOracle(v) && hasMethods(v, ['validateDeployment']);
 
 export interface AsyncDeploymentOracle<S> extends AbstractOracle<S> {
 	readonly asyncValidateDeployment: (
@@ -50,8 +50,8 @@ export interface AsyncDeploymentOracle<S> extends AbstractOracle<S> {
 		runState: S
 	) => Promise<TestResult>;
 }
-export const isAsyncDeploymentOracle = (val: any): val is AsyncDeploymentOracle<unknown> =>
-	typeof val?.asyncValidateDeployment === 'function' && isAbstractOracle(val);
+export const isAsyncDeploymentOracle = (v: unknown): v is AsyncDeploymentOracle<unknown> =>
+	isAbstractOracle(v) && hasMethods(v, ['asyncValidateDeployment']);
 
 export type Oracle<S> =
 	| AsyncDeploymentOracle<S>
