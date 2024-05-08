@@ -48,6 +48,8 @@ describe('type guards', () => {
 	});
 
 	it('should not identify oracle', () => {
+		expect(isOracle({})).toBe(false);
 		expect(isOracle({ testName: 'a' })).toBe(false);
+		expect(isOracle({ name: 'a', decsription: 'b', newRunState: () => {} })).toBe(false);
 	});
 });
