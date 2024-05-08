@@ -298,13 +298,13 @@ const runProti = async (
 	};
 	const start = now();
 	const checkDetails = await fc.check(
-		fc.asyncProperty(await testCoordinator.arbitrary, testPredicate),
+		fc.asyncProperty(await testCoordinator.generatorArbitrary, testPredicate),
 		proti.testRunner as fc.Parameters<[Generator]>
 	);
 	const report = fc.defaultReportMessage(checkDetails);
 
 	const end = now();
-	return (({ failed, interrupted, numRuns, numShrinks, numSkips }) => ({
+	const checkResult = (({ failed, interrupted, numRuns, numShrinks, numSkips }) => ({
 		failed,
 		interrupted,
 		start: nsToMs(start),
@@ -316,6 +316,8 @@ const runProti = async (
 		runResults: runStats,
 		report,
 	}))(checkDetails);
+	testCoordinator.shutdown(checkResult);
+	return checkResult;
 };
 
 const testRunner = async (
