@@ -63,7 +63,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup-env
       - name: Run linter
-        run: yarn && yarn lint
+        run: yarn && yarn lint --max-warnings=0
 
   pack:
     runs-on: ubuntu-latest
