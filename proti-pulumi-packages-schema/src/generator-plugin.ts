@@ -2,7 +2,9 @@ import * as fc from 'fast-check';
 import {
 	createAppendOnlyMap,
 	type Generator,
+	type GeneratorPlugin,
 	type PluginInitFn,
+	type PluginWithInitFn,
 	type ResourceArgs,
 	type ResourceOutput,
 	TraceGenerator,
@@ -248,9 +250,10 @@ export class PulumiPackagesSchemaGenerator extends TraceGenerator {
 
 export type PulumiPackagesSchemaArbitraryContext = {};
 
-export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<PulumiPackagesSchemaGenerator> {
-	private readonly registry: SchemaRegistry = SchemaRegistry.getInstance();
-
+export class PulumiPackagesSchemaGeneratorPlugin
+	extends fc.Arbitrary<PulumiPackagesSchemaGenerator>
+	implements GeneratorPlugin, PluginWithInitFn
+{
 	/**
 	 * Caching arbitraries under their normalized Pulumi type reference URI.
 	 */
@@ -272,13 +275,20 @@ export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<PulumiPackagesSc
 		[this.arbitraryCache, this.appendArbitraryCache] = createAppendOnlyMap();
 	}
 
+	private registry?: SchemaRegistry;
+
+	readonly init: PluginInitFn = async (args) => {
+		await initModule(args);
+		this.registry = SchemaRegistry.getInstance();
+	};
+
 	generate(
 		mrng: fc.Random,
 		biasFactor: number | undefined
 	): fc.Value<PulumiPackagesSchemaGenerator> {
 		const generator = new PulumiPackagesSchemaGenerator(
 			this.conf,
-			this.registry,
+			this.registry!,
 			this.arbitraryCache,
 			this.appendArbitraryCache,
 			mrng,
@@ -298,6 +308,4 @@ export class PulumiPackagesSchemaArbitrary extends fc.Arbitrary<PulumiPackagesSc
 		return fc.Stream.nil();
 	}
 }
-
-export default PulumiPackagesSchemaArbitrary;
-export const init: PluginInitFn = initModule;
+export default PulumiPackagesSchemaGeneratorPlugin;

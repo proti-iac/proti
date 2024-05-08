@@ -70,7 +70,3 @@ export abstract class TraceGenerator implements Generator {
 		return `Trace of generator ${this.generatorId}:\n${trace}`;
 	}
 }
-
-export const isGenerator = (generator: any): generator is Generator =>
-	typeof generator?.generateResourceOutput === 'function' &&
-	typeof generator?.generateValue === 'function';

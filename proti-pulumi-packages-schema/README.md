@@ -26,8 +26,8 @@ const config = {
 	globals: {
 		proti: {
 			testCoordinator: {
-				arbitrary: "@proti-iac/pulumi-packages-schema/arbitrary",
-				oracles: ["@proti-iac/pulumi-packages-schema/oracle", /* ... */],
+				generator: "@proti-iac/pulumi-packages-schema/generator-plugin",
+				oracles: ["@proti-iac/pulumi-packages-schema/oracle-plugin", /* ... */],
 			},
 			/* ... */
 		},

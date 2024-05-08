@@ -3,8 +3,9 @@ import { Arbitrary } from 'fast-check';
 import { is } from 'typia';
 import { Generator, ResourceOutput, TraceGenerator } from '../generator';
 import type { ResourceArgs } from '../oracle';
+import { GeneratorPlugin } from '../plugin';
 
-export class EmptyStateGenerator extends TraceGenerator {
+class EmptyStateGenerator extends TraceGenerator {
 	// eslint-disable-next-line class-methods-use-this
 	async generateResourceOutput(resource: ResourceArgs): Promise<ResourceOutput> {
 		const resourceOutput = { id: resource.urn, state: {} };
@@ -19,12 +20,12 @@ export class EmptyStateGenerator extends TraceGenerator {
 	}
 }
 
-export class EmptyStateGeneratorArbitrary extends Arbitrary<Generator> {
+export class EmptyStateGeneratorPlugin extends Arbitrary<Generator> implements GeneratorPlugin {
 	private static generatorIdCounter: number = 0;
 
 	// eslint-disable-next-line class-methods-use-this
 	generate(mrng: fc.Random, biasFactor: number | undefined): fc.Value<Generator> {
-		const generatorId = `empty-state-generator-${EmptyStateGeneratorArbitrary.generatorIdCounter++}`;
+		const generatorId = `empty-state-generator-${EmptyStateGeneratorPlugin.generatorIdCounter++}`;
 		return new fc.Value(new EmptyStateGenerator(generatorId, mrng, biasFactor), {});
 	}
 
@@ -39,4 +40,4 @@ export class EmptyStateGeneratorArbitrary extends Arbitrary<Generator> {
 	}
 }
 
-export default EmptyStateGeneratorArbitrary;
+export default EmptyStateGeneratorPlugin;

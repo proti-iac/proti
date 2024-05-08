@@ -7,8 +7,8 @@
   "main": "./bin/index.js",
   "exports": {
     ".": "./bin/index.js",
-    "./empty-state-generator-arbitrary": "./bin/arbitraries/empty-state-generator-arbitrary.js",
-    "./unique-urns-oracle": "./bin/oracles/unique-urns-oracle.js"
+    "./empty-state-generator-plugin": "./bin/generator-plugins/empty-state-generator-plugin.js",
+    "./unique-urns-oracle-plugin": "./bin/oracle-plugins/unique-urns-oracle-plugin.js"
   },
   "types": "./bin/index.d.ts",
   "files": [

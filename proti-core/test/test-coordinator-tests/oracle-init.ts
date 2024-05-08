@@ -5,38 +5,38 @@ import type {
 	DeploymentOracle,
 	ResourceOracle,
 } from '../../src/oracle';
-import type { PluginArgs, PluginInitFn } from '../../src/plugin';
+import type { PluginArgs, PluginInitFn, PluginWithInitFn } from '../../src/plugin';
 
-class Oracle
+// eslint-disable-next-line import/no-mutable-exports
+export let config: PluginArgs;
+class OraclePlugin
 	implements
 		ResourceOracle<{}>,
 		AsyncResourceOracle<{}>,
 		DeploymentOracle<{}>,
-		AsyncDeploymentOracle<{}>
+		AsyncDeploymentOracle<{}>,
+		PluginWithInitFn
 {
-	name = 'Test';
+	readonly name = 'Test';
 
-	description = 'Test';
+	readonly description = 'Test';
 
-	newRunState = () => ({});
+	readonly newRunState = () => ({});
 
-	validateResource = () => undefined;
+	readonly validateResource = () => undefined;
 
-	asyncValidateResource = async () => undefined;
+	readonly asyncValidateResource = async () => undefined;
 
-	validateDeployment = () => undefined;
+	readonly validateDeployment = () => undefined;
 
-	asyncValidateDeployment = async () => undefined;
-}
+	readonly asyncValidateDeployment = async () => undefined;
 
-export default Oracle;
-
-// eslint-disable-next-line import/no-mutable-exports
-export let config: PluginArgs;
-export const init: PluginInitFn = async (pluginArgs) =>
-	new Promise((done) => {
-		process.nextTick(() => {
-			config = pluginArgs;
-			done();
+	readonly init: PluginInitFn = async (pluginArgs) =>
+		new Promise((done) => {
+			process.nextTick(() => {
+				config = pluginArgs;
+				done();
+			});
 		});
-	});
+}
+export default OraclePlugin;

@@ -1,12 +1,12 @@
 export {
 	Arbitrary,
 	ArbitraryCache,
-	PulumiPackagesSchemaArbitrary,
+	PulumiPackagesSchemaGeneratorPlugin,
 	PulumiPackagesSchemaArbitraryContext,
 	PulumiPackagesSchemaGenerator,
-} from './arbitrary';
+} from './generator-plugin';
 export * from './config';
-export { PulumiPackagesSchemaOracle, Validator, ValidatorCache } from './oracle';
+export { PulumiPackagesSchemaOraclePlugin, Validator, ValidatorCache } from './oracle-plugin';
 export * from './pulumi';
 export * from './schema-registry';
 export * from './utils';

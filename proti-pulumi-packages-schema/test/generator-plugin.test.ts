@@ -17,7 +17,7 @@ import {
 	resourceDefinitionArbitrary,
 	unionTypeArbitrary,
 	unresolvableUriArbitrary,
-} from '../src/arbitrary';
+} from '../src/generator-plugin';
 import { ArbitraryConfig, defaultArbitraryConfig } from '../src/config';
 import { SchemaRegistry } from '../src/schema-registry';
 import type {} from '../src/pulumi-package-metaschema';

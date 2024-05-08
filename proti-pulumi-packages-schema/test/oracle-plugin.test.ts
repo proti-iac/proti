@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import type { ResourceArgs } from '@proti-iac/core';
+import type { PluginArgs, ResourceArgs } from '@proti-iac/core';
 import { type OracleConfig, defaultOracleConfig } from '../src/config';
 import {
 	anyValidator,
@@ -11,11 +11,11 @@ import {
 	mapTypeValidator,
 	objectTypeDetailsValidator,
 	primitiveTypeValidator,
-	PulumiPackagesSchemaOracle,
+	PulumiPackagesSchemaOraclePlugin,
 	unionTypeValidator,
 	unresolvableUriValidator,
 	type Validator,
-} from '../src/oracle';
+} from '../src/oracle-plugin';
 import {
 	type BuiltInTypeUri,
 	type NamedTypeArgs,
@@ -36,6 +36,9 @@ jest.mock('../src/schema-registry', () => ({
 			resolveTypeRef: resolveTypeRefMock,
 		}),
 	},
+}));
+jest.mock('../src/utils', () => ({
+	initModule: jest.fn(),
 }));
 const conf = defaultOracleConfig();
 const neverValidator = (v: unknown): v is unknown => {
@@ -346,13 +349,15 @@ describe('enum type definition validator', () => {
 	});
 });
 
-describe('Pulumi packages schema oracle', () => {
-	const init = (
+describe('Pulumi packages schema oracle plugin', () => {
+	const init = async (
 		c: Partial<OracleConfig> = {},
 		resourceDefinition: ResourceDefinition | undefined = undefined
 	) => {
 		getResourceMock.mockReset().mockReturnValueOnce(Promise.resolve(resourceDefinition));
-		return new PulumiPackagesSchemaOracle({ ...conf, ...c });
+		const plugin = new PulumiPackagesSchemaOraclePlugin({ ...conf, ...c });
+		await plugin.init({} as PluginArgs);
+		return plugin;
 	};
 	const resourceArgsArb: fc.Arbitrary<ResourceArgs> = fc.record(
 		{
@@ -367,9 +372,7 @@ describe('Pulumi packages schema oracle', () => {
 		{ requiredKeys: ['type', 'name', 'inputs', 'urn'] }
 	);
 
-	it('should instantiate', () => {
-		expect(() => init()).not.toThrow();
-	});
+	it('should instantiate', () => expect(() => init()).not.toThrow());
 
 	describe('validate resource arguments', () => {
 		const resDefAb: ResourceDefinition = {
@@ -384,7 +387,7 @@ describe('Pulumi packages schema oracle', () => {
 
 		it('should throw on resource type without definition', () => {
 			const predicate = async (args: ResourceArgs) => {
-				const result = init().asyncValidateResource(args);
+				const result = (await init()).asyncValidateResource(args);
 				await expect(result).resolves.toThrow(/Failed to generate resource validator/);
 				await expect(result.then((e) => (e as Error).cause)).resolves.toThrow(
 					/Failed to find resource definition/
@@ -396,16 +399,18 @@ describe('Pulumi packages schema oracle', () => {
 		it('should validate on resource type without definition', () => {
 			console.warn = () => {};
 			const c = { failOnMissingResourceDefinition: false };
-			const predicate = (args: ResourceArgs) =>
-				expect(init(c).asyncValidateResource(args)).resolves.toBeUndefined();
+			const predicate = async (args: ResourceArgs) =>
+				expect((await init(c)).asyncValidateResource(args)).resolves.toBeUndefined();
 			return fc.assert(fc.asyncProperty(resourceArgsArb, predicate));
 		});
 
 		it('should not validate on resource type without definition', () => {
 			console.warn = () => {};
 			const c = { failOnMissingResourceDefinition: false, defaultResourceDefinition: {} };
-			const predicate = (args: ResourceArgs) =>
-				expect(init(c).asyncValidateResource(args)).resolves.toThrow(/has .* property/);
+			const predicate = async (args: ResourceArgs) =>
+				expect((await init(c)).asyncValidateResource(args)).resolves.toThrow(
+					/has .* property/
+				);
 			const withInputsArb = fc
 				.tuple(resourceArgsArb, fc.dictionary(fc.string(), fc.anything(), { minKeys: 1 }))
 				.map(([res, inputs]) => ({ ...res, inputs }));
@@ -419,8 +424,10 @@ describe('Pulumi packages schema oracle', () => {
 			['a-bb-resource', resDefAb, { a: 1, b: ['c', 'd'] }],
 		])('should validate resource args for %s', (_, resDef, inputs) => {
 			const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
-			const predicate = (args: ResourceArgs) =>
-				expect(init({}, resDef).asyncValidateResource(args)).resolves.toBeUndefined();
+			const predicate = async (args: ResourceArgs) =>
+				expect(
+					(await init({}, resDef)).asyncValidateResource(args)
+				).resolves.toBeUndefined();
 			return fc.assert(fc.asyncProperty(arb, predicate));
 		});
 
@@ -432,8 +439,10 @@ describe('Pulumi packages schema oracle', () => {
 			['a-b-c-resource', resDefAb, { a: 1, b: ['c', 'd'], c: false }],
 		])('should fail to validate resource args for %s', (_, resDef, inputs) => {
 			const arb = resourceArgsArb.map((args) => ({ ...args, inputs }));
-			const predicate = (args: ResourceArgs) =>
-				expect(init({}, resDef).asyncValidateResource(args)).resolves.toThrowError();
+			const predicate = async (args: ResourceArgs) =>
+				expect(
+					(await init({}, resDef)).asyncValidateResource(args)
+				).resolves.toThrowError();
 			return fc.assert(fc.asyncProperty(arb, predicate));
 		});
 
@@ -458,8 +467,8 @@ describe('Pulumi packages schema oracle', () => {
 				resArgs: ResourceArgs,
 				[resDef, resType]: [ResourceDefinition, string]
 			) => {
+				const oracle = await init({ ...conf, ...c }, resDef);
 				getResourceMock.mockReset().mockReturnValue(resDef);
-				const oracle = new PulumiPackagesSchemaOracle({ ...conf, ...c });
 				const subject = (type: string) =>
 					expect(
 						oracle.asyncValidateResource({

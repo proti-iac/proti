@@ -12,8 +12,9 @@ describe('runner plugin lifecycle hooks spec end-to-end', () => {
 	const jestConfig = { globals: { proti: protiConfig } };
 
 	it('should invoke all lifecycle hooks', () => {
-		expect(cp.execSync(jestCmd([project], jestConfig)).toString()).toBe(`TEST_PLUGIN: init
-TEST_PLUGIN: constructor
+		expect(cp.execSync(jestCmd([project], jestConfig)).toString())
+			.toBe(`TEST_PLUGIN: constructor
+TEST_PLUGIN: init
 TEST_PLUGIN: newRunState
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource

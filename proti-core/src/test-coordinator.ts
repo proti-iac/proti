@@ -1,5 +1,3 @@
-import type { Arbitrary } from 'fast-check';
-import { is } from 'typia';
 import type { TestCoordinatorConfig } from './config';
 import type { Generator } from './generator';
 import {
@@ -14,14 +12,17 @@ import {
 	type ResourceOracle,
 	type ResourceArgs,
 	type Oracle,
-	type OracleMetadata,
 	type TestResult,
-	type AbstractOracle,
 } from './oracle';
 import {
-	getPluginInitFn,
-	getPluginShutdownFn,
+	type GeneratorPlugin,
+	isGeneratorPlugin,
+	isOraclePlugin,
+	isPluginWithInitFn,
+	isPluginWithShutdownFn,
+	type Plugin,
 	type PluginArgs,
+	type PluginInitFn,
 	type PluginShutdownFn,
 } from './plugin';
 import { createAppendOnlyArray, type DeepReadonly } from './utils';
@@ -35,13 +36,13 @@ type Oracles = {
 };
 
 type Fail = DeepReadonly<{
-	oracle: OracleMetadata;
+	oracle: Oracle<unknown>;
 	deployment?: DeploymentOracleArgs;
 	resource?: ResourceArgs;
 	error: Error;
 }>;
 
-type OracleWithState<O extends AbstractOracle<S>, S = unknown> = readonly [O, S];
+type OracleWithState<O extends Oracle<S>, S = unknown> = readonly [O, S];
 type UnpackArray<T> = T extends (infer U)[] ? U : never;
 
 export class TestRunCoordinator {
@@ -72,9 +73,10 @@ export class TestRunCoordinator {
 	) {
 		[this.fails, this.appendFail] = createAppendOnlyArray<Fail>();
 		[this.pendingTests, this.appendPendingTest] = createAppendOnlyArray<Promise<TestResult>>();
-		const toOracleWithState = <O extends AbstractOracle<S>, S>(
-			oracle: O
-		): OracleWithState<O, S> => [oracle, oracle.newRunState()];
+		const toOracleWithState = <O extends Oracle<S>, S>(oracle: O): OracleWithState<O, S> => [
+			oracle,
+			oracle.newRunState(),
+		];
 		this.oracles = {
 			resource: oracles.resource.map(toOracleWithState),
 			asyncResource: oracles.asyncResource.map(toOracleWithState),
@@ -90,24 +92,24 @@ export class TestRunCoordinator {
 	}
 
 	private handleAsyncResult(
-		test: OracleMetadata,
+		oracle: Oracle<unknown>,
 		asyncResult: Promise<TestResult>,
 		resource?: ResourceArgs,
 		deployment?: DeploymentOracleArgs
 	): void {
 		this.appendPendingTest(asyncResult);
-		asyncResult.then((result) => this.handleResult(test, result, resource, deployment));
+		asyncResult.then((result) => this.handleResult(oracle, result, resource, deployment));
 	}
 
 	private handleResult(
-		test: OracleMetadata,
+		oracle: Oracle<unknown>,
 		result: TestResult,
 		resource?: ResourceArgs,
 		deployment?: DeploymentOracleArgs
 	): void {
 		if (result !== undefined) {
 			this.appendFail({
-				oracle: test,
+				oracle,
 				resource,
 				deployment,
 				error: result,
@@ -147,64 +149,74 @@ export class TestRunCoordinator {
 }
 
 export class TestCoordinator {
+	private readonly plugins: readonly Plugin[];
+
+	public readonly pluginInitFns: readonly PluginInitFn[];
+
+	public readonly pluginShutdownFns: readonly PluginShutdownFn[];
+
 	private constructor(
-		public readonly generatorArbitrary: Arbitrary<Generator>,
-		public readonly oracles: DeepReadonly<Oracles>,
-		public readonly pluginShutdownFns: readonly PluginShutdownFn[]
-	) {}
+		private readonly pluginArgs: PluginArgs,
+		public readonly generatorPlugin: GeneratorPlugin,
+		public readonly oraclePlugins: DeepReadonly<Oracles>
+	) {
+		const plugins: Plugin[] = [this.generatorPlugin];
+		Object.values(this.oraclePlugins).forEach((os) =>
+			plugins.push(...os.filter((o) => !plugins.includes(o)))
+		);
+		this.plugins = plugins;
+		this.pluginInitFns = this.plugins.filter(isPluginWithInitFn).map((p) => p.init);
+		this.pluginShutdownFns = this.plugins.filter(isPluginWithShutdownFn).map((p) => p.shutdown);
+	}
 
 	public static async create(
 		config: TestCoordinatorConfig,
 		pluginArgs: PluginArgs
 	): Promise<TestCoordinator> {
-		const generatorPlugin: any = await import(config.arbitrary);
-		const oraclePlugins = await Promise.all(
-			config.oracles.map(async (name) => [name, await import(name)] as [string, any])
-		);
-		const plugins = [generatorPlugin, ...oraclePlugins.map((o) => o[1])];
-		// Initialize all plugins
-		await Promise.all(
-			plugins.map(getPluginInitFn).map((fn) => (fn ? fn(pluginArgs) : undefined))
-		);
-
 		return new TestCoordinator(
-			this.initGeneratorArbitrary(config.arbitrary, generatorPlugin),
-			this.initOracles(oraclePlugins),
-			plugins.map(getPluginShutdownFn).filter((fn): fn is PluginShutdownFn => !!fn)
+			pluginArgs,
+			await this.loadGeneratorPlugin(config.generator),
+			await this.loadOraclePlugins(config.oracles)
 		);
 	}
 
-	private static initGeneratorArbitrary(name: string, plugin: any): Arbitrary<Generator> {
-		const ArbitraryConstructor = plugin.default;
-		const generatorArbitrary = new ArbitraryConstructor();
-		if (!is<Arbitrary<Generator>>(generatorArbitrary))
-			throw new Error(`Invalid test generator arbitrary ${name}`);
-		return generatorArbitrary;
+	private static async loadGeneratorPlugin(module: string): Promise<GeneratorPlugin> {
+		const GeneratorPluginConstructor = (await import(module)).default;
+		const generatorPlugin = new GeneratorPluginConstructor();
+		if (!isGeneratorPlugin(generatorPlugin))
+			throw new Error(`Invalid test generator plugin ${module}`);
+		return generatorPlugin;
 	}
 
-	private static initOracles(oraclePlugins: readonly [string, any][]): Oracles {
-		const oracles: Oracles = {
+	private static async loadOraclePlugins(modules: readonly string[]): Promise<Oracles> {
+		const oraclePlugins: Oracles = {
 			resource: [],
 			asyncResource: [],
 			deployment: [],
 			asyncDeployment: [],
 		};
-		oraclePlugins.forEach(([name, plugin]) => {
-			const OracleConstructor = plugin.default;
-			const oracle = new OracleConstructor();
-			if (isResourceOracle(oracle)) oracles.resource.push(oracle);
-			if (isAsyncResourceOracle(oracle)) oracles.asyncResource.push(oracle);
-			if (isDeploymentOracle(oracle)) oracles.deployment.push(oracle);
-			if (isAsyncDeploymentOracle(oracle)) oracles.asyncDeployment.push(oracle);
-			if (!is<Oracle<unknown>>(oracle))
-				throw new Error(`Configured oracle has invalid interface: ${name}`);
-		});
-		return oracles;
+		await Promise.all(
+			modules.map(async (module) => {
+				const OraclePluginConstructor = (await import(module)).default;
+				const oracle = new OraclePluginConstructor();
+				if (isResourceOracle(oracle)) oraclePlugins.resource.push(oracle);
+				if (isAsyncResourceOracle(oracle)) oraclePlugins.asyncResource.push(oracle);
+				if (isDeploymentOracle(oracle)) oraclePlugins.deployment.push(oracle);
+				if (isAsyncDeploymentOracle(oracle)) oraclePlugins.asyncDeployment.push(oracle);
+				if (!isOraclePlugin(oracle))
+					throw new Error(`Configured oracle has invalid interface: ${module}`);
+			})
+		);
+		return oraclePlugins;
 	}
 
 	public newRunCoordinator(generator: Generator): TestRunCoordinator {
-		if (!this.generatorArbitrary) throw new Error('Test generator not initialized');
-		return new TestRunCoordinator(generator, this.oracles);
+		if (!this.generatorPlugin) throw new Error('Test generator not initialized');
+		return new TestRunCoordinator(generator, this.oraclePlugins);
+	}
+
+	public async init(): Promise<void> {
+		await Promise.all(this.pluginInitFns.map((fn) => fn(this.pluginArgs)));
 	}
 
 	public async shutdown(result: CheckResult): Promise<void> {
