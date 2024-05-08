@@ -7,7 +7,7 @@ export * from 'fast-check';
  * Specifies an add-hoc generator, wrapping {@link value} and replacing it with
  * values from a user-defined arbitary generator in ProTI test executions.
  * @param value Value to replace with the ad-hoc generator specification.
- * @returns Prepared `with` syntax object to specify the arbitrary generator.
+ * @returns Prepared `with` syntax object to specify the ad-hoc generator.
  */
 export const generate = <T>(value: T) => {
 	type S = T extends Output<infer U> ? T | U : T;

@@ -1,11 +1,14 @@
 import * as fc from 'fast-check';
-import { Arbitrary } from 'fast-check';
 import { is } from 'typia';
 import {
-	Generator,
-	PluginInitFn,
-	ResourceArgs,
-	ResourceOutput,
+	type Generator,
+	type GeneratorPlugin,
+	type PluginInitFn,
+	type PluginShutdownFn,
+	type PluginWithInitFn,
+	type PluginWithShutdownFn,
+	type ResourceArgs,
+	type ResourceOutput,
 	TraceGenerator,
 } from '@proti-iac/core';
 import { config } from './config';
@@ -29,9 +32,12 @@ export class DemoGenerator extends TraceGenerator {
 }
 
 /**
- * Simple generator arbitrary ({@link Arbitrary<Generator>}) providing {@link DemoGenerator} instances.
+ * Simple generator plugin ({@link GeneratorPlugin}) providing {@link DemoGenerator} instances.
  */
-export class DemoGeneratorArbitrary extends Arbitrary<Generator> {
+export class DemoGeneratorPlugin
+	extends fc.Arbitrary<Generator>
+	implements GeneratorPlugin, PluginWithInitFn, PluginWithShutdownFn
+{
 	private static generatorIdCounter: number = 0;
 
 	private static conf = config();
@@ -39,8 +45,8 @@ export class DemoGeneratorArbitrary extends Arbitrary<Generator> {
 	// eslint-disable-next-line class-methods-use-this
 	generate(mrng: fc.Random, biasFactor: number | undefined): fc.Value<Generator> {
 		// Access plugin configuration value
-		const id = DemoGeneratorArbitrary.conf.demoId;
-		const generatorId = `demo-generator-${id}-${DemoGeneratorArbitrary.generatorIdCounter++}`;
+		const id = DemoGeneratorPlugin.conf.demoId;
+		const generatorId = `demo-generator-${id}-${DemoGeneratorPlugin.generatorIdCounter++}`;
 		return new fc.Value(new DemoGenerator(generatorId, mrng, biasFactor), {});
 	}
 
@@ -53,11 +59,20 @@ export class DemoGeneratorArbitrary extends Arbitrary<Generator> {
 	shrink(value: Generator, context: unknown): fc.Stream<fc.Value<Generator>> {
 		return fc.Stream.nil();
 	}
+
+	/**
+	 * Optional initialization method called after the generator plugin is
+	 * loaded. Enforced through optional implementation of
+	 * {@link PluginWithInitFn}.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	readonly init: PluginInitFn = async () => {};
+
+	/**
+	 * Optional shutdown method called after the ProTI check terminated.
+	 * Enforced through optional implementation of {@link PluginWithShutdownFn}.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	readonly shutdown: PluginShutdownFn = async () => {};
 }
-
-export default DemoGeneratorArbitrary;
-
-/**
- * Initialization method called when the generator is loaded.
- */
-export const init: PluginInitFn = async () => {};
+export default DemoGeneratorPlugin;

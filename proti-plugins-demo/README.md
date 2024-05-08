@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/proti-iac/proti)](../LICENSE)
 [![DOI](https://zenodo.org/badge/706779109.svg)](https://zenodo.org/doi/10.5281/zenodo.10028479)
 
-This package demonstrates the implementation of a [ProTI](https://proti-iac.github.io/) generator and a [ProTI](https://proti-iac.github.io/) oracle plugin. The [demo generator](../proti-plugins-demo/src/demo-arbitrary.ts) simply generates an empty output configuration for all resources. The [demo oracle](../proti-plugins-demo/src/demo-oracle.ts) checks whether all resource URNs in the IaC program are unique. Both plugins and the [config](../proti-plugins-demo/src/config.ts) demonstrate how ProTI plugins can leverage ProTI's interface for ProTI plugin user configuration through Jest. Use this package as a starter blueprint for your own ProTI plugin implementations.
+This package demonstrates the implementation of a [ProTI](https://proti-iac.github.io/) generator and a [ProTI](https://proti-iac.github.io/) oracle plugin. The [demo generator plugin](../proti-plugins-demo/src/demo-generator-plugin.ts) simply generates an empty output configuration for all resources. The [demo oracle plugin](../proti-plugins-demo/src/demo-oracle-plugin.ts) checks whether all resource URNs in the IaC program are unique. Both plugins and the [config](../proti-plugins-demo/src/config.ts) demonstrate how ProTI plugins can leverage ProTI's interface for ProTI plugin user configuration through Jest. Use this package as a starter blueprint for your own ProTI plugin implementations.
 
 For development, we provide some general instructions under the [Developers Guide](../README.md#developers-guide) in the main README of this repository.
 
@@ -14,11 +14,11 @@ This package implements a rudimentary end-to-end test using one of the example P
 
 ## Implementing Generator Plugins
 
-[`src/demo-arbitrary.ts`](../proti-plugins-demo/src/demo-arbitrary.ts) is an example ProTI generator plugin. Generator modules must have a default export that implements `Arbitrary<Generator>`. `Arbitrary` is the arbitrary abstraction from fast-check, and [`Generator`](../proti-core/src/generator.ts) the test generator abstraction of ProTI. ProTI draws one generator from the arbitrary per test run. The generator itself is then invoked throughout the test run to incrementally provide the input for the test run, practically unfolding the test case.
+[`src/demo-generator-plugin.ts`](../proti-plugins-demo/src/demo-generator-plugin.ts) is an example ProTI generator plugin. Generator modules must have a default export that implements `GeneratorPlugin`. It inherits from the `Arbitrary` abstraction from fast-check, and [`Generator`](../proti-core/src/generator.ts) the test generator abstraction of ProTI. ProTI draws one generator from the arbitrary per test run. The generator itself is then invoked throughout the test run to incrementally provide the input for the test run, practically unfolding the test case.
 
 ## Implementing Oracle Plugins
 
-[`src/demo-oracle.ts`](../proti-plugins-demo/src/demo-oracle.ts) is an example ProTI oracle plugin. Oracle modules must have a default export that implements one of [ProTI's oracle interfaces](../proti-core/src/oracle.ts). The following oracle interfaces exist:
+[`src/demo-oracle-plugin.ts`](../proti-plugins-demo/src/demo-oracle-plugin.ts) is an example ProTI oracle plugin. Oracle modules must have a default export that implements one of ProTI's [`OraclePlugin` interfaces](../proti-core/src/oracle.ts). The following oracle interfaces exist:
 
 * `ResourceOracle` is for oracles that are synchronously invoked for every resource on its definition.
 * `AsyncResourceOracle` is like `ResourceOracle` but asynchronous.
@@ -49,8 +49,8 @@ const config = {
 	globals: {
 		proti: {
 			testCoordinator: {
-				arbitrary: "@proti-iac/plugins-demo/demo-arbitrary",
-				oracles: ["@proti-iac/plugins-demo/demo-arbitrary", /* ... */],
+				generator: "@proti-iac/plugins-demo/demo-generator-plugin",
+				oracles: ["@proti-iac/plugins-demo/demo-oracle-plugin", /* ... */],
 			},
 			/* ... */
 		},

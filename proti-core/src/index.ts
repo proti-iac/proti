@@ -11,5 +11,5 @@ export * from './spec-impl';
 export * from './test-coordinator';
 export * from './utils';
 
-export * from './arbitraries/empty-state-generator-arbitrary';
-export * from './oracles/unique-urns-oracle';
+export * from './generator-plugins/empty-state-generator-plugin';
+export * from './oracle-plugins/unique-urns-oracle-plugin';

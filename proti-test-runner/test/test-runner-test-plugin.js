@@ -18,8 +18,12 @@ class Oracle {
 
 	// eslint-disable-next-line class-methods-use-this
 	validateResource = () => console.info('TEST_PLUGIN: validateResource');
+
+	// eslint-disable-next-line class-methods-use-this
+	init = async () => console.info('TEST_PLUGIN: init');
+
+	// eslint-disable-next-line class-methods-use-this
+	shutdown = async () => console.info('TEST_PLUGIN: shutdown');
 }
 
 exports.default = Oracle;
-exports.init = async () => console.info('TEST_PLUGIN: init');
-exports.shutdown = async () => console.info('TEST_PLUGIN: shutdown');

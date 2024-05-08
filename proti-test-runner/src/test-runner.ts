@@ -152,7 +152,7 @@ const runProti = async (
 		}
 	);
 
-	const testCoordinator = await runAccompanyingTest('Load ProTI plugins', async () =>
+	const testCoordinator = await runAccompanyingTest('Load ProTI plugins', () =>
 		TestCoordinator.create(proti.testCoordinator, {
 			moduleLoader,
 			pluginsConfig: proti.plugins,
@@ -168,6 +168,7 @@ const runProti = async (
 			pulumiProject,
 		})
 	);
+	await runAccompanyingTest('Init ProTI plugins', () => testCoordinator.init());
 
 	// @proti-iac/spec ad-hoc specifications is enabled when used in the program and not explicitely disabled
 	const isSpecEnabled =
@@ -298,7 +299,7 @@ const runProti = async (
 	};
 	const start = now();
 	const checkDetails = await fc.check(
-		fc.asyncProperty(await testCoordinator.generatorArbitrary, testPredicate),
+		fc.asyncProperty(await testCoordinator.generatorPlugin, testPredicate),
 		proti.testRunner as fc.Parameters<[Generator]>
 	);
 	const report = fc.defaultReportMessage(checkDetails);
@@ -316,7 +317,9 @@ const runProti = async (
 		runResults: runStats,
 		report,
 	}))(checkDetails);
-	testCoordinator.shutdown(checkResult);
+	await runAccompanyingTest('Shutdown ProTI plugins', () =>
+		testCoordinator.shutdown(checkResult)
+	);
 	return checkResult;
 };
 

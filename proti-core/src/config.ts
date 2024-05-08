@@ -4,10 +4,10 @@ import type { Generator } from './generator';
 import { deepMerge, type DeepPartial, type DeepReadonly } from './utils';
 
 export const defaultTestCoordinatorConfig = () => ({
-	/** Test generator arbitrary to use */
-	arbitrary: '@proti-iac/core/empty-state-generator-arbitrary',
-	/** Test oracles to run */
-	oracles: ['@proti-iac/core/unique-urns-oracle'],
+	/** Test generator plugin to use */
+	generator: '@proti-iac/core/empty-state-generator-plugin',
+	/** Test oracle plugins to run */
+	oracles: ['@proti-iac/core/unique-urns-oracle-plugin'],
 });
 export type TestCoordinatorConfig = DeepReadonly<ReturnType<typeof defaultTestCoordinatorConfig>>;
 

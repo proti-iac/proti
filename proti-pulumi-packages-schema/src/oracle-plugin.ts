@@ -2,6 +2,7 @@ import {
 	type AsyncResourceOracle,
 	type JsType,
 	type PluginInitFn,
+	type PluginWithInitFn,
 	type ResourceArgs,
 	type TestResult,
 	type Types,
@@ -261,13 +262,13 @@ export const enumTypeDefinitionValidator: EnumTypeDefinitionTransform<Validator>
 		return true;
 	};
 
-export class PulumiPackagesSchemaOracle implements AsyncResourceOracle<undefined> {
-	name = 'Pulumi Packages Schema Types';
+export class PulumiPackagesSchemaOraclePlugin
+	implements AsyncResourceOracle<undefined>, PluginWithInitFn
+{
+	readonly name = 'Pulumi Packages Schema Types';
 
-	description =
+	readonly description =
 		'Checks that each resource configuration satisfies the type defined in the Pulumi package schema.';
-
-	private readonly registry: SchemaRegistry = SchemaRegistry.getInstance();
 
 	/**
 	 * Caching validators under their Pulumi type reference, assuming definition
@@ -292,11 +293,18 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle<undefined
 		[this.validatorCache, this.appendValidatorCache] = createAppendOnlyMap();
 	}
 
+	private registry?: SchemaRegistry;
+
+	readonly init: PluginInitFn = async (args) => {
+		await initModule(args);
+		this.registry = SchemaRegistry.getInstance();
+	};
+
 	// eslint-disable-next-line class-methods-use-this
-	newRunState = () => undefined;
+	readonly newRunState = () => undefined;
 
 	private async generateValidator(resourceType: string): Promise<Validator> {
-		let resDef = await this.registry.getResource(resourceType);
+		let resDef = await this.registry!.getResource(resourceType);
 		if (resDef === undefined) {
 			const errMsg = `Failed to find resource definition of ${resourceType}`;
 			if (this.conf.failOnMissingResourceDefinition) throw new Error(errMsg);
@@ -309,7 +317,7 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle<undefined
 			cache: this.validatorCache,
 			appendCache: this.appendValidatorCache,
 			parentUris: [`#/resources/${resourceType}`],
-			registry: this.registry,
+			registry: this.registry!,
 		};
 		const mutTransforms: Partial<MutableTransforms<Validator>> = {
 			builtInType: builtInTypeValidator,
@@ -351,7 +359,4 @@ export class PulumiPackagesSchemaOracle implements AsyncResourceOracle<undefined
 		}
 	}
 }
-
-export default PulumiPackagesSchemaOracle;
-
-export const init: PluginInitFn = initModule;
+export default PulumiPackagesSchemaOraclePlugin;

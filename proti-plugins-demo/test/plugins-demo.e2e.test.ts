@@ -5,8 +5,8 @@ import * as path from 'path';
 const protiConfig: DeepPartial<Config> = {
 	testRunner: { numRuns: 2 },
 	testCoordinator: {
-		arbitrary: path.resolve(__dirname, '../bin/demo-arbitrary'),
-		oracles: [path.resolve(__dirname, '../bin/demo-oracle')],
+		generator: path.resolve(__dirname, '../bin/demo-generator-plugin'),
+		oracles: [path.resolve(__dirname, '../bin/demo-oracle-plugin')],
 	},
 };
 const jestCmd = (...projects: string[]): string =>

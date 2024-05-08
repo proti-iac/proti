@@ -7,19 +7,16 @@ export type ResourceArgs = DeepReadonly<MockResourceArgs & { urn: string }>;
 
 export type TestResult = Readonly<Error> | undefined;
 
-export type OracleMetadata = Readonly<{
-	name: string;
-	description?: string;
-}>;
-
-export interface AbstractOracle<S> extends OracleMetadata {
+interface AbstractOracle<S> {
+	readonly name: string;
+	readonly description?: string;
 	/**
 	 * Create the oracle's state for a new test run. The returned new state,
 	 * e.g., a mutable object, is passed to all validation calls on the oracle
 	 * in the same test run.
 	 * @returns New oracle test run state.
 	 */
-	readonly newRunState: () => S;
+	newRunState(): S;
 }
 const isAbstractOracle = (v: unknown): v is AsyncResourceOracle<unknown> =>
 	is<AbstractOracle<unknown>>(v) && hasMethods(v, ['newRunState']);

@@ -5,39 +5,39 @@ import type {
 	DeploymentOracle,
 	ResourceOracle,
 } from '../../src/oracle';
-import type { PluginShutdownFn } from '../../src/plugin';
+import type { PluginShutdownFn, PluginWithShutdownFn } from '../../src/plugin';
 import type { CheckResult } from '../../src/result';
 
-class Oracle
+// eslint-disable-next-line import/no-mutable-exports
+export let result: CheckResult;
+class OracleWithShutdownPlugin
 	implements
 		ResourceOracle<{}>,
 		AsyncResourceOracle<{}>,
 		DeploymentOracle<{}>,
-		AsyncDeploymentOracle<{}>
+		AsyncDeploymentOracle<{}>,
+		PluginWithShutdownFn
 {
-	name = 'Test';
+	readonly name = 'Test';
 
-	description = 'Test';
+	readonly description = 'Test';
 
-	newRunState = () => ({});
+	readonly newRunState = () => ({});
 
-	validateResource = () => undefined;
+	readonly validateResource = () => undefined;
 
-	asyncValidateResource = async () => undefined;
+	readonly asyncValidateResource = async () => undefined;
 
-	validateDeployment = () => undefined;
+	readonly validateDeployment = () => undefined;
 
-	asyncValidateDeployment = async () => undefined;
-}
+	readonly asyncValidateDeployment = async () => undefined;
 
-export default Oracle;
-
-// eslint-disable-next-line import/no-mutable-exports
-export let result: CheckResult;
-export const shutdown: PluginShutdownFn = async (checkResult) =>
-	new Promise((done) => {
-		process.nextTick(() => {
-			result = checkResult;
-			done();
+	readonly shutdown: PluginShutdownFn = async (checkResult) =>
+		new Promise((done) => {
+			process.nextTick(() => {
+				result = checkResult;
+				done();
+			});
 		});
-	});
+}
+export default OracleWithShutdownPlugin;

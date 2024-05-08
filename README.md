@@ -57,7 +57,7 @@ npx jest
 
 [`@proti-iac/test-runner`](./proti-test-runner/) exports [ProTI's Jest configuration preset](./proti-test-runner/src/jest-preset.ts). ProTI exposes all configuration options through Jest's configuration interface under the path `globals.proti`. The type of `globals.proti` and thus ProTI's configuration options are defined and documented in [ProTI's core `Config` type](./proti-core/src/config.ts).
 
-The generator plugin and the set of oracle plugins are configured in the test coordinator configuration. The generator plugin is configured as a NodeJS module resolution string in `globals.proti.testCoordinator.arbitrary`, and the oracle plugins as an array of NodeJS module resolution strings in `globals.proti.testCoordinator.oracles`.
+The generator plugin and the set of oracle plugins are configured in the test coordinator configuration. The generator plugin is configured as a NodeJS module resolution string in `globals.proti.testCoordinator.generator`, and the oracle plugins as an array of NodeJS module resolution strings in `globals.proti.testCoordinator.oracles`.
 
 The test runner configuration object under `globals.proti.testRunner` is passed as a whole to fast-check's runner in ProTI's test runner, inheriting all [configuration options of fast-check](https://fast-check.dev/api-reference/interfaces/Parameters.html). For instance, you can configure the test runner's verbosity level in `globals.proti.testRunner.verbose`. `0` only shows the final error result, `1` all failing tests, `2` the full tree of passing and failing tests.
 

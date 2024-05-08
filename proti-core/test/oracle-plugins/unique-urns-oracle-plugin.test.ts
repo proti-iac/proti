@@ -1,11 +1,11 @@
 import * as fc from 'fast-check';
 
-import { UniqueUrnsOracle } from '../../src/oracles/unique-urns-oracle';
+import { UniqueUrnsOraclePlugin } from '../../src/oracle-plugins/unique-urns-oracle-plugin';
 
 describe('unique URNs oracle', () => {
 	it('should not fail on unique strings in separate runs', () => {
 		const predicate = (urns: string[]) => {
-			const test = new UniqueUrnsOracle();
+			const test = new UniqueUrnsOraclePlugin();
 			const state = new Set<string>();
 			const state2 = new Set<string>();
 			urns.forEach((urn) => {
@@ -19,7 +19,7 @@ describe('unique URNs oracle', () => {
 
 	it('should fail on duplicated strings in same run', () => {
 		const predicate = (urns: string[]) => {
-			const test = new UniqueUrnsOracle();
+			const test = new UniqueUrnsOraclePlugin();
 			const state = new Set<string>();
 			let err: Error | undefined;
 			[...urns, ...urns].forEach((urn) => {
