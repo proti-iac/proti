@@ -28,15 +28,15 @@
   "dependencies": {
     "@proti-iac/core": "workspace:^",
     "@pulumi/pulumi": "^3.91.1",
-    "fast-check": "^3.13.2",
+    "fast-check": "^3.18.0",
     "ts-patch": "3.1.2",
     "typia": "^6.0.3"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.7",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20.12.11",
     "jest": "^29.7.0",
-    "pure-rand": "^6.0.4",
+    "pure-rand": "^6.1.0",
     "typescript": "^5.4.5"
   }
 }
