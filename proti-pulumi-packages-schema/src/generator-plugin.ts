@@ -141,7 +141,7 @@ export const propertyDefinitionArbitrary: PropertyDefinitionTransform<Arbitrary>
 		: fc.oneof(
 				{ arbitrary: defaultArbitrary, weight: 1 },
 				{ arbitrary: typeArbitrary, weight: 4 }
-		  );
+			);
 
 export const constArbitrary: ConstTransform<Arbitrary> = async (constant) => fc.constant(constant);
 

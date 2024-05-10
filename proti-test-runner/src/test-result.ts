@@ -60,7 +60,7 @@ export const toTestResult = (state: RunnerResult): DeepReadonly<TestResult> => {
 						checkResult.report
 							? toHeader('Check program report') + checkResult.report
 							: ''
-				  }`,
+					}`,
 		leaks: false,
 		numFailingTests: accompanyingFailures.length + (checkResult.failed ? 1 : 0),
 		numPassingTests:

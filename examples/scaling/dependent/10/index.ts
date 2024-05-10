@@ -6,7 +6,7 @@ const defineBuckets = (count: number): Output<string[]> =>
 		? new aws.s3.Bucket(`${count}`).id.apply((i) => [i])
 		: defineBuckets(count - 1).apply((i) =>
 				new aws.s3.Bucket(`${count}`).id.apply((j) => [...i, j])
-		  );
+			);
 
 const buckets = defineBuckets(10);
 

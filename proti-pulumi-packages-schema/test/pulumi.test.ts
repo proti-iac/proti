@@ -433,7 +433,7 @@ describe('transform type definition', () => {
 					? stringify(
 							typeDef.enum.map(({ value }) => value),
 							`${path}$enum`
-					  )
+						)
 					: stringify(typeDef, `${path}$object`);
 			const ts = { ...transforms, enumType: asyncStringify };
 			const e = transformTypeDefinition(typeDef, ts, ntArgs, path);

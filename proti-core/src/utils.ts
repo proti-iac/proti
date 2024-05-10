@@ -5,8 +5,8 @@ export type DeepPartial<T> = {
 	[P in keyof T]?: T[P] extends (infer U)[]
 		? DeepPartial<U>[]
 		: T[P] extends object
-		? DeepPartial<T[P]>
-		: T[P];
+			? DeepPartial<T[P]>
+			: T[P];
 };
 
 /**
@@ -16,18 +16,18 @@ export type DeepPartial<T> = {
 export type DeepReadonly<T> = T extends Function
 	? T
 	: T extends Map<infer K, infer V>
-	? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
-	: T extends Set<infer U>
-	? ReadonlySet<DeepReadonly<U>>
-	: T extends [infer H] // One-Tuple
-	? Readonly<[DeepReadonly<H>]>
-	: T extends [infer H, ...infer R] // Tuples
-	? Readonly<[DeepReadonly<H>, ...DeepReadonly<R>]>
-	: T extends Array<infer U>
-	? ReadonlyArray<DeepReadonly<U>>
-	: T extends object
-	? { readonly [P in keyof T]: DeepReadonly<T[P]> }
-	: T;
+		? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
+		: T extends Set<infer U>
+			? ReadonlySet<DeepReadonly<U>>
+			: T extends [infer H] // One-Tuple
+				? Readonly<[DeepReadonly<H>]>
+				: T extends [infer H, ...infer R] // Tuples
+					? Readonly<[DeepReadonly<H>, ...DeepReadonly<R>]>
+					: T extends Array<infer U>
+						? ReadonlyArray<DeepReadonly<U>>
+						: T extends object
+							? { readonly [P in keyof T]: DeepReadonly<T[P]> }
+							: T;
 
 const wrappedTypeof = (x: any) => typeof x;
 /**
@@ -45,24 +45,24 @@ export const typeOf = (val: unknown): Types => {
 export type JsType<T extends Types> = T extends 'string'
 	? string
 	: T extends 'number'
-	? number
-	: T extends 'bigint'
-	? bigint
-	: T extends 'boolean'
-	? boolean
-	: T extends 'symbol'
-	? symbol
-	: T extends 'undefined'
-	? undefined
-	: T extends 'array'
-	? unknown[]
-	: T extends 'object'
-	? object
-	: T extends 'function'
-	? Function
-	: T extends 'null'
-	? null
-	: never;
+		? number
+		: T extends 'bigint'
+			? bigint
+			: T extends 'boolean'
+				? boolean
+				: T extends 'symbol'
+					? symbol
+					: T extends 'undefined'
+						? undefined
+						: T extends 'array'
+							? unknown[]
+							: T extends 'object'
+								? object
+								: T extends 'function'
+									? Function
+									: T extends 'null'
+										? null
+										: never;
 
 export type Dict = { [_: string]: any };
 
