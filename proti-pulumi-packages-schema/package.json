@@ -37,6 +37,6 @@
     "@types/node": "^20.12.11",
     "jest": "^29.7.0",
     "pure-rand": "^6.0.4",
-    "typescript": "^5.2.2"
+    "typescript": "^5.4.5"
   }
 }

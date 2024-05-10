@@ -21,7 +21,9 @@ export const numberArb = (): fc.Arbitrary<number> =>
 export const primitiveTypeArb = (): fc.Arbitrary<PrimitiveType> =>
 	fc.record(
 		{
-			type: fc.constantFrom('boolean', 'integer', 'number', 'string'),
+			type: fc.constantFrom('boolean', 'integer', 'number', 'string') as fc.Arbitrary<
+				'string' | 'number' | 'boolean' | 'integer'
+			>,
 			plain: fc.boolean(),
 		},
 		{ requiredKeys: ['type'] }
@@ -32,7 +34,7 @@ export const arrayTypeArb = (
 ): fc.Arbitrary<ArrayType> =>
 	fc.record(
 		{
-			type: fc.constant('array'),
+			type: fc.constant('array') as fc.Arbitrary<'array'>,
 			items: typeReferenceArb,
 			plain: fc.boolean(),
 		},
@@ -42,7 +44,7 @@ export const arrayTypeArb = (
 export const mapTypeArb = (typeReferenceArb: fc.Arbitrary<TypeReference>): fc.Arbitrary<MapType> =>
 	fc.record(
 		{
-			type: fc.constant('object'),
+			type: fc.constant('object') as fc.Arbitrary<'object'>,
 			additionalProperties: typeReferenceArb,
 			plain: fc.boolean(),
 		},
@@ -64,7 +66,9 @@ export const unionTypeArb = (
 ): fc.Arbitrary<UnionType> =>
 	fc.record(
 		{
-			type: fc.constantFrom('boolean', 'integer', 'number', 'string'),
+			type: fc.constantFrom('boolean', 'integer', 'number', 'string') as fc.Arbitrary<
+				'boolean' | 'integer' | 'number' | 'string'
+			>,
 			oneOf: fc.array(typeReferenceArb, { minLength: 1 }),
 			discriminator: fc.record(
 				{ propertyName: fc.string(), mapping: fc.dictionary(fc.string(), fc.string()) },
