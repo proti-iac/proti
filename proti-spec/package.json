@@ -18,11 +18,11 @@
     "postpack": "rm README.md LICENSE"
   },
   "dependencies": {
-    "fast-check": "^3.13.2"
+    "fast-check": "^3.18.0"
   },
   "devDependencies": {
     "@pulumi/pulumi": "^3.91.1",
-    "@types/jest": "^29.5.7",
+    "@types/jest": "^29.5.12",
     "@types/node": "^20.12.11",
     "typescript": "^5.4.5"
   }
