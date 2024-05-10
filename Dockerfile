@@ -1,4 +1,4 @@
-FROM node
+FROM node:20
 
 ENV PULUMI_TAR=pulumi-v3.91.1-linux-x64.tar.gz
 ENV PULUMI_CONFIG_PASSPHRASE=""

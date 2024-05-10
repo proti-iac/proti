@@ -38,7 +38,7 @@
     "@jest/types": "^29.6.3",
     "@types/jest": "^29.5.7",
     "@types/js-yaml": "^4.0.8",
-    "@types/node": "^18.18.8",
+    "@types/node": "^20.12.11",
     "jest-haste-map": "^29.7.0",
     "jest-resolve": "^29.7.0",
     "jest-runtime": "^29.7.0",

@@ -2,7 +2,7 @@
     "name": "scaling-dependent-10",
     "main": "index.ts",
     "devDependencies": {
-        "@types/node": "^20.8.10"
+        "@types/node": "^20.12.11"
     },
     "dependencies": {
         "@pulumi/aws": "^6.7.0",

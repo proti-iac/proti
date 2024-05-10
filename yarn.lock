@@ -1128,7 +1128,7 @@ __metadata:
     "@pulumi/pulumi": ^3.91.1
     "@types/jest": ^29.5.7
     "@types/js-yaml": ^4.0.8
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     fast-check: ^3.13.2
     jest-haste-map: ^29.7.0
     jest-resolve: ^29.7.0
@@ -1150,7 +1150,7 @@ __metadata:
     "@proti-iac/core": "workspace:^"
     "@pulumi/pulumi": ^3.91.1
     "@types/jest": ^29.5.7
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     fast-check: ^3.13.2
     jest: ^29.7.0
     jest-runtime: ^29.7.0
@@ -1167,7 +1167,7 @@ __metadata:
     "@proti-iac/core": "workspace:^"
     "@pulumi/pulumi": ^3.91.1
     "@types/jest": ^29.5.7
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     fast-check: ^3.13.2
     jest: ^29.7.0
     pure-rand: ^6.0.4
@@ -1185,7 +1185,7 @@ __metadata:
     "@jest/test-result": ^29.7.0
     "@proti-iac/core": "workspace:^"
     "@types/jest": ^29.5.7
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     csv-stringify: ^6.4.4
     jest: ^29.7.0
     ts-jest: ^29.1.1
@@ -1202,7 +1202,7 @@ __metadata:
     "@jest/test-result": ^29.7.0
     "@proti-iac/core": "workspace:^"
     "@types/jest": ^29.5.7
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     jest: ^29.7.0
     jest-runner: ^29.7.0
     jest-watcher: ^29.7.0
@@ -1217,7 +1217,7 @@ __metadata:
   dependencies:
     "@pulumi/pulumi": ^3.91.1
     "@types/jest": ^29.5.7
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     fast-check: ^3.13.2
     typescript: ^5.2.2
   languageName: unknown
@@ -1235,7 +1235,7 @@ __metadata:
     "@proti-iac/runner": "workspace:^"
     "@pulumi/pulumi": ^3.91.1
     "@types/jest": ^29.5.7
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     fast-check: ^3.13.2
     jest: ^29.7.0
     jest-config: ^29.7.0
@@ -1243,7 +1243,7 @@ __metadata:
     jest-resolve: ^29.7.0
     jest-runtime: ^29.7.0
     ts-jest: ^29.1.1
-    ts-node: ^10.9.1
+    ts-node: ^10.9.2
     typescript: ^5.2.2
   languageName: unknown
   linkType: soft
@@ -1555,12 +1555,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.18.8":
-  version: 18.18.8
-  resolution: "@types/node@npm:18.18.8"
+"@types/node@npm:^20.12.11":
+  version: 20.12.11
+  resolution: "@types/node@npm:20.12.11"
   dependencies:
     undici-types: ~5.26.4
-  checksum: d6a82bfc28bca8e4e32ffc9526798d1aea62f6993ea3a535cd3f47ac3f725a48efe3f484d68168dd154af0001c89935e4e1d77e7b1809c3824c6382bf99b86f6
+  checksum: 0cc06bb69cd8150e96fcf65fa3d7f2eeebedf110a99e1834a7fa55bd6c04e7b6d73f74321a2acfc569ca300c0b88d8e1b702ce245b3802f6e5f6a8987fef451a
   languageName: node
   linkType: hard
 
@@ -6086,7 +6086,7 @@ __metadata:
     "@proti-iac/runner": "workspace:^"
     "@proti-iac/test-runner": "workspace:^"
     "@types/jest": ^29.5.7
-    "@types/node": ^18.18.8
+    "@types/node": ^20.12.11
     "@typescript-eslint/eslint-plugin": ^6.9.1
     "@typescript-eslint/parser": ^6.9.1
     eslint: ^8.52.0
@@ -6101,7 +6101,7 @@ __metadata:
     jest-config: ^29.7.0
     prettier: ^3.0.3
     ts-jest: ^29.1.1
-    ts-node: ^10.9.1
+    ts-node: ^10.9.2
     ts-patch: 3.0.2
     typescript: ^5.2.2
     typia: ^5.2.4
@@ -7057,9 +7057,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-node@npm:^10.9.1":
-  version: 10.9.1
-  resolution: "ts-node@npm:10.9.1"
+"ts-node@npm:^10.9.2":
+  version: 10.9.2
+  resolution: "ts-node@npm:10.9.2"
   dependencies:
     "@cspotcode/source-map-support": ^0.8.0
     "@tsconfig/node10": ^1.0.7
@@ -7091,7 +7091,7 @@ __metadata:
     ts-node-script: dist/bin-script.js
     ts-node-transpile-only: dist/bin-transpile.js
     ts-script: dist/bin-script-deprecated.js
-  checksum: 090adff1302ab20bd3486e6b4799e90f97726ed39e02b39e566f8ab674fd5bd5f727f43615debbfc580d33c6d9d1c6b1b3ce7d8e3cca3e20530a145ffa232c35
+  checksum: fde256c9073969e234526e2cfead42591b9a2aec5222bac154b0de2fa9e4ceb30efcd717ee8bc785a56f3a119bdd5aa27b333d9dbec94ed254bd26f8944c67ac
   languageName: node
   linkType: hard
 

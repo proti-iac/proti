@@ -2,7 +2,7 @@
     "name": "random-word-webpage-aurora-proti-spec",
     "main": "index.ts",
     "devDependencies": {
-        "@types/node": "^20.8.10"
+        "@types/node": "^20.12.11"
     },
     "dependencies": {
         "@proti-iac/spec": "file:../../../@proti-iac-spec@0.0.0.tgz",
