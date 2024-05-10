@@ -52,7 +52,7 @@ describe('config', () => {
 			typeOf(partialConf) === 'object'
 				? Object.entries(partialConf).forEach(([k, v]: [string, unknown]) =>
 						check((conf as any)[k], v as DeepPartial<any>)
-				  )
+					)
 				: expect(conf).toStrictEqual(partialConf);
 		check(config(partialConfig), partialConfig);
 	});

@@ -12,7 +12,7 @@ const config: Config = {
 	projects: packageJson.workspaces.map((packet: string) => {
 		const packetConfig = fs.existsSync(resolve(packet, 'jest.config.ts'))
 			? // eslint-disable-next-line global-require, import/no-dynamic-require
-			  require(resolve(packet, 'jest.config.ts'))
+				require(resolve(packet, 'jest.config.ts'))
 			: {};
 		return {
 			displayName: packet,
@@ -28,7 +28,7 @@ const config: Config = {
 									tsconfig: resolve(packet, 'tsconfig.json'),
 									...packetConfig?.globals?.tsJest,
 								},
-						  ]
+							]
 						: conf,
 				])
 			),

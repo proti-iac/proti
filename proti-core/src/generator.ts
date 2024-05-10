@@ -35,7 +35,7 @@ export const generatorTraceToString = (trace: readonly Generated[]) => {
 				? Object.entries(generated.state).map(
 						([k, v]: [string, unknown]) =>
 							`${' '.repeat(numLength + 2)}- ${k}: ${stringify(v)}`
-				  )
+					)
 				: [`${' '.repeat(numLength + 2)}- ${stringify(generated.value)}`]),
 		])
 		.join('\n');
