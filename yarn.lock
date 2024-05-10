@@ -1356,6 +1356,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@proti-iac/plugins-demo@workspace:proti-plugins-demo"
   dependencies:
+    "@jest/transform": ^29.7.0
     "@jest/types": ^29.6.3
     "@proti-iac/core": "workspace:^"
     "@pulumi/pulumi": ^3.115.2

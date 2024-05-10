@@ -26,6 +26,7 @@
     "postinstall": "ts-patch install"
   },
   "dependencies": {
+    "@jest/transform": "^29.7.0",
     "@proti-iac/core": "workspace:^",
     "@pulumi/pulumi": "^3.115.2",
     "fast-check": "^3.18.0",
