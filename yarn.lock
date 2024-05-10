@@ -1125,9 +1125,9 @@ __metadata:
     jest-runtime: ^29.7.0
     jest-snapshot: ^29.7.0
     js-yaml: ^4.1.0
-    ts-patch: 3.0.2
+    ts-patch: 3.1.2
     typescript: ^5.4.5
-    typia: ^5.2.4
+    typia: ^6.0.3
   languageName: unknown
   linkType: soft
 
@@ -1143,9 +1143,9 @@ __metadata:
     fast-check: ^3.13.2
     jest: ^29.7.0
     jest-runtime: ^29.7.0
-    ts-patch: 3.0.2
+    ts-patch: 3.1.2
     typescript: ^5.4.5
-    typia: ^5.2.4
+    typia: ^6.0.3
   languageName: unknown
   linkType: soft
 
@@ -1160,9 +1160,9 @@ __metadata:
     fast-check: ^3.13.2
     jest: ^29.7.0
     pure-rand: ^6.0.4
-    ts-patch: 3.0.2
+    ts-patch: 3.1.2
     typescript: ^5.4.5
-    typia: ^5.2.4
+    typia: ^6.0.3
   languageName: unknown
   linkType: soft
 
@@ -1178,9 +1178,9 @@ __metadata:
     csv-stringify: ^6.4.4
     jest: ^29.7.0
     ts-jest: ^29.1.1
-    ts-patch: 3.0.2
+    ts-patch: 3.1.2
     typescript: ^5.4.5
-    typia: ^5.2.4
+    typia: ^6.0.3
   languageName: unknown
   linkType: soft
 
@@ -1347,6 +1347,13 @@ __metadata:
   version: 0.3.0
   resolution: "@pulumi/query@npm:0.3.0"
   checksum: 4e579c56937313a4e60211510dd0dcb71bb3014707f727015f5458d5f1e227a83b3a15bfd97c5b44500d022ee15f81917d45de0f6c2b11d47e6fba333b3b6195
+  languageName: node
+  linkType: hard
+
+"@samchon/openapi@npm:^0.1.16":
+  version: 0.1.21
+  resolution: "@samchon/openapi@npm:0.1.21"
+  checksum: a4f08c04b18cee61458b00f9275e67307c1130037098c7d86d7ce42fd186975424c96e8d8450e1d87209311c5d323d1465df934265c12912389cd8ad0d2c3691
   languageName: node
   linkType: hard
 
@@ -5946,9 +5953,9 @@ __metadata:
     prettier: ^3.2.5
     ts-jest: ^29.1.1
     ts-node: ^10.9.2
-    ts-patch: 3.0.2
-    typescript: ^5.4.5
-    typia: ^5.2.4
+    ts-patch: 3.1.2
+    typescript: 5.4.5
+    typia: ^6.0.3
   languageName: unknown
   linkType: soft
 
@@ -6386,17 +6393,6 @@ __metadata:
   bin:
     semver: bin/semver.js
   checksum: 12d8ad952fa353b0995bf180cdac205a4068b759a140e5d3c608317098b3575ac2f1e09182206bf2eb26120e1c0ed8fb92c48c592f6099680de56bb071423ca3
-  languageName: node
-  linkType: hard
-
-"semver@npm:^7.3.8":
-  version: 7.5.1
-  resolution: "semver@npm:7.5.1"
-  dependencies:
-    lru-cache: ^6.0.0
-  bin:
-    semver: bin/semver.js
-  checksum: d16dbedad53c65b086f79524b9ef766bf38670b2395bdad5c957f824dcc566b624988013564f4812bcace3f9d405355c3635e2007396a39d1bffc71cfec4a2fc
   languageName: node
   linkType: hard
 
@@ -6953,20 +6949,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-patch@npm:3.0.2":
-  version: 3.0.2
-  resolution: "ts-patch@npm:3.0.2"
+"ts-patch@npm:3.1.2":
+  version: 3.1.2
+  resolution: "ts-patch@npm:3.1.2"
   dependencies:
     chalk: ^4.1.2
     global-prefix: ^3.0.0
     minimist: ^1.2.8
     resolve: ^1.22.2
-    semver: ^7.3.8
+    semver: ^7.5.4
     strip-ansi: ^6.0.1
   bin:
     ts-patch: bin/ts-patch.js
     tspc: bin/tspc.js
-  checksum: 09cdc54bf517b11d4b0de64515e9a0d7e71e238d6065b3c02a04280dc2683143cd810a9065046228571af0865a7d876a4a852ff9a909cb2cae8fe33b41e4eb81
+  checksum: b6bf7a34280863b32f5c21d8367108046f1e0305d197e87ef871679c446a6fe29662d7e3d4de19bda8785b49bd628d58d9dc82d908f1a785638115a08c6b01ea
   languageName: node
   linkType: hard
 
@@ -7091,7 +7087,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.4.5":
+"typescript@npm:5.4.5, typescript@npm:^5.4.5":
   version: 5.4.5
   resolution: "typescript@npm:5.4.5"
   bin:
@@ -7111,7 +7107,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^5.4.5#~builtin<compat/typescript>":
+"typescript@patch:typescript@5.4.5#~builtin<compat/typescript>, typescript@patch:typescript@^5.4.5#~builtin<compat/typescript>":
   version: 5.4.5
   resolution: "typescript@patch:typescript@npm%3A5.4.5#~builtin<compat/typescript>::version=5.4.5&hash=5da071"
   bin:
@@ -7131,19 +7127,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typia@npm:^5.2.4":
-  version: 5.2.4
-  resolution: "typia@npm:5.2.4"
+"typia@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "typia@npm:6.0.3"
   dependencies:
+    "@samchon/openapi": ^0.1.16
     commander: ^10.0.0
     comment-json: ^4.2.3
     inquirer: ^8.2.5
     randexp: ^0.5.3
   peerDependencies:
-    typescript: ">=4.8.0 <5.3.0"
+    typescript: ">=4.8.0 <5.5.0"
   bin:
     typia: lib/executable/typia.js
-  checksum: 0c48260f244cbf383d1253735821930dee068511e8683010b6a65ecd2e5c54a4d602fe39c91be9650ac416dd396b6fbd957c703cb2e125b760a33662a8ff483a
+  checksum: 23696158e484d1f076f07b10c7f11f0ebde2ded5a05e1f892d115b7573ae7cacedbc0f188aed7ec9b106eb08e0c5adc15dbb62af4ca54cc46b0d344958014022
   languageName: node
   linkType: hard
 
