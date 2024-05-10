@@ -19,10 +19,16 @@ import {
 	isGeneratorPlugin,
 	isOraclePlugin,
 	isPluginWithInitFn,
+	isPluginWithPostRunFn,
+	isPluginWithPreRunFn,
 	isPluginWithShutdownFn,
 	type Plugin,
 	type PluginArgs,
 	type PluginInitFn,
+	type PluginPostRunArgs,
+	type PluginPostRunFn,
+	type PluginPreRunArgs,
+	type PluginPreRunFn,
 	type PluginShutdownFn,
 } from './plugin';
 import { createAppendOnlyArray, type DeepReadonly } from './utils';
@@ -69,7 +75,9 @@ export class TestRunCoordinator {
 
 	constructor(
 		public readonly generator: Generator,
-		oracles: DeepReadonly<Oracles>
+		oracles: DeepReadonly<Oracles>,
+		private readonly pluginPreRunFns: readonly PluginPreRunFn[],
+		private readonly pluginPostRunFns: readonly PluginPostRunFn[]
 	) {
 		[this.fails, this.appendFail] = createAppendOnlyArray<Fail>();
 		[this.pendingTests, this.appendPendingTest] = createAppendOnlyArray<Promise<TestResult>>();
@@ -146,12 +154,24 @@ export class TestRunCoordinator {
 
 		Promise.all(this.pendingTests).then(() => this.complete());
 	}
+
+	public async preRun(preRunArgs: PluginPreRunArgs): Promise<void> {
+		await Promise.all(this.pluginPreRunFns.map((fn) => fn(preRunArgs)));
+	}
+
+	public async postRun(postRunArgs: PluginPostRunArgs): Promise<void> {
+		await Promise.all(this.pluginPostRunFns.map((fn) => fn(postRunArgs)));
+	}
 }
 
 export class TestCoordinator {
 	private readonly plugins: readonly Plugin[];
 
 	public readonly pluginInitFns: readonly PluginInitFn[];
+
+	public readonly pluginPreRunFns: readonly PluginPreRunFn[];
+
+	public readonly pluginPostRunFns: readonly PluginPostRunFn[];
 
 	public readonly pluginShutdownFns: readonly PluginShutdownFn[];
 
@@ -166,6 +186,8 @@ export class TestCoordinator {
 		);
 		this.plugins = plugins;
 		this.pluginInitFns = this.plugins.filter(isPluginWithInitFn).map((p) => p.init);
+		this.pluginPreRunFns = this.plugins.filter(isPluginWithPreRunFn).map((p) => p.preRun);
+		this.pluginPostRunFns = this.plugins.filter(isPluginWithPostRunFn).map((p) => p.postRun);
 		this.pluginShutdownFns = this.plugins.filter(isPluginWithShutdownFn).map((p) => p.shutdown);
 	}
 
@@ -212,7 +234,12 @@ export class TestCoordinator {
 
 	public newRunCoordinator(generator: Generator): TestRunCoordinator {
 		if (!this.generatorPlugin) throw new Error('Test generator not initialized');
-		return new TestRunCoordinator(generator, this.oraclePlugins);
+		return new TestRunCoordinator(
+			generator,
+			this.oraclePlugins,
+			this.pluginPreRunFns,
+			this.pluginPostRunFns
+		);
 	}
 
 	public async init(): Promise<void> {

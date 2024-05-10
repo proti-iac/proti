@@ -3,8 +3,12 @@ import {
 	isGeneratorPlugin,
 	isOraclePlugin,
 	isPluginWithInitFn,
+	isPluginWithPreRunFn,
+	isPluginWithPostRunFn,
 	isPluginWithShutdownFn,
 	type PluginWithInitFn,
+	type PluginWithPreRunFn,
+	type PluginWithPostRunFn,
 	type PluginWithShutdownFn,
 } from '../src/plugin';
 
@@ -32,6 +36,22 @@ describe('plugin type guards', () => {
 		expect(isPluginWithInitFn('')).toBe(false);
 		expect(isPluginWithInitFn({})).toBe(false);
 		expect(isPluginWithInitFn({ init: '' })).toBe(false);
+	});
+
+	it('should guard PluginWithPreRunFn', () => {
+		const v: PluginWithPreRunFn = { preRun: async () => {} };
+		expect(isPluginWithPreRunFn(v)).toBe(true);
+		expect(isPluginWithPreRunFn('')).toBe(false);
+		expect(isPluginWithPreRunFn({})).toBe(false);
+		expect(isPluginWithPreRunFn({ preRun: '' })).toBe(false);
+	});
+
+	it('should guard PluginWithPostRunFn', () => {
+		const v: PluginWithPostRunFn = { postRun: async () => {} };
+		expect(isPluginWithPostRunFn(v)).toBe(true);
+		expect(isPluginWithPostRunFn('')).toBe(false);
+		expect(isPluginWithPostRunFn({})).toBe(false);
+		expect(isPluginWithPostRunFn({ postRun: '' })).toBe(false);
 	});
 
 	it('should guard PluginWithShutdownFn', () => {

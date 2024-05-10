@@ -214,6 +214,8 @@ const runProti = async (
 			// Load MockMonitor from ProTI's Pulumi instance into the PUT's Pulumi instance
 			programPulumi.runtime.setMockOptions(monitor);
 
+			await testRunCoordinator.preRun({ runId });
+
 			// Hard timeout for asnyc and deasync code that fast-check's softer
 			// timeout cannot handle. The hard timeout breaks ProTI's execution
 			// and takes one second longer to ensure fast-check's timeout is
@@ -231,11 +233,14 @@ const runProti = async (
 			}
 
 			const runStart = now();
-			try {
-				moduleLoader.execProgram();
-			} catch (error) {
-				reportError(error as Error);
-			}
+			const programExports = await (() => {
+				try {
+					return moduleLoader.execProgram();
+				} catch (error) {
+					reportError(error as Error);
+					return undefined;
+				}
+			})();
 			(
 				await Promise.race([unhandledRejection.then(() => []), outputsWaiter.isCompleted()])
 			).forEach(reportError);
@@ -266,14 +271,16 @@ const runProti = async (
 			});
 			const runEnd = now();
 			notifyUnhandledRejection = undefined;
-			runStats.push({
+			const result = {
 				title: `Check program (run ${runId})`,
 				start: nsToMs(runStart),
 				end: nsToMs(runEnd),
 				duration: nsToMs(runEnd - runStart),
 				generator: generator.toString(),
 				errors,
-			});
+			};
+			runStats.push(result);
+			await testRunCoordinator.postRun({ result, programExports });
 		});
 	};
 

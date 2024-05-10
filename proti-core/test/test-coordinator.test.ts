@@ -1,9 +1,20 @@
 import * as path from 'path';
-import { defaultPluginsConfig, defaultTestCoordinatorConfig } from '../src/config';
+import {
+	defaultPluginsConfig,
+	defaultTestCoordinatorConfig,
+	type TestCoordinatorConfig,
+} from '../src/config';
+import type { Generator } from '../src/generator';
 import type { ModuleLoader } from '../src/module-loader';
-import { isGeneratorPlugin, isOraclePlugin, type PluginArgs } from '../src/plugin';
-import { TestCoordinator } from '../src/test-coordinator';
+import {
+	isGeneratorPlugin,
+	isOraclePlugin,
+	type PluginPostRunArgs,
+	type PluginPreRunArgs,
+	type PluginArgs,
+} from '../src/plugin';
 import type { CheckResult } from '../src/result';
+import { TestCoordinator } from '../src/test-coordinator';
 
 describe('test coordinator', () => {
 	const pluginArgs = {
@@ -57,40 +68,10 @@ describe('test coordinator', () => {
 			);
 			expect(coordinator).rejects.toThrow(/Cannot find module 'a' from /);
 		});
-
-		it('should init loaded oracle plugin', async () => {
-			const initOraclePath = path.resolve(__dirname, './test-coordinator-tests/oracle-init');
-			// eslint-disable-next-line import/no-dynamic-require, global-require
-			const module = require(initOraclePath);
-			const coordinator = await TestCoordinator.create(
-				{ ...defaultTestCoordinatorConfig(), oracles: [initOraclePath] },
-				pluginArgs
-			);
-			expect(coordinator.pluginInitFns.length).toBe(1);
-			expect(module.config).toBeUndefined();
-			await coordinator.init();
-			expect(module.config).toBe(pluginArgs);
-		});
-
-		it('should shutdown loaded oracle plugin', async () => {
-			const oraclePath = path.resolve(__dirname, './test-coordinator-tests/oracle-shutdown');
-			// eslint-disable-next-line import/no-dynamic-require, global-require
-			const module = require(oraclePath);
-			const coordinator = await TestCoordinator.create(
-				{ ...defaultTestCoordinatorConfig(), oracles: [oraclePath] },
-				pluginArgs
-			);
-			expect(coordinator.pluginShutdownFns.length).toBe(1);
-			expect(module.result).toBeUndefined();
-			await coordinator.shutdown(result);
-			expect(module.result).toBe(result);
-		});
 	});
 
 	describe('loading generator plugin', () => {
 		const arbPath = path.resolve(__dirname, './test-coordinator-tests/generator');
-		const initArbPath = path.resolve(__dirname, './test-coordinator-tests/generator-init');
-		const shutArbPath = path.resolve(__dirname, './test-coordinator-tests/generator-shutdown');
 
 		it('should load generator plugin', async () => {
 			const coordinator = await TestCoordinator.create(
@@ -109,27 +90,55 @@ describe('test coordinator', () => {
 			);
 			expect(coordinator).rejects.toThrow(/Cannot find module 'a' from /);
 		});
+	});
 
-		it('should init loaded generator plugin', async () => {
-			// eslint-disable-next-line import/no-dynamic-require, global-require
-			const module = require(initArbPath);
-			const coordinator = await await TestCoordinator.create(
-				{ ...defaultTestCoordinatorConfig(), generator: initArbPath },
+	describe('plugin test lifecycle hooks', () => {
+		const pluginConfigs: Partial<TestCoordinatorConfig>[] = [
+			{ generator: path.resolve(__dirname, './test-coordinator-tests/generator-lifecycle') },
+			{ oracles: [path.resolve(__dirname, './test-coordinator-tests/oracle-lifecycle')] },
+		];
+		const initCoord = async (
+			pluginConfig: Partial<TestCoordinatorConfig>
+		): Promise<[TestCoordinator, any]> => {
+			const plugin: string =
+				pluginConfig.generator ||
+				(pluginConfig.oracles && pluginConfig.oracles[0] ? pluginConfig.oracles[0] : '');
+			const module = await import(plugin);
+			const coordinator = await TestCoordinator.create(
+				{ ...defaultTestCoordinatorConfig(), ...pluginConfig },
 				pluginArgs
 			);
+			return [coordinator, module];
+		};
+
+		it.each(pluginConfigs)('should init plugin %s', async (pluginConfig) => {
+			const [coordinator, module] = await initCoord(pluginConfig);
 			expect(coordinator.pluginInitFns.length).toBe(1);
 			expect(module.config).toBeUndefined();
 			await coordinator.init();
 			expect(module.config).toBe(pluginArgs);
 		});
 
-		it('should shutdown loaded generator plugin', async () => {
-			// eslint-disable-next-line import/no-dynamic-require, global-require
-			const module = require(shutArbPath);
-			const coordinator = await TestCoordinator.create(
-				{ ...defaultTestCoordinatorConfig(), generator: shutArbPath },
-				pluginArgs
-			);
+		it.each(pluginConfigs)('should call preRun in plugin %s', async (pluginConfig) => {
+			const [coordinator, module] = await initCoord(pluginConfig);
+			expect(coordinator.pluginPreRunFns.length).toBe(1);
+			expect(module.preRunArgs).toBeUndefined();
+			const preRunArgs: PluginPreRunArgs = { runId: 123 };
+			await coordinator.newRunCoordinator({} as Generator).preRun(preRunArgs);
+			expect(module.preRunArgs).toBe(preRunArgs);
+		});
+
+		it.each(pluginConfigs)('should call postRun in  plugin %s', async (pluginConfig) => {
+			const [coordinator, module] = await initCoord(pluginConfig);
+			expect(coordinator.pluginPostRunFns.length).toBe(1);
+			expect(module.postRunArgs).toBeUndefined();
+			const postRunArgs = {} as PluginPostRunArgs;
+			await coordinator.newRunCoordinator({} as Generator).postRun(postRunArgs);
+			expect(module.postRunArgs).toBe(postRunArgs);
+		});
+
+		it.each(pluginConfigs)('should shutdown plugin %s', async (pluginConfig) => {
+			const [coordinator, module] = await initCoord(pluginConfig);
 			expect(coordinator.pluginShutdownFns.length).toBe(1);
 			expect(module.result).toBeUndefined();
 			await coordinator.shutdown(result);

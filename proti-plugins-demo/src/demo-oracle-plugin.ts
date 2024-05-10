@@ -2,8 +2,12 @@ import type {
 	ResourceArgs,
 	ResourceOracle,
 	PluginInitFn,
+	PluginPostRunFn,
+	PluginPreRunFn,
 	PluginShutdownFn,
 	PluginWithInitFn,
+	PluginWithPostRunFn,
+	PluginWithPreRunFn,
 	PluginWithShutdownFn,
 	TestResult,
 } from '@proti-iac/core';
@@ -13,7 +17,12 @@ import { config } from './config';
  * Simple {@link OraclePlugin} checking that all resource URNs are unique.
  */
 export class DemoOraclePlugin
-	implements ResourceOracle<Set<string>>, PluginWithInitFn, PluginWithShutdownFn
+	implements
+		ResourceOracle<Set<string>>,
+		PluginWithInitFn,
+		PluginWithPreRunFn,
+		PluginWithPostRunFn,
+		PluginWithShutdownFn
 {
 	readonly name = 'Demo Oracle';
 
@@ -40,6 +49,21 @@ export class DemoOraclePlugin
 	 */
 	// eslint-disable-next-line class-methods-use-this
 	readonly init: PluginInitFn = async () => {};
+
+	/**
+	 * Optional pre test run method called right before a test run starts.
+	 * Enforced through optional implementation of {@link PluginWithPreRunFn}.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	readonly preRun: PluginPreRunFn = async () => {};
+
+	/**
+	 * Optional post test run method called right after a test run ended with
+	 * its results and the values the IaC program exported. Enforced through
+	 * optional implementation of {@link PluginWithPostRunFn}.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	readonly postRun: PluginPostRunFn = async () => {};
 
 	/**
 	 * Optional shutdown method called after the ProTI check terminated.

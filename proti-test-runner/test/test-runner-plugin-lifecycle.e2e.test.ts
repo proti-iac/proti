@@ -16,17 +16,21 @@ describe('runner plugin lifecycle hooks spec end-to-end', () => {
 			.toBe(`TEST_PLUGIN: constructor
 TEST_PLUGIN: init
 TEST_PLUGIN: newRunState
+TEST_PLUGIN: preRun
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
+TEST_PLUGIN: postRun
 TEST_PLUGIN: newRunState
+TEST_PLUGIN: preRun
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
 TEST_PLUGIN: validateResource
+TEST_PLUGIN: postRun
 TEST_PLUGIN: shutdown
 `);
 	});

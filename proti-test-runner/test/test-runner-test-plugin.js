@@ -23,6 +23,12 @@ class Oracle {
 	init = async () => console.info('TEST_PLUGIN: init');
 
 	// eslint-disable-next-line class-methods-use-this
+	preRun = async () => console.info('TEST_PLUGIN: preRun');
+
+	// eslint-disable-next-line class-methods-use-this
+	postRun = async () => console.info('TEST_PLUGIN: postRun');
+
+	// eslint-disable-next-line class-methods-use-this
 	shutdown = async () => console.info('TEST_PLUGIN: shutdown');
 }
 
