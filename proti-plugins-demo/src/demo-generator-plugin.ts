@@ -4,8 +4,12 @@ import {
 	type Generator,
 	type GeneratorPlugin,
 	type PluginInitFn,
+	type PluginPostRunFn,
+	type PluginPreRunFn,
 	type PluginShutdownFn,
 	type PluginWithInitFn,
+	type PluginWithPostRunFn,
+	type PluginWithPreRunFn,
 	type PluginWithShutdownFn,
 	type ResourceArgs,
 	type ResourceOutput,
@@ -36,7 +40,12 @@ export class DemoGenerator extends TraceGenerator {
  */
 export class DemoGeneratorPlugin
 	extends fc.Arbitrary<Generator>
-	implements GeneratorPlugin, PluginWithInitFn, PluginWithShutdownFn
+	implements
+		GeneratorPlugin,
+		PluginWithInitFn,
+		PluginWithPreRunFn,
+		PluginWithPostRunFn,
+		PluginWithShutdownFn
 {
 	private static generatorIdCounter: number = 0;
 
@@ -67,6 +76,21 @@ export class DemoGeneratorPlugin
 	 */
 	// eslint-disable-next-line class-methods-use-this
 	readonly init: PluginInitFn = async () => {};
+
+	/**
+	 * Optional pre test run method called right before a test run starts.
+	 * Enforced through optional implementation of {@link PluginWithPreRunFn}.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	readonly preRun: PluginPreRunFn = async () => {};
+
+	/**
+	 * Optional post test run method called right after a test run ended with
+	 * its results and the values the IaC program exported. Enforced through
+	 * optional implementation of {@link PluginWithPostRunFn}.
+	 */
+	// eslint-disable-next-line class-methods-use-this
+	readonly postRun: PluginPostRunFn = async () => {};
 
 	/**
 	 * Optional shutdown method called after the ProTI check terminated.
