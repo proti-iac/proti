@@ -5,9 +5,9 @@
   },
   "dependencies": {
     "@proti-iac/spec": "file:../../../@proti-iac-spec@0.0.0.tgz",
-    "@pulumi/aws": "^6.7.0",
-    "@pulumi/awsx": "^2.1.0",
-    "@pulumi/pulumi": "^3.91.1",
-    "fast-check": "^3.13.2"
+    "@pulumi/aws": "^6.34.1",
+    "@pulumi/awsx": "^2.9.0",
+    "@pulumi/pulumi": "^3.115.2",
+    "fast-check": "^3.18.0"
   }
 }

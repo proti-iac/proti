@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@proti-iac/spec": "workspace:^",
-    "@pulumi/pulumi": "^3.91.1",
+    "@pulumi/pulumi": "^3.115.2",
     "fast-check": "^3.18.0",
     "jest-resolve-dependencies": "^29.7.0",
     "jest-snapshot": "^29.7.0",

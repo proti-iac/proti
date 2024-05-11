@@ -1,13 +1,13 @@
 {
   "name": "s3-website-non-terminating-deasync",
   "devDependencies": {
-    "@types/deasync": "^0.1.4",
+    "@types/deasync": "^0.1.5",
     "@types/node": "^20.12.11"
   },
   "dependencies": {
-    "@pulumi/aws": "^6.7.0",
-    "@pulumi/awsx": "^2.1.0",
-    "@pulumi/pulumi": "^3.91.1",
+    "@pulumi/aws": "^6.34.1",
+    "@pulumi/awsx": "^2.9.0",
+    "@pulumi/pulumi": "^3.115.2",
     "deasync": "^0.1.29"
   }
 }

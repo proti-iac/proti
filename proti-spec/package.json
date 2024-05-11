@@ -21,7 +21,7 @@
     "fast-check": "^3.18.0"
   },
   "devDependencies": {
-    "@pulumi/pulumi": "^3.91.1",
+    "@pulumi/pulumi": "^3.115.2",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.11",
     "typescript": "^5.4.5"

@@ -1,5 +1,5 @@
 import { type DeepReadonly, asyncMapValues } from '@proti-iac/core';
-import { runPulumiCmd } from '@pulumi/pulumi/automation';
+import { PulumiCommand, PulumiCommandRun } from '@pulumi/pulumi/automation';
 import { is } from 'typia';
 import type {
 	AliasDefinition as PulumiAliasDefinition,
@@ -20,8 +20,9 @@ import type {
 } from './pulumi-package-metaschema';
 import type { SchemaRegistry } from './schema-registry';
 
-// Pulumi hides the runPulumiCmd export using @internal. To use it here, we provide the type declaration manually.
+// // Pulumi hides the runPulumiCmd export using @internal. To use it here, we provide the type declaration manually.
 declare module '@pulumi/pulumi/automation' {
+	// eslint-disable-next-line @typescript-eslint/no-shadow
 	class CommandResult {
 		stdout: string;
 
@@ -33,15 +34,18 @@ declare module '@pulumi/pulumi/automation' {
 
 		toString: () => string;
 	}
-	// eslint-disable-next-line @typescript-eslint/no-shadow
-	const runPulumiCmd: (
+	type PulumiCommandRun = (
 		args: string[],
 		cwd: string,
 		additionalEnv: { [key: string]: string },
 		onOutput?: (data: string) => void
 	) => Promise<CommandResult>;
 }
-export const runPulumi = runPulumiCmd;
+type PulumiCommandWithRun = {
+	run: PulumiCommandRun;
+};
+export const runPulumi: PulumiCommandRun = async (...args) =>
+	((await PulumiCommand.get()) as unknown as PulumiCommandWithRun).run(...args);
 
 export type AliasDefinition = DeepReadonly<PulumiAliasDefinition>;
 export type ArrayType = DeepReadonly<PulumiArrayType>;
