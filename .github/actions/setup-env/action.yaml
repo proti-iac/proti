@@ -13,7 +13,7 @@ runs:
     - name: Install Pulumi
       uses: pulumi/actions@v4
       with:
-        pulumi-version: 3.91.1
+        pulumi-version: 3.115.2
     - name: Get yarn cache directory path
       id: yarn-cache-dir-path
       run: echo "YARN_CACHE_FOLDER=$(yarn config get cacheFolder)" >> "$GITHUB_ENV"

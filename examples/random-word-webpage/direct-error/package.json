@@ -5,8 +5,8 @@
         "@types/node": "^20.12.11"
     },
     "dependencies": {
-        "@pulumi/aws": "^6.7.0",
-        "@pulumi/pulumi": "^3.91.1",
-        "@pulumi/random": "^4.14.0"
+        "@pulumi/aws": "^6.34.1",
+        "@pulumi/pulumi": "^3.115.2",
+        "@pulumi/random": "^4.16.1"
     }
 }

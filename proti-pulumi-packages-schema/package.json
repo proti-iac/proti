@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@proti-iac/core": "workspace:^",
-    "@pulumi/pulumi": "^3.91.1",
+    "@pulumi/pulumi": "^3.115.2",
     "fast-check": "^3.18.0",
     "ts-patch": "3.1.2",
     "typia": "^6.0.3"
